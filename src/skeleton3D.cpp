@@ -175,6 +175,11 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     else
         yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
 
+    dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
+
+    // initialise timing in case of misrecognition
+    dTimingLastApparition = clock();
+
     // Open the OPC Client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
 
@@ -242,7 +247,8 @@ bool    skeleton3D::updateModule()
 {
     deque<CvPoint> bodyPartsCv;
     // Obtain body part from a Tensorflow-based module
-    obtainBodyParts(bodyPartsCv);
+    bool tracked = false;
+    tracked = obtainBodyParts(bodyPartsCv);
 
     // Get the 3D pose of CvPoint of body parts
 
@@ -259,41 +265,54 @@ bool    skeleton3D::updateModule()
 
     // Update OPC or conduct actions
     //check if this skeletton is really tracked
-    bool reallyTracked = false;
-    for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ; jnt != player.skeleton.end() ; jnt++)
+    if (tracked)
     {
-        if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
+        bool reallyTracked = false;
+        for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ; jnt != player.skeleton.end() ; jnt++)
         {
-            reallyTracked = true;
-            break;
-        }
-    }
-    if (reallyTracked)
-    {
-        dSince = (clock() - dTimingLastApparition) / (double) CLOCKS_PER_SEC;
-        yInfo("skeleton is tracked ==> update OPC");
-        opc->checkout();
-        partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
-        partner->m_present = 1.0;
-
-        // reset the timing.
-        dTimingLastApparition = clock();
-
-        for (map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin(); jnt != player.skeleton.end(); jnt++)
-        {
-            Vector pos(3,0.0);
-            pos[0] = jnt->second.x;
-            pos[1] = jnt->second.y;
-            pos[2] = jnt->second.z;
-            if (jnt->first == ICUBCLIENT_OPC_BODY_PART_TYPE_HEAD)
+            if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
             {
-                partner->m_ego_position = pos;
+                reallyTracked = true;
+                break;
             }
-            partner->m_body.m_parts[jnt->first] = pos;
         }
-        opc->commit(partner);
-    }
+        if (reallyTracked)
+        {
+            dSince = (clock() - dTimingLastApparition) / (double) CLOCKS_PER_SEC;
+            yInfo("skeleton is tracked ==> update OPC");
+            opc->checkout();
+            partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
+            partner->m_present = 1.0;
 
-    bodyPartsCv.clear();
+            // reset the timing.
+            dTimingLastApparition = clock();
+
+            for (map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin(); jnt != player.skeleton.end(); jnt++)
+            {
+                Vector pos(3,0.0);
+                pos[0] = jnt->second.x;
+                pos[1] = jnt->second.y;
+                pos[2] = jnt->second.z;
+                if (jnt->first == ICUBCLIENT_OPC_BODY_PART_TYPE_HEAD)
+                {
+                    partner->m_ego_position = pos;
+                }
+                partner->m_body.m_parts[jnt->first] = pos;
+            }
+            opc->commit(partner);
+        }
+
+        bodyPartsCv.clear();
+    }
+    else
+    {
+        if (dSince > dThresholdDisparition)
+        {
+            opc->checkout();
+            partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
+            partner->m_present = 0.0;
+            opc->commit(partner);
+        }
+    }
     return true;
 }
