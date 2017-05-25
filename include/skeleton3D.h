@@ -29,16 +29,24 @@ class skeleton3D : public RFModule
 protected:
     double      period;
     string      name;
+    double      body_valence;
+    double      part_dimension;
+
+    Stamp       ts;
+
     RpcServer   rpcPort;                            //!< rpc server to receive user request
     RpcClient   rpcGet3D;                           //!< rpc client port to send requests to SFM
     OPCClient   *opc;                               //!< OPC client object
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
+    BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
+
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
 
     bool                    connected3D;
+    bool                    connectedPPS;
 
     string                  partner_default_name;   //!< string value of default name of partner
     icubclient::Agent*      partner;                //!< human as an agent object
@@ -60,6 +68,10 @@ protected:
     bool    obtainBodyParts(deque<CvPoint> &partsCV);
 
     void    addJoint(map<string,kinectWrapper::Joint> &joints, const CvPoint &point, const string &partName);
+
+    bool    streamPartsToPPS();
+
+    void    addPartToStream(Agent* a, const string &partName, Bottle &streamedObj);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();

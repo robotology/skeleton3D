@@ -123,6 +123,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 addJoint(jnts,head,"head");
             }
             player.skeleton = jnts;
+            ts.update();
         }
         else
         {
@@ -153,10 +154,49 @@ void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
     }
 }
 
+void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &streamedObjs)
+{
+    Bottle part;
+    part.addDouble(a->m_body.m_parts[partName.c_str()][0]); // X
+    part.addDouble(a->m_body.m_parts[partName.c_str()][1]); // Y
+    part.addDouble(a->m_body.m_parts[partName.c_str()][2]); // Z
+    part.addDouble(part_dimension);                         // RADIUS
+    part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    streamedObjs.addList()=part;
+}
+
+bool    skeleton3D::streamPartsToPPS()
+{
+    if (partner && partner->m_present==1.0 && connectedPPS)
+    {
+        Bottle objects;
+        addPartToStream(partner,"head",objects);
+        addPartToStream(partner,"handRight",objects);
+        addPartToStream(partner,"handLeft",objects);
+        addPartToStream(partner,"elbowRight",objects);
+        addPartToStream(partner,"elbowLeft",objects);
+        addPartToStream(partner,"shoulderRight",objects);
+        addPartToStream(partner,"shoulderLeft",objects);
+
+        Bottle& output=ppsOutPort.prepare();
+        output.clear();
+        output.addList()=objects;
+        ppsOutPort.setEnvelope(ts);
+        ppsOutPort.write();
+        return true;
+    }
+    else
+        return false;
+}
+
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("skeleton3D")).asString().c_str();
     period=rf.check("period",Value(0.1)).asDouble();
+
+    body_valence = rf.check("body_valence",Value(-0.5)).asDouble();
+    part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
+
 
     // Connect to /SFM/rpc to obtain 3D estimation
     rpcGet3D.open(("/"+name+"/get3d:rpc").c_str());
@@ -175,10 +215,21 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     else
         yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
 
+    // Connect to /visuoTactileWrapper/sensManager:i to stream body parts as objects to PPS
+    ppsOutPort.open(("/"+name+"/visuoTactileWrapper/objects:o").c_str());
+    std::string visuoTactileWrapper_inport = "/visuoTactileWrapper/sensManager:i";
+    connectedPPS = yarp::os::Network::connect(ppsOutPort.getName().c_str(), visuoTactileWrapper_inport);
+    if (!connectedPPS)
+        yError("[%s] Unable to connect to %s port", name.c_str(),visuoTactileWrapper_inport.c_str());
+    else
+        yInfo("[%s] Connected to %s port", name.c_str(), visuoTactileWrapper_inport.c_str());
+
+
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
+
 
     // Open the OPC Client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
@@ -204,6 +255,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     partner->m_present = 0.0;
     opc->commit(partner);
 
+    ts.update();
+
 //    rpcPort.open("/"+name+"/rpc");
 //    attach(rpcPort);
 
@@ -217,6 +270,7 @@ bool    skeleton3D::interruptModule()
     rpcPort.interrupt();
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
+    ppsOutPort.interrupt();
     opc->interrupt();
     return true;
 }
@@ -228,6 +282,7 @@ bool    skeleton3D::close()
     rpcPort.close();
     rpcGet3D.close();
     bodyPartsInPort.close();
+    ppsOutPort.close();
     opc->close();
     return true;
 }
@@ -251,7 +306,6 @@ bool    skeleton3D::updateModule()
     tracked = obtainBodyParts(bodyPartsCv);
 
     // Get the 3D pose of CvPoint of body parts
-
     if (bodyPartsCv.size()>=0 && connected3D)
     {
         for (int8_t i=0; i<bodyPartsCv.size(); i++)
@@ -264,11 +318,12 @@ bool    skeleton3D::updateModule()
     }
 
     // Update OPC or conduct actions
-    //check if this skeletton is really tracked
+    // check if this skeletton is really tracked
     if (tracked)
     {
         bool reallyTracked = false;
-        for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ; jnt != player.skeleton.end() ; jnt++)
+        for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ;
+            jnt != player.skeleton.end() ; jnt++)
         {
             if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
             {
@@ -314,5 +369,11 @@ bool    skeleton3D::updateModule()
             opc->commit(partner);
         }
     }
+
+    if(streamPartsToPPS())
+        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
+    else
+        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
+
     return true;
 }
