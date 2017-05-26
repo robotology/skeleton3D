@@ -18,6 +18,7 @@ find_package(YARP REQUIRED)
 find_package(ICUB REQUIRED)
 find_package(ICUBcontrib REQUIRED)
 find_package(icubclient)
+find_package(kinectWrapper)
 
 list(APPEND CMAKE_MODULE_PATH ${YARP_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH ${ICUB_MODULE_PATH})
@@ -53,6 +54,7 @@ set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/src/skeleton3D.cpp
 
 include_directories(    ${YARP_INCLUDE_DIRS}
                         ${ICUB_INCLUDE_DIRS}
+                        ${kinectWrapper_INCLUDE_DIRS}
                         ${CMAKE_CURRENT_SOURCE_DIR}
                         ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
