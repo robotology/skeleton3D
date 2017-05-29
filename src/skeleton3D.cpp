@@ -69,6 +69,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         if (Bottle *bodyParts=allBodyParts->get(0).asList())
         {
             map<string,kinectWrapper::Joint> jnts;
+            confJoints.clear();
             Vector pos(3,0.0);
             if (Bottle *part=bodyParts->find("hands").asList())
             {
@@ -83,6 +84,9 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
                 addJoint(jnts,hand1,"handRight");
                 addJoint(jnts,hand2,"handLeft");
+
+                addConf(part->get(4).asDouble(),"handRight");
+                addConf(part->get(5).asDouble(),"handLeft");
             }
             if (Bottle *part=bodyParts->find("elbows").asList())
             {
@@ -97,6 +101,9 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
                 addJoint(jnts,eb1,"elbowRight");
                 addJoint(jnts,eb2,"elbowLeft");
+
+                addConf(part->get(4).asDouble(),"elbowRight");
+                addConf(part->get(5).asDouble(),"elbowLeft");
             }
             if (Bottle *part=bodyParts->find("shoulders").asList())
             {
@@ -111,6 +118,9 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
                 addJoint(jnts,sh1,"shoulderRight");
                 addJoint(jnts,sh2,"shoulderLeft");
+
+                addConf(part->get(4).asDouble(),"shoulderRight");
+                addConf(part->get(5).asDouble(),"shoulderLeft");
             }
             if (Bottle *part=bodyParts->find("head").asList())
             {
@@ -121,7 +131,10 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 partsCV.push_back(head);
 
                 addJoint(jnts,head,"head");
+
+                addConf(part->get(2).asDouble(),"head");
             }
+            extrapolateHand(jnts);
             player.skeleton = jnts;
             ts.update();
         }
@@ -154,6 +167,11 @@ void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
     }
 }
 
+void    skeleton3D::addConf(const double &conf, const string &partName)
+{
+    confJoints.insert(std::pair<string,double>(partName,conf));
+}
+
 void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &streamedObjs)
 {
     Bottle part;
@@ -161,8 +179,67 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     part.addDouble(a->m_body.m_parts[partName.c_str()][1]); // Y
     part.addDouble(a->m_body.m_parts[partName.c_str()][2]); // Z
     part.addDouble(part_dimension);                         // RADIUS
-    part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    if (use_part_conf)
+        part.addDouble(computeValence(partName));
+    else
+        part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
     streamedObjs.addList()=part;
+}
+
+double  skeleton3D::computeValence(const string &partName)
+{
+    double conf = confJoints[partName.c_str()];
+    return conf*2.0 - 1.0;
+}
+
+void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
+{
+    Vector handR(3,0.0), handL(3,0.0), elbowR(3,0.0), elbowL(3,0.0), handR_new(3,0.0), handL_new(3,0.0);
+    handR[0] = jnts.at("handRight").x;
+    handR[1] = jnts.at("handRight").y;
+    handR[2] = jnts.at("handRight").z;
+
+    handL[0] = jnts.at("handLeft").x;
+    handL[1] = jnts.at("handLeft").y;
+    handL[2] = jnts.at("handLeft").z;
+
+    elbowR[0] = jnts.at("elbowRight").x;
+    elbowR[1] = jnts.at("elbowRight").y;
+    elbowR[2] = jnts.at("elbowRight").z;
+
+    elbowL[0] = jnts.at("elbowLeft").x;
+    elbowL[1] = jnts.at("elbowLeft").y;
+    elbowL[2] = jnts.at("elbowLeft").z;
+
+    if (extrapolatePoint(elbowL,handL,handL_new))
+    {
+        jnts.at("handLeft").x = handL_new[0];
+        jnts.at("handLeft").y = handL_new[1];
+        jnts.at("handLeft").z = handL_new[2];
+    }
+    if (extrapolatePoint(elbowR,handR,handR_new))
+    {
+        jnts.at("handRight").x = handR_new[0];
+        jnts.at("handRight").y = handR_new[1];
+        jnts.at("handRight").z = handR_new[2];
+    }
+}
+
+bool  skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result)
+{
+    double handDim = 0.05;
+    if (p1.size()==3 && p2.size()==3)
+    {
+        Vector dir(3,0.0);
+        dir = p2-p1;
+        result = p1 + dir*(norm(dir)+ handDim)/norm(dir);
+        return true;
+    }
+    else
+    {
+        result.resize(3,0.0);
+        return false;
+    }
 }
 
 bool    skeleton3D::streamPartsToPPS()
@@ -197,6 +274,11 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
+    use_part_conf = rf.check("use_part_conf",Value(0)).asBool();
+    if (use_part_conf)
+        yInfo("[%s] Use part confidence as valence", name.c_str());
+    else
+        yInfo("[%s] Don't use part confidence as valence", name.c_str());
 
     // Connect to /SFM/rpc to obtain 3D estimation
     rpcGet3D.open(("/"+name+"/get3d:rpc").c_str());

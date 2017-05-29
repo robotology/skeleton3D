@@ -31,6 +31,7 @@ protected:
     string      name;
     double      body_valence;
     double      part_dimension;
+    bool        use_part_conf;
 
     Stamp       ts;
 
@@ -51,6 +52,7 @@ protected:
     string                  partner_default_name;   //!< string value of default name of partner
     icubclient::Agent*      partner;                //!< human as an agent object
     kinectWrapper::Player   player;
+    map<string,double>      confJoints;             //!< confidence of identified skeleton
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
@@ -69,9 +71,17 @@ protected:
 
     void    addJoint(map<string,kinectWrapper::Joint> &joints, const CvPoint &point, const string &partName);
 
+    void    addConf(const double &conf, const string &partName);
+
     bool    streamPartsToPPS();
 
     void    addPartToStream(Agent* a, const string &partName, Bottle &streamedObj);
+
+    double  computeValence(const string &partName);
+
+    void    extrapolateHand(map<string,kinectWrapper::Joint> &jnts);
+
+    bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
