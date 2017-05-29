@@ -1,5 +1,5 @@
 <application>
-<name>PPS Modulation icub </name>
+<name>PPS Modulation icub with Skeleton3D </name>
 
     <module>
         <name>iCubGui</name>
@@ -10,8 +10,34 @@
 
     <!--OPC and related modules-->
     <module>
+       <name>objectsPropertiesCollector</name>
+       <parameters>--name OPC --no-load-db --no-save-db</parameters>
+       <node>icub21</node>
+    </module>
+
+    <module>
         <name>opcPopulater</name>
         <node>icub21</node>
+    </module>
+
+     <!--SFM modules-->
+    <module>
+        <name>SFM</name>
+        <parameters></parameters>
+        <node>icub-cuda</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /SFM/disp --x 960 --y 720 --p 50 --compact</parameters>
+        <node>icub22</node>
+    </module>
+
+    <!--Skeleton modules-->
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /dispSkeleton:i --x 640 --y 720 --p 50 --compact</parameters>
+        <node>icub22</node>
     </module>
 
     <!--PPS modules-->
@@ -97,7 +123,7 @@
         <tag>skinGuiRH</tag>
     </module>
 
-    <!--sensationManager and behaviorManager modules-->
+    <!--sensationManager and behaviorManager modules
     <module>
         <name>sensationManager</name>
         <parameters>--from pps.ini</parameters>
@@ -121,7 +147,7 @@
         <parameters>--from pps.ini</parameters>
         <node>icub21</node>
         <tag>behaviorManager</tag>
-    </module>
+    </module>-->
 
 	<ensure>
 		<wait>5.0</wait>
@@ -167,6 +193,30 @@
     <connection>
         <from>/ppsAggregEventsForiCubGui/contacts:o</from>
         <to>/iCubGui/forces</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <!--SFM connections-->
+    <connection>
+        <from>/icub/camcalib/right/out</from>
+        <to>/SFM/right:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/camcalib/left/out</from>
+        <to>/SFM/left:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+    <connection>
+        <from>/SFM/disp:o</from>
+        <to>/SFM/disp</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <!--Skeleton connections-->
+    <connection>
+        <from>/skeleton2D/dispSkeleton:o</from>
+        <to>/dispSkeleton:i</to>
         <protocol>udp</protocol>
     </connection>
 
