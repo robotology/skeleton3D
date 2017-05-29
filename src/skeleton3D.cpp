@@ -195,34 +195,40 @@ double  skeleton3D::computeValence(const string &partName)
 void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
 {
     Vector handR(3,0.0), handL(3,0.0), elbowR(3,0.0), elbowL(3,0.0), handR_new(3,0.0), handL_new(3,0.0);
-    handR[0] = jnts.at("handRight").x;
-    handR[1] = jnts.at("handRight").y;
-    handR[2] = jnts.at("handRight").z;
-
-    handL[0] = jnts.at("handLeft").x;
-    handL[1] = jnts.at("handLeft").y;
-    handL[2] = jnts.at("handLeft").z;
-
-    elbowR[0] = jnts.at("elbowRight").x;
-    elbowR[1] = jnts.at("elbowRight").y;
-    elbowR[2] = jnts.at("elbowRight").z;
-
-    elbowL[0] = jnts.at("elbowLeft").x;
-    elbowL[1] = jnts.at("elbowLeft").y;
-    elbowL[2] = jnts.at("elbowLeft").z;
-
-    if (extrapolatePoint(elbowL,handL,handL_new))
+    if (!jnts.empty() && jnts.find("handRight")!=jnts.end() && jnts.find("handLeft")!=jnts.end()
+            && jnts.find("elbowRight")!=jnts.end() && jnts.find("elbowLeft")!=jnts.end())
     {
-        jnts.at("handLeft").x = handL_new[0];
-        jnts.at("handLeft").y = handL_new[1];
-        jnts.at("handLeft").z = handL_new[2];
+        handR[0] = jnts.at("handRight").x;
+        handR[1] = jnts.at("handRight").y;
+        handR[2] = jnts.at("handRight").z;
+
+        handL[0] = jnts.at("handLeft").x;
+        handL[1] = jnts.at("handLeft").y;
+        handL[2] = jnts.at("handLeft").z;
+
+        elbowR[0] = jnts.at("elbowRight").x;
+        elbowR[1] = jnts.at("elbowRight").y;
+        elbowR[2] = jnts.at("elbowRight").z;
+
+        elbowL[0] = jnts.at("elbowLeft").x;
+        elbowL[1] = jnts.at("elbowLeft").y;
+        elbowL[2] = jnts.at("elbowLeft").z;
+
+        if (extrapolatePoint(elbowL,handL,handL_new))
+        {
+            jnts.at("handLeft").x = handL_new[0];
+            jnts.at("handLeft").y = handL_new[1];
+            jnts.at("handLeft").z = handL_new[2];
+        }
+        if (extrapolatePoint(elbowR,handR,handR_new))
+        {
+            jnts.at("handRight").x = handR_new[0];
+            jnts.at("handRight").y = handR_new[1];
+            jnts.at("handRight").z = handR_new[2];
+        }
     }
-    if (extrapolatePoint(elbowR,handR,handR_new))
-    {
-        jnts.at("handRight").x = handR_new[0];
-        jnts.at("handRight").y = handR_new[1];
-        jnts.at("handRight").z = handR_new[2];
-    }
+    else
+        yDebug("[%s] extrapolateHand: can't find a body part", name.c_str());
 }
 
 bool  skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result)
@@ -232,7 +238,11 @@ bool  skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &r
     {
         Vector dir(3,0.0);
         dir = p2-p1;
-        result = p1 + dir*(norm(dir)+ handDim)/norm(dir);
+        if (norm(dir)>=0.0001)
+            result = p1 + dir*(norm(dir)+ handDim)/norm(dir);
+        else
+            result = p1 + dir*(0.0001+ handDim)/0.0001;
+        yDebug("extrapolatePoint: result = %s",result.toString(3,3).c_str());
         return true;
     }
     else
