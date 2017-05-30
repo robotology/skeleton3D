@@ -58,6 +58,12 @@ protected:
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
     double                  dThresholdDisparition;  //!< timing maximal of non-reconnaissance of a agent, after thath we consider the agent as absent
 
+    bool                        init_filters;
+    int                         filterOrder;
+    map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
+
+
+    void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
     /**
      * @brief get3DPosition Get the 3D point coordinate in Root frame through SFM

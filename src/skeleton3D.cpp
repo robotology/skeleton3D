@@ -7,6 +7,59 @@
 #include <set>
 #include "skeleton3D.h"
 
+
+void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered)
+{
+    if (init_filters)
+    {
+        jointsFiltered = joints;
+        for(map<string,kinectWrapper::Joint>::iterator jnt = joints.begin() ;
+            jnt != joints.end() ; jnt++)
+        {
+            string partName = jnt->first;
+            Vector pos(3,0.0);
+            pos[0] = jnt->second.x;
+            pos[1] = jnt->second.y;
+            pos[2] = jnt->second.z;
+            MedianFilter filterPos(filterOrder,pos);
+            filterSkeleton.insert(std::pair<string,MedianFilter>(partName,filterPos));
+        }
+        init_filters = false;
+    }
+    else
+    {
+        for(map<string,kinectWrapper::Joint>::iterator jnt = joints.begin() ;
+            jnt != joints.end() ; jnt++)
+        {
+            string partName = jnt->first;
+            if (!filterSkeleton.empty() && filterSkeleton.find(partName.c_str())!=filterSkeleton.end())
+            {
+                Vector pos(3,0.0), posFilted(3,0.0);
+                kinectWrapper::Joint jntFilted;
+                pos[0] = jnt->second.x;
+                pos[1] = jnt->second.y;
+                pos[2] = jnt->second.z;
+
+                posFilted = filterSkeleton.at(partName.c_str()).filt(pos);
+                jntFilted.x = posFilted[0];
+                jntFilted.y = posFilted[1];
+                jntFilted.z = posFilted[2];
+                jointsFiltered.insert(std::pair<string,kinectWrapper::Joint>(partName.c_str(),jntFilted));
+                yDebug("[%s] filt: apply median filter for %s",name.c_str(), partName.c_str());
+            }
+            else
+            {
+                Vector pos(3,0.0);
+                pos[0] = jnt->second.x;
+                pos[1] = jnt->second.y;
+                pos[2] = jnt->second.z;
+                MedianFilter filterPos(filterOrder,pos);
+                filterSkeleton.insert(std::pair<string,MedianFilter>(partName,filterPos));
+            }
+        }
+    }
+}
+
 // Inspired from iol2opc
 bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
 {
@@ -69,6 +122,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         if (Bottle *bodyParts=allBodyParts->get(0).asList())
         {
             map<string,kinectWrapper::Joint> jnts;
+            map<string,kinectWrapper::Joint> jntsFiltered;
             confJoints.clear();
             Vector pos(3,0.0);
             if (Bottle *part=bodyParts->find("hands").asList())
@@ -134,8 +188,11 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
                 addConf(part->get(2).asDouble(),"head");
             }
+
             extrapolateHand(jnts);
-            player.skeleton = jnts;
+            filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
+            player.skeleton = jntsFiltered;
+
             ts.update();
         }
         else
@@ -231,7 +288,7 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
         yDebug("[%s] extrapolateHand: can't find a body part", name.c_str());
 }
 
-bool  skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result)
+bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result)
 {
     double handDim = 0.05;
     if (p1.size()==3 && p2.size()==3)
@@ -282,13 +339,15 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     period=rf.check("period",Value(0.1)).asDouble();
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
-    part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
+    part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(0)).asBool();
     if (use_part_conf)
         yInfo("[%s] Use part confidence as valence", name.c_str());
     else
         yInfo("[%s] Don't use part confidence as valence", name.c_str());
+
+    filterOrder = rf.check("filter_order", Value(1)).asInt();
 
     // Connect to /SFM/rpc to obtain 3D estimation
     rpcGet3D.open(("/"+name+"/get3d:rpc").c_str());
@@ -321,6 +380,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
+
+    // Median Filter for body part positions
+    init_filters = true;
 
 
     // Open the OPC Client
