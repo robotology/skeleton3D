@@ -67,20 +67,62 @@ protected:
      */
     bool    get3DPosition(const CvPoint &point, Vector &x);
 
+    /**
+     * @brief obtainBodyParts Get body parts position and confidence from Tensorflow-based skeleton2D module
+     * @param partsCV Set of CvPoint(s) of body parts from skeleton2D module
+     * @return True if can obtain the good value from skeleton2D module, False otherwise
+     */
     bool    obtainBodyParts(deque<CvPoint> &partsCV);
 
+    /**
+     * @brief addJoint Add a joint of skeleton by name to a skeleton
+     * @param joints A skeleton by set of joints and equivalent joint name
+     * @param point CvPoint of the body part from skeleton2D module
+     * @param partName String value of the name of a part
+     */
     void    addJoint(map<string,kinectWrapper::Joint> &joints, const CvPoint &point, const string &partName);
 
+    /**
+     * @brief addConf Store the received identified confidence rate of a body part
+     * @param conf Double value of the confidence rate
+     * @param partName String value of the name of a part
+     */
     void    addConf(const double &conf, const string &partName);
 
+    /**
+     * @brief streamPartsToPPS Send body parts to (PPS) visuoTactileWrapper
+     * @return True if send successfully, False otherwise
+     */
     bool    streamPartsToPPS();
 
+    /**
+     * @brief addPartToStream Accumulate a body part by name to streamed Bottle before sending it to PPS
+     * @param a An icubclient Agent, which contains all OPC-related information, e.g skeleton, position, dimensions of parts, valence of parts
+     * @param partName String value of the name of a part
+     * @param streamedObj A Yarp Bottle to store streamed body parts
+     */
     void    addPartToStream(Agent* a, const string &partName, Bottle &streamedObj);
 
+    /**
+     * @brief computeValence Compute the body part valence based on the identified confidence rate
+     * @param partName String for the name of a body part
+     * @return Double value of the body part valence
+     */
     double  computeValence(const string &partName);
 
+    /**
+     * @brief extrapolateHand Estimate the hand position, known the elbow and wrist position
+     * @param jnts A skeleton by set of joints and equivalent joint name
+     */
     void    extrapolateHand(map<string,kinectWrapper::Joint> &jnts);
 
+    /**
+     * @brief extrapolatePoint Estimate a point position, known 2 other points in the same line
+     * @param p1 Yarp Vector of 1st point in the line
+     * @param p2 Yarp Vector of 2nd point in the line
+     * @param result Estimated position
+     * @return True if can estimate the point, False otherwise and size of p1 and/or p2 is wrong
+     */
     bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
 
     bool    configure(ResourceFinder &rf);
