@@ -315,7 +315,7 @@
         <protocol>udp</protocol>
     </connection>
 
-    <!--sensation and behaviorManager connections-->
+    <!--sensation and behaviorManager connections
     <connection>
         <from>/opcSensation/objects:o</from>
         <to>/visuoTactileWrapper/sensManager:i</to>
@@ -326,9 +326,7 @@
         <from>/homeostasis/stress:o</from>
         <to>/visuoTactileRF/stress:i</to>
         <protocol>udp</protocol>
-    </connection>
-
-
+    </connection>-->
 
 </application>
 
