@@ -1,5 +1,5 @@
 # Copyright: (C) 2017 iCub Facility - Istituto Italiano di Tecnologia
-# Author: Nguyen Dong Hai Phuong
+# Author: Nguyen Dong Hai Phuong <phuong.nguyen@iit.it>
 # CopyPolicy: Released under the terms of the LGPLv2.1 or later, see LGPL.TXT
 
 cmake_minimum_required(VERSION 2.8)
@@ -37,7 +37,7 @@ include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 
 #add_subdirectory(modules)
 
-#add_subdirectory(app)
+add_subdirectory(app)
 
 #include(YarpIDL)
 

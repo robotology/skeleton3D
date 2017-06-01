@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
     ResourceFinder rf;
     rf.setDefaultContext("skeleton3D");
-    rf.setDefaultConfigFile("config.ini");
+    rf.setDefaultConfigFile("skeleton3D.ini");
     rf.configure(argc,argv);
 
     skeleton3D tracker;
