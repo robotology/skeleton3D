@@ -58,8 +58,9 @@ protected:
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
     double                  dThresholdDisparition;  //!< timing maximal of non-reconnaissance of a agent, after thath we consider the agent as absent
 
-    bool                        init_filters;
-    int                         filterOrder;
+    bool                        use_part_filter;    //!< boolean value to define the usage of median filter for body parts
+    bool                        init_filters;       //!< boolean value to define if the median filter for body parts have been initialized
+    int                         filterOrder;        //!< integer value for order of the median filter of the body parts
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
 
 

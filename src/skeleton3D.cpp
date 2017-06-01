@@ -190,8 +190,13 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
             }
 
             extrapolateHand(jnts);
-            filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
-            player.skeleton = jntsFiltered;
+            if (use_part_filter)
+            {
+                filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
+                player.skeleton = jntsFiltered;
+            }
+            else
+                player.skeleton = jnts;
 
             ts.update();
         }
@@ -341,11 +346,17 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
 
-    use_part_conf = rf.check("use_part_conf",Value(0)).asBool();
+    use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
     if (use_part_conf)
         yInfo("[%s] Use part confidence as valence", name.c_str());
     else
         yInfo("[%s] Don't use part confidence as valence", name.c_str());
+
+    use_part_filter = rf.check("use_part_filter",Value(1)).asBool();
+    if (use_part_filter)
+        yInfo("[%s] Use median filters for body parts", name.c_str());
+    else
+        yInfo("[%s] Don't use median filters for body parts", name.c_str());
 
     filterOrder = rf.check("filter_order", Value(1)).asInt();
 
@@ -383,6 +394,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // Median Filter for body part positions
     init_filters = true;
+    filterSkeleton.clear();
 
 
     // Open the OPC Client
