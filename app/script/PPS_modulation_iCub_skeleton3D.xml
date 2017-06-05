@@ -3,7 +3,7 @@
 
     <module>
         <name>iCubGui</name>
-        <parameters>--xpos 3000 --ypos 0 --width 500 --height 530</parameters>
+        <parameters>--xpos 1300 --ypos 0 --width 600 --height 930</parameters>
         <node>icub22</node>
         <tag>iCubGui</tag>
     </module>
@@ -36,10 +36,19 @@
     <!--Skeleton modules-->
     <module>
         <name>yarpview</name>
-        <parameters>--name /dispSkeleton:i --x 640 --y 720 --p 50 --compact</parameters>
+        <parameters>--name /dispSkeleton:i --x 960 --y 370 --p 50 --compact</parameters>
         <node>icub22</node>
     </module>
-
+    <module>
+        <name>skeleton3D</name>
+        <parameters>--dThresholdDisparition 10.0 --part_dimension 0.07 --filter_order 3</parameters>
+        <dependencies>
+            <port timeout="10">/OPC/rpc</port>
+            <port timeout="10">/SFM/rpc</port>
+            <port timeout="10">/skeleton2D/bodyParts:o</port>
+        </dependencies>
+        <node>icub21</node>
+    </module>
     <!--PPS modules-->
     <module>
         <name>skinEventsAggregator</name>
