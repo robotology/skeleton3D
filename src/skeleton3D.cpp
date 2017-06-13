@@ -341,7 +341,7 @@ bool    skeleton3D::streamPartsToPPS()
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("skeleton3D")).asString().c_str();
-    period=rf.check("period",Value(0.1)).asDouble();
+    period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
