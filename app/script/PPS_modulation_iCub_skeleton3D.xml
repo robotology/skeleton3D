@@ -22,6 +22,11 @@
 
      <!--SFM modules-->
     <module>
+        <name>skeleton2D.py</name>
+        <parameters>--des /skeleton2D</parameters>
+        <node>icub-cuda</node>
+    </module>
+    <module>
         <name>SFM</name>
         <parameters></parameters>
         <node>icub-cuda</node>
