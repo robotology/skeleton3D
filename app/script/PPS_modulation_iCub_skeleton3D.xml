@@ -329,6 +329,42 @@
         <protocol>udp</protocol>
     </connection>
 
+    <connection>
+        <from>/icub/skin/left_hand_comp</from>
+        <to>/skinGui/left_hand:i</to>
+        <protocol>udp</protocol>
+    </connection>
+    
+    <connection>
+        <from>/icub/skin/left_forearm_comp</from>
+        <to>/skinGui/left_forearm:i</to>
+        <protocol>udp</protocol>
+    </connection>  
+    
+    <connection>
+        <from>/icub/skin/left_arm_comp</from>
+        <to>/skinGui/left_arm:i</to>
+        <protocol>udp</protocol>
+    </connection>  
+
+    <connection>
+        <from>/icub/skin/right_hand_comp</from>
+        <to>/skinGui/right_hand:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/icub/skin/right_forearm_comp</from>
+        <to>/skinGui/right_forearm:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/icub/skin/right_arm_comp</from>
+        <to>/skinGui/right_arm:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
     <!--sensation and behaviorManager connections
     <connection>
         <from>/opcSensation/objects:o</from>
