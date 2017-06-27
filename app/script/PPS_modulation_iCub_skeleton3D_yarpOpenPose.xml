@@ -45,7 +45,7 @@
         <dependencies>
             <port timeout="10">/OPC/rpc</port>
             <port timeout="10">/SFM/rpc</port>
-            <port timeout="10">/skeleton2D/bodyParts:o</port>
+            <port timeout="10">/yarpOpenPose/target:o</port>
         </dependencies>
         <node>icub21</node>
     </module>
