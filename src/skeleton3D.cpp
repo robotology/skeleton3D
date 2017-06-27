@@ -116,15 +116,63 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 {
     mutexResourcesSkeleton.lock();
     Bottle *allBodyParts = bodyPartsInPort.read(false);
+//    Bottle *allPeople = bodyPartsInPort.read(false);
     mutexResourcesSkeleton.unlock();
     if (allBodyParts!=NULL)
+//    if (allPeople!=NULL)
     {
-        if (Bottle *bodyParts=allBodyParts->get(0).asList())
+//        if (Bottle *bodyParts=allBodyParts->get(0).asList())
+        for (uint person=0; person<allBodyParts->size(); person++)
+        {
+            if (Bottle *bodyParts=allBodyParts->get(person).asList())
+            {
+                map<string,kinectWrapper::Joint> jnts;
+                map<string,kinectWrapper::Joint> jntsFiltered;
+                confJoints.clear();
+                for (uint partId=0; partId<bodyParts->size();partId++)
+                {
+                    if (partId<mapPartsKinect.size())
+                    {
+                        if (Bottle *part=bodyParts->get(partId).asList())
+                        {
+                            string partName = part->get(0).asString();
+                            yDebug("[skeleton3D] found part as %s",partName.c_str());
+                            CvPoint partCv;
+                            partCv.x = (int)part->get(1).asDouble();
+                            partCv.y = (int)part->get(2).asDouble();
+                            partsCV.push_back(partCv);
+
+                            addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
+
+                            addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
+                        }
+                    }
+                    else
+                        yDebug("[skeleton3D] obtainBodyParts: don't deal with face parts!");
+                }
+
+                extrapolateHand(jnts);
+                if (use_part_filter)
+                {
+                    filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
+                    player.skeleton = jntsFiltered;
+                }
+                else
+                    player.skeleton = jnts;
+
+                ts.update();
+            }
+            else
+            {
+                yDebug("[skeleton3D] obtainBodyParts wrong format");
+                return false;
+            }
+        }
+/*
         {
             map<string,kinectWrapper::Joint> jnts;
             map<string,kinectWrapper::Joint> jntsFiltered;
             confJoints.clear();
-            Vector pos(3,0.0);
             if (Bottle *part=bodyParts->find("hands").asList())
             {
                 yDebug("[skeleton3D] part found hands");
@@ -205,6 +253,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
             yDebug("[skeleton3D] obtainBodyParts wrong format");
             return false;
         }
+*/
     }
     else
     {
