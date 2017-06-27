@@ -165,10 +165,10 @@ public:
         {1,  "shoulderCenter"},
         {2,  "shoulderRight"},
         {3,  "elbowRight"},
-        {4,  "wristRight"},
+        {4,  "handRight"},      // wrist --> hand: use extrapolatePoint later to convert truely
         {5,  "shoulderLeft"},
         {6,  "elbowLeft"},
-        {7,  "wristLeft"},
+        {7,  "handLeft"},       // wrist --> hand: use extrapolatePoint later to convert truely
         {8,  "hipRight"},
         {9,  "kneeRight"},
         {10, "ankleRight"},
