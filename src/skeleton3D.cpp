@@ -420,11 +420,11 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // Connect to /skeleton2D/bodyParts:o to get streamed body parts
     bodyPartsInPort.open(("/"+name+"/bodyParts:i").c_str());
-    std::string bodyParts_streaming = "/skeleton2D/bodyParts:o";
-    if (!yarp::os::Network::connect(bodyParts_streaming, bodyPartsInPort.getName().c_str()))
-        yError("[%s] Unable to connect to %s port", name.c_str(),bodyParts_streaming.c_str());
-    else
-        yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
+//    std::string bodyParts_streaming = "/skeleton2D/bodyParts:o";
+//    if (!yarp::os::Network::connect(bodyParts_streaming, bodyPartsInPort.getName().c_str()))
+//        yError("[%s] Unable to connect to %s port", name.c_str(),bodyParts_streaming.c_str());
+//    else
+//        yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
 
     // Connect to /visuoTactileWrapper/sensManager:i to stream body parts as objects to PPS
     ppsOutPort.open(("/"+name+"/visuoTactileWrapper/objects:o").c_str());
