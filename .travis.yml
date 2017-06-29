@@ -44,6 +44,14 @@ install:
   - sudo make install
   - cd ../../
 
+  - https://github.com/robotology/kinect-wrapper.git
+  - cd kinect-wrapper
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - sudo make install
+  - cd ../../
+
   - git clone https://github.com/robotology/icub-hri.git
   - cd icub-hri
   - mkdir build
