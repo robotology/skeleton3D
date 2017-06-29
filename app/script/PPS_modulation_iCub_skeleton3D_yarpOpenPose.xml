@@ -22,11 +22,6 @@
 
      <!--SFM modules-->
     <module>
-        <name>skeleton2D.py</name>
-        <parameters>--des /skeleton2D</parameters>
-        <node>icub-cuda</node>
-    </module>
-    <module>
         <name>SFM</name>
         <parameters></parameters>
         <node>icub-cuda</node>
@@ -50,9 +45,14 @@
         <dependencies>
             <port timeout="10">/OPC/rpc</port>
             <port timeout="10">/SFM/rpc</port>
-            <port timeout="10">/skeleton2D/bodyParts:o</port>
+            <port timeout="10">/yarpOpenPose/target:o</port>
         </dependencies>
         <node>icub21</node>
+    </module>
+
+     <module>
+        <name>yarpOpenPose</name>
+        <node>icub-cuda</node>
     </module>
     <!--PPS modules-->
     <module>
@@ -229,13 +229,19 @@
 
     <!--Skeleton connections-->
     <connection>
-        <from>/skeleton2D/dispSkeleton:o</from>
+        <from>/icub/camcalib/left/out</from>
+        <to>/yarpOpenPose/image:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/yarpOpenPose/image:o</from>
         <to>/dispSkeleton:i</to>
         <protocol>udp</protocol>
     </connection>
 
     <connection>
-        <from>/skeleton2D/bodyParts:o</from>
+        <from>/yarpOpenPose/target:o</from>
         <to>/skeleton3D/bodyParts:i</to>
         <protocol>udp</protocol>
     </connection>
@@ -332,42 +338,6 @@
     <connection>
         <from>/visuoTactileRF/skinGuiHandR:o</from>
         <to>/skinGui/right_hand_virtual:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/icub/skin/left_hand_comp</from>
-        <to>/skinGui/left_hand:i</to>
-        <protocol>udp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/icub/skin/left_forearm_comp</from>
-        <to>/skinGui/left_forearm:i</to>
-        <protocol>udp</protocol>
-    </connection>  
-    
-    <connection>
-        <from>/icub/skin/left_arm_comp</from>
-        <to>/skinGui/left_arm:i</to>
-        <protocol>udp</protocol>
-    </connection>  
-
-    <connection>
-        <from>/icub/skin/right_hand_comp</from>
-        <to>/skinGui/right_hand:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/icub/skin/right_forearm_comp</from>
-        <to>/skinGui/right_forearm:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/icub/skin/right_arm_comp</from>
-        <to>/skinGui/right_arm:i</to>
         <protocol>udp</protocol>
     </connection>
 

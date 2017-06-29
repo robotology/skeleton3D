@@ -217,6 +217,43 @@ public:
         use_part_conf = false;
         return true;
     }
+    std::map<unsigned int, std::string> mapPartsOpenPose {
+        {0,  "Nose"},
+        {1,  "Neck"},
+        {2,  "RShoulder"},
+        {3,  "RElbow"},
+        {4,  "RWrist"},
+        {5,  "LShoulder"},
+        {6,  "LElbow"},
+        {7,  "LWrist"},
+        {8,  "RHip"},
+        {9,  "RKnee"},
+        {10, "RAnkle"},
+        {11, "LHip"},
+        {12, "LKnee"},
+        {13, "LAnkle"},
+        {14, "REye"},
+        {15, "LEye"},
+        {16, "REar"},
+        {17, "LEar"},
+        {18, "Background"}
+    };
+    std::map<unsigned int, std::string> mapPartsKinect {
+        {0,  "head"},
+        {1,  "shoulderCenter"},
+        {2,  "shoulderRight"},
+        {3,  "elbowRight"},
+        {4,  "handRight"},      // wrist --> hand: use extrapolatePoint later to convert truely
+        {5,  "shoulderLeft"},
+        {6,  "elbowLeft"},
+        {7,  "handLeft"},       // wrist --> hand: use extrapolatePoint later to convert truely
+        {8,  "hipRight"},
+        {9,  "kneeRight"},
+        {10, "ankleRight"},
+        {11, "hipLeft"},
+        {12, "kneeLeft"},
+        {13, "ankleLeft"},
+    };
 };
 
 #endif // SKELETON3D_H

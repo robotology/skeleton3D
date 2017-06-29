@@ -115,95 +115,68 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
 bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 {
     mutexResourcesSkeleton.lock();
-    Bottle *allBodyParts = bodyPartsInPort.read(false);
+    Bottle *allPeople = bodyPartsInPort.read(false);
     mutexResourcesSkeleton.unlock();
-    if (allBodyParts!=NULL)
+    if (allPeople!=NULL)
     {
-        if (Bottle *bodyParts=allBodyParts->get(0).asList())
+//        yInfo("allBodyParts %s",allBodyParts->toString().c_str());
+//        yInfo("allBodyParts size %d",allBodyParts->size());
+        for (int person=0; person<allPeople->size(); person++)
         {
-            map<string,kinectWrapper::Joint> jnts;
-            map<string,kinectWrapper::Joint> jntsFiltered;
-            confJoints.clear();
-            Vector pos(3,0.0);
-            if (Bottle *part=bodyParts->find("hands").asList())
+            if (Bottle *allBodyParts=allPeople->get(person).asList())
             {
-                yDebug("[skeleton3D] part found hands");
-                CvPoint hand1, hand2;
-                hand1.x = part->get(0).asInt();
-                hand1.y = part->get(1).asInt();
-                hand2.x = part->get(2).asInt();
-                hand2.y = part->get(3).asInt();
-                partsCV.push_back(hand1);
-                partsCV.push_back(hand2);
+//                yInfo("bodyParts %s",bodyParts->toString().c_str());
+                map<string,kinectWrapper::Joint> jnts;
+                map<string,kinectWrapper::Joint> jntsFiltered;
+                confJoints.clear();
+                if (Bottle *bodyParts=allBodyParts->get(0).asList())
+                {
 
-                addJoint(jnts,hand1,"handRight");
-                addJoint(jnts,hand2,"handLeft");
+                    for (int partId=0; partId<bodyParts->size();partId++)
+                    {
+                        if (partId<mapPartsKinect.size())
+                        {
+                            if (Bottle *part=bodyParts->get(partId).asList())
+                            {
+//                                yInfo("part %s",part->toString().c_str());
+                                string partName = part->get(0).asString();
+                                yDebug("[skeleton3D] found part as %s",partName.c_str());
+                                CvPoint partCv;
+                                double partConf = part->get(3).asDouble();
+                                partCv.x = (int)part->get(1).asDouble();
+                                partCv.y = (int)part->get(2).asDouble();
 
-                addConf(part->get(4).asDouble(),"handRight");
-                addConf(part->get(5).asDouble(),"handLeft");
-            }
-            if (Bottle *part=bodyParts->find("elbows").asList())
-            {
-                yDebug("[skeleton3D] part found elbows");
-                CvPoint eb1, eb2;
-                eb1.x = part->get(0).asInt();
-                eb1.y = part->get(1).asInt();
-                eb2.x = part->get(2).asInt();
-                eb2.y = part->get(3).asInt();
-                partsCV.push_back(eb1);
-                partsCV.push_back(eb2);
+                                if (partConf>=0.0001)
+                                {
+                                    partsCV.push_back(partCv);
+                                    addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
+                                    addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
+                                }
+                                else
+                                    yDebug("[skeleton3D] ignore part with confidence lower than 0.0001%%");
+                            }
+                        }
+                        else
+                            yDebug("[skeleton3D] obtainBodyParts: don't deal with face parts!");
+                    }
+                }
 
-                addJoint(jnts,eb1,"elbowRight");
-                addJoint(jnts,eb2,"elbowLeft");
+                extrapolateHand(jnts);
+                if (use_part_filter)
+                {
+                    filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
+                    player.skeleton = jntsFiltered;
+                }
+                else
+                    player.skeleton = jnts;
 
-                addConf(part->get(4).asDouble(),"elbowRight");
-                addConf(part->get(5).asDouble(),"elbowLeft");
-            }
-            if (Bottle *part=bodyParts->find("shoulders").asList())
-            {
-                yDebug("[skeleton3D] part found shoulders");
-                CvPoint sh1, sh2;
-                sh1.x = part->get(0).asInt();
-                sh1.y = part->get(1).asInt();
-                sh2.x = part->get(2).asInt();
-                sh2.y = part->get(3).asInt();
-                partsCV.push_back(sh1);
-                partsCV.push_back(sh2);
-
-                addJoint(jnts,sh1,"shoulderRight");
-                addJoint(jnts,sh2,"shoulderLeft");
-
-                addConf(part->get(4).asDouble(),"shoulderRight");
-                addConf(part->get(5).asDouble(),"shoulderLeft");
-            }
-            if (Bottle *part=bodyParts->find("head").asList())
-            {
-                yDebug("[skeleton3D] part found head");
-                CvPoint head;
-                head.x = part->get(0).asInt();
-                head.y = part->get(1).asInt();
-                partsCV.push_back(head);
-
-                addJoint(jnts,head,"head");
-
-                addConf(part->get(2).asDouble(),"head");
-            }
-
-            extrapolateHand(jnts);
-            if (use_part_filter)
-            {
-                filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
-                player.skeleton = jntsFiltered;
+                ts.update();
             }
             else
-                player.skeleton = jnts;
-
-            ts.update();
-        }
-        else
-        {
-            yDebug("[skeleton3D] obtainBodyParts wrong format");
-            return false;
+            {
+                yDebug("[skeleton3D] obtainBodyParts wrong format");
+                return false;
+            }
         }
     }
     else if (fakeHand)
@@ -389,11 +362,11 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // Connect to /skeleton2D/bodyParts:o to get streamed body parts
     bodyPartsInPort.open(("/"+name+"/bodyParts:i").c_str());
-    std::string bodyParts_streaming = "/skeleton2D/bodyParts:o";
-    if (!yarp::os::Network::connect(bodyParts_streaming, bodyPartsInPort.getName().c_str()))
-        yError("[%s] Unable to connect to %s port", name.c_str(),bodyParts_streaming.c_str());
-    else
-        yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
+//    std::string bodyParts_streaming = "/skeleton2D/bodyParts:o";
+//    if (!yarp::os::Network::connect(bodyParts_streaming, bodyPartsInPort.getName().c_str()))
+//        yError("[%s] Unable to connect to %s port", name.c_str(),bodyParts_streaming.c_str());
+//    else
+//        yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
 
     // Connect to /visuoTactileWrapper/sensManager:i to stream body parts as objects to PPS
     ppsOutPort.open(("/"+name+"/visuoTactileWrapper/objects:o").c_str());
