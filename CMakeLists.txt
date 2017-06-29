@@ -38,6 +38,7 @@ include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 #add_subdirectory(modules)
 
 add_subdirectory(app)
+add_subdirectory(yetAnotherAvoidance)
 
 #include(YarpIDL)
 

@@ -206,11 +206,27 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
             return false;
         }
     }
+    else if (fakeHand)
+    {
+        yDebug("[skeleton3D] obtainBodyParts create a fake hand");
+        map<string, kinectWrapper::Joint> joints;
+        kinectWrapper::Joint joint;
+        joint.x = -0.3;
+        joint.y = 0.05;
+        joint.z = 0.05;
+        joints.insert(std::pair<string,kinectWrapper::Joint>("handRight",joint));
+        addConf(0.9,"handRight");
+
+        player.skeleton = joints;
+
+        ts.update();
+    }
     else
     {
         yDebug("[skeleton3D] obtainBodyParts return empty");
         return false;
     }
+
     return true;
 }
 
@@ -347,6 +363,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
+    fakeHand = rf.check("fakeHand",Value(0)).asBool();
+
     if (use_part_conf)
         yInfo("[%s] Use part confidence as valence", name.c_str());
     else

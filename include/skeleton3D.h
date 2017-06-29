@@ -63,6 +63,8 @@ protected:
     int                         filterOrder;        //!< integer value for order of the median filter of the body parts
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
 
+    bool                        fakeHand;
+
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
