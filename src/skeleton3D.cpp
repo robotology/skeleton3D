@@ -441,8 +441,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     ts.update();
 
-//    rpcPort.open("/"+name+"/rpc");
-//    attach(rpcPort);
+    rpcPort.open("/"+name+"/rpc");
+    attach(rpcPort);
 
     return true;
 }
@@ -473,8 +473,8 @@ bool    skeleton3D::close()
 
 bool    skeleton3D::attach(RpcServer &source)
 {
-//    return this->yarp().attachAsServer(source);
-    return true;
+    return this->yarp().attachAsServer(source);
+//    return true;
 }
 
 double  skeleton3D::getPeriod()
