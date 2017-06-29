@@ -44,7 +44,7 @@ install:
   - sudo make install
   - cd ../../
 
-  - https://github.com/robotology/kinect-wrapper.git
+  - git clone https://github.com/robotology/kinect-wrapper.git
   - cd kinect-wrapper
   - mkdir build
   - cd build
