@@ -68,6 +68,9 @@ protected:
     bool        askedReach;     //!< flag of reach command
     bool        askedHome;      //!< flag of home command
 
+    bool        elbow_set;
+    double      elbow_height,elbow_weight;
+
     RpcServer   rpcSrvr;
 
     Mutex       mutex;
@@ -156,6 +159,27 @@ protected:
         {
             d.iarm->goToPose(d.home_x,d.home_o);
             d.timeout=-1.0;
+        }
+    }
+
+    void changeElbowHeight(yarp::dev::ICartesianControl *iCartCtrl)
+    {
+        if (elbow_set)
+        {
+            Bottle tweakOptions;
+            Bottle &optTask2=tweakOptions.addList();
+            optTask2.addString("task_2");
+            Bottle &plTask2=optTask2.addList();
+            plTask2.addInt(6);
+            Bottle &posPart=plTask2.addList();
+            posPart.addDouble(0.0);
+            posPart.addDouble(0.0);
+            posPart.addDouble(elbow_height);
+            Bottle &weightsPart=plTask2.addList();
+            weightsPart.addDouble(0.0);
+            weightsPart.addDouble(0.0);
+            weightsPart.addDouble(elbow_weight);
+            iCartCtrl->tweakSet(tweakOptions);
         }
     }
 
@@ -273,6 +297,21 @@ public:
         name    =rf.check("name",Value("yetAnotherAvoidance")).asString().c_str();
         period  =rf.check("period",Value(0.05)).asDouble();
         trajTime=rf.check("trajTime",Value(0.9)).asDouble();
+
+        elbow_set=rf.check("elbow_set",Value(1)).asBool();
+        if (elbow_set)
+        {
+            if (Bottle *pB=rf.find("elbow_set").asList())
+            {
+                elbow_height=pB->get(0).asDouble();
+                elbow_weight=pB->get(1).asDouble();
+            }
+            else
+            {
+                elbow_height=0.4;
+                elbow_weight=30.0;
+            }
+        }
 
         if (rf.check("noLeftArm") && rf.check("noRightArm"))
         {
@@ -451,12 +490,15 @@ public:
         if (askedReach)
         {
             yDebug("[%s] goToPose (%s) by %s arm",name.c_str(), data[armReach.c_str()].home_x.toString(3,3).c_str(), armReach.c_str());
+            changeElbowHeight(data[armReach.c_str()].iarm);
             data[armReach.c_str()].iarm->goToPose(data[armReach.c_str()].home_x,data[armReach.c_str()].home_o);
             askedReach = false;
         }
         else if (askedHome)
         {
             yDebug("[%s] homing", name.c_str());
+            changeElbowHeight(data["left"].iarm);
+            changeElbowHeight(data["right"].iarm);
             data["left"].iarm->goToPose(data["left"].home_x,data["left"].home_o);
             data["right"].iarm->goToPose(data["right"].home_x,data["right"].home_o);
             askedHome = false;
