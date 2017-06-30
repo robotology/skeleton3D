@@ -242,6 +242,7 @@ double  skeleton3D::computeValence(const string &partName)
     double conf = confJoints[partName.c_str()];
 //    return conf*2.0 - 1.0;
     double threat = body_valence + body_valence*(1-conf) - 1.0;
+    yDebug("[%s] %s\t body_valence: %3.3f\t threat: %3.3f",name.c_str(), partName.c_str(), body_valence, threat);
     return threat;
 }
 
