@@ -240,7 +240,9 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
 double  skeleton3D::computeValence(const string &partName)
 {
     double conf = confJoints[partName.c_str()];
-    return conf*2.0 - 1.0;
+//    return conf*2.0 - 1.0;
+    double threat = body_valence + body_valence*(1-conf) - 1.0;
+    return threat;
 }
 
 void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
