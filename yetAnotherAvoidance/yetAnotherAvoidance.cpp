@@ -68,6 +68,8 @@ protected:
     bool        askedReach;     //!< flag of reach command
     bool        askedHome;      //!< flag of home command
 
+    double      valence;        //!< body_valence like skeleton3D
+
     bool        elbow_set;
     double      elbow_height,elbow_weight;
 
@@ -198,6 +200,11 @@ public:
                     reply.addVocab(ack);
                     reply.addDouble(motionGain);
                 }
+                if (command.get(1).asString() == "body_valence")
+                {
+                    reply.addVocab(ack);
+                    reply.addDouble(valence);
+                }
                 else if (command.get(1).asString() == "home")
                 {
                     reply.addVocab(ack);
@@ -218,6 +225,12 @@ public:
                     reply.addVocab(ack);
                     motionGain = command.get(2).asDouble();
                     reply.addDouble(motionGain);
+                }
+                else if (command.get(1).asString() == "body_valence")
+                {
+                    reply.addVocab(ack);
+                    valence = command.get(2).asDouble();
+                    reply.addDouble(valence);
                 }
                 else if (command.get(1).asString() == "behavior")
                 {
@@ -297,6 +310,8 @@ public:
         name    =rf.check("name",Value("yetAnotherAvoidance")).asString().c_str();
         period  =rf.check("period",Value(0.05)).asDouble();
         trajTime=rf.check("trajTime",Value(0.9)).asDouble();
+
+        valence=rf.check("body_valence",Value(1.0)).asDouble();
 
         elbow_set=rf.check("elbow_set",Value(1)).asBool();
         if (elbow_set)
