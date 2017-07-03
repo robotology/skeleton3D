@@ -62,10 +62,12 @@ protected:
     bool        useRightArm;
 
     Vector      x0_L, x0_R;     //!< origin position of left, right arms
+    Vector      o0;             //!< origin orientation of left, right arms
     string      armReach;       //!< chosen arm to reach an object
     Vector      xReach;         //!< reaching position
     Vector      oReach;         //!< reaching orientation
     bool        askedReach;     //!< flag of reach command
+    bool        askedReachPose; //!< flag of reach a pose command
     bool        askedHome;      //!< flag of home command
 
     double      valence;        //!< body_valence like skeleton3D
@@ -278,10 +280,36 @@ public:
                 else
                     reply.addVocab(nack);
             }
+            else if (command.get(0).asString() == "reach_pose")
+            {
+                if (command.size()==9)
+                {
+                    armReach = command.get(1).asString();
+                    if (armReach == "left" || armReach == "right")
+                    {
+                        for (uint8_t i=0; i<xReach.size(); i++)
+                            xReach[i] = command.get(i+2).asDouble();
+                        for (uint8_t i=0; i<oReach.size(); i++)
+                            oReach[i] = command.get(i+5).asDouble();
+                        oReach[3] = oReach[3]*M_PI/180.0;
+                        data[armReach.c_str()].home_x = xReach;
+                        data[armReach.c_str()].home_o = oReach;
+                        askedReachPose = true;
+                        yDebug("[%s] REACH A POSE (%s) (%s) by %s arm",name.c_str(), xReach.toString(3,3).c_str(), oReach.toString(3,3).c_str(), armReach.c_str());
+                        reply.addVocab(ack);
+                    }
+                    else
+                        reply.addVocab(nack);
+                }
+                else
+                    reply.addVocab(nack);
+            }
             else if (command.get(0).asString() == "home")
             {
                 data["left"].home_x = x0_L;
                 data["right"].home_x = x0_R;
+                data["left"].home_o = o0;
+                data["right"].home_o = o0;
                 askedHome = true;
                 reply.addVocab(ack);
             }
@@ -373,9 +401,12 @@ public:
         x0_R[1]=+0.20;
         x0_R[2]=+0.05;
 
+        o0 = dcm2axis(R);
+
         xReach.resize(3,0.0);
         oReach.resize(4,0.0);
         askedReach = false;
+        askedReachPose = false;
         askedHome  = false;
 
         if (!rf.check("noLeftArm"))
@@ -384,7 +415,7 @@ public:
 
             data["left"]=Data();
             data["left"].home_x = x0_L;
-            data["left"].home_o=dcm2axis(R);
+            data["left"].home_o = o0;
 
             Property optionCartL;
             optionCartL.put("device","cartesiancontrollerclient");
@@ -436,8 +467,8 @@ public:
             useRightArm = true;
 
             data["right"]=Data();
-            data["right"].home_x=x0_R;
-            data["right"].home_o=dcm2axis(R);
+            data["right"].home_x = x0_R;
+            data["right"].home_o = o0;
 
             Property optionCartR;
             optionCartR.put("device","cartesiancontrollerclient");
@@ -508,6 +539,13 @@ public:
             changeElbowHeight(data[armReach.c_str()].iarm);
             data[armReach.c_str()].iarm->goToPose(data[armReach.c_str()].home_x,data[armReach.c_str()].home_o);
             askedReach = false;
+        }
+        else if (askedReachPose)
+        {
+            yDebug("[%s] goToPose (%s) (%s) by %s arm",name.c_str(), data[armReach.c_str()].home_x.toString(3,3).c_str(), data[armReach.c_str()].home_o.toString(3,3).c_str(),  armReach.c_str());
+            changeElbowHeight(data[armReach.c_str()].iarm);
+            data[armReach.c_str()].iarm->goToPose(data[armReach.c_str()].home_x,data[armReach.c_str()].home_o);
+            askedReachPose = false;
         }
         else if (askedHome)
         {
