@@ -1,4 +1,4 @@
-# skeleton3D [![Build Status](https://travis-ci.org/towardthesea/skeleton3D.svg?branch=feature%2Fadd-avoidance-module)]((https://travis-ci.org/towardthesea/skeleton3D)
+# skeleton3D [![Build Status](https://travis-ci.org/towardthesea/skeleton3D.svg?branch=feature%2Fadd-avoidance-module)](https://travis-ci.org/towardthesea/skeleton3D)
 
 ## Dependencies
 - [YARP](https://github.com/robotology/yarp)
