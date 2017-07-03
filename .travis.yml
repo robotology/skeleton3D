@@ -14,12 +14,17 @@ branches:
   - feature/add-avoidance-module
 
 install:
-  - sudo sh -c 'echo "deb http://www.icub.org/ubuntu trusty contrib/science" > /etc/apt/sources.list.d/icub.list'
-  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 57A5ACB6110576A6
-  - sudo apt-get --quiet --yes update
-  - sudo apt-get --quiet --yes install icub-common libeigen3-dev
+  # Ubuntu dependencies
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo sh -c 'echo "deb http://www.icub.org/ubuntu trusty contrib/science" > /etc/apt/sources.list.d/icub.list'; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 57A5ACB6110576A6; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get --quiet --yes update; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get --quiet --yes install icub-common libeigen3-dev; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get --quiet --yes install doxygen xsltproc graphviz; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then pip2 install doxypypy; fi
+
   - cd ..
 
+  - pwd
   - git clone https://github.com/robotology/yarp.git
   - cd yarp
   - mkdir build
@@ -41,6 +46,14 @@ install:
   - mkdir build
   - cd build
   - cmake ..
+  - sudo make install
+  - cd ../../
+
+  - git clone https://github.com/robotology/kinect-wrapper.git
+  - cd kinect-wrapper
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
   - sudo make install
   - cd ../../
 

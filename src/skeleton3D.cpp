@@ -179,11 +179,27 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
             }
         }
     }
+    else if (fakeHand)
+    {
+        yDebug("[skeleton3D] obtainBodyParts create a fake hand");
+        map<string, kinectWrapper::Joint> joints;
+        kinectWrapper::Joint joint;
+        joint.x = -0.3;
+        joint.y = 0.05;
+        joint.z = 0.05;
+        joints.insert(std::pair<string,kinectWrapper::Joint>("handRight",joint));
+        addConf(0.9,"handRight");
+
+        player.skeleton = joints;
+
+        ts.update();
+    }
     else
     {
         yDebug("[skeleton3D] obtainBodyParts return empty");
         return false;
     }
+
     return true;
 }
 
@@ -224,7 +240,10 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
 double  skeleton3D::computeValence(const string &partName)
 {
     double conf = confJoints[partName.c_str()];
-    return conf*2.0 - 1.0;
+//    return conf*2.0 - 1.0;
+    double threat = body_valence + body_valence*(1-conf) - 1.0;
+    yDebug("[%s] %s\t body_valence: %3.3f\t conf: %3.3f\t threat: %3.3f",name.c_str(), partName.c_str(), body_valence, conf, threat);
+    return threat;
 }
 
 void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
@@ -320,6 +339,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
+    fakeHand = rf.check("fakeHand",Value(0)).asBool();
+
     if (use_part_conf)
         yInfo("[%s] Use part confidence as valence", name.c_str());
     else
@@ -396,8 +417,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     ts.update();
 
-//    rpcPort.open("/"+name+"/rpc");
-//    attach(rpcPort);
+    rpcPort.open("/"+name+"/rpc");
+    attach(rpcPort);
 
     return true;
 }
@@ -428,8 +449,8 @@ bool    skeleton3D::close()
 
 bool    skeleton3D::attach(RpcServer &source)
 {
-//    return this->yarp().attachAsServer(source);
-    return true;
+    return this->yarp().attachAsServer(source);
+//    return true;
 }
 
 double  skeleton3D::getPeriod()

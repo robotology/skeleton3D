@@ -17,6 +17,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "skeleton3D_IDL.h"
+
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -24,7 +26,7 @@ using namespace yarp::math;
 using namespace iCub::ctrl;
 using namespace icubclient;
 
-class skeleton3D : public RFModule
+class skeleton3D : public RFModule, public skeleton3D_IDL
 {
 protected:
     double      period;
@@ -62,6 +64,8 @@ protected:
     bool                        init_filters;       //!< boolean value to define if the median filter for body parts have been initialized
     int                         filterOrder;        //!< integer value for order of the median filter of the body parts
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
+
+    bool                        fakeHand;
 
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
@@ -139,6 +143,80 @@ protected:
     double  getPeriod();
     bool    updateModule();
 public:
+
+    /************************************************************************/
+    // Thrift methods
+    bool set_valence(const double _valence)
+    {
+        if (_valence<=1.0 && _valence>=-1.0)
+        {
+            body_valence = _valence;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_valence()
+    {
+        return body_valence;
+    }
+
+    bool set_filter_order(const int16_t _order)
+    {
+        if (_order>=0)
+        {
+            filterOrder = _order;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    int16_t get_filter_order()
+    {
+        return filterOrder;
+    }
+
+    bool set_threshold_disparition(const double _thr)
+    {
+        if (_thr>0.0)
+        {
+            dThresholdDisparition = _thr;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_threshold_disparition()
+    {
+        return dThresholdDisparition;
+    }
+
+    bool enable_fake_hand()
+    {
+        fakeHand = true;
+        return true;
+    }
+
+    bool disable_fake_hand()
+    {
+        fakeHand = false;
+        return true;
+    }
+
+    bool enable_part_conf()
+    {
+        use_part_conf = true;
+        return true;
+    }
+
+    bool disable_part_conf()
+    {
+        use_part_conf = false;
+        return true;
+    }
     std::map<unsigned int, std::string> mapPartsOpenPose {
         {0,  "Nose"},
         {1,  "Neck"},
@@ -176,7 +254,6 @@ public:
         {12, "kneeLeft"},
         {13, "ankleLeft"},
     };
-
 };
 
 #endif // SKELETON3D_H
