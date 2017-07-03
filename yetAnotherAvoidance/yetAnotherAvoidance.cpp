@@ -1,6 +1,6 @@
 /* Copyright (C) 2017 RobotCub Consortium
- * Author:  Phuong Nguyen, Alessandro Roncone
- * email:   phuong.nguyen@iit.it, alessandro.roncone@iit.it
+ * Author:  Phuong Nguyen
+ * email:   phuong.nguyen@iit.it
  * Inspired from demoAvoidance of Alessandro Roncone (alessandro.roncone@iit.it)
  * website: www.robotcub.org
  * Permission is granted to copy, distribute, and/or modify this program

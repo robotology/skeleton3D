@@ -19,6 +19,7 @@ find_package(ICUB REQUIRED)
 find_package(ICUBcontrib REQUIRED)
 find_package(icubclient)
 find_package(kinectWrapper)
+find_package(periPersonalSpace)
 
 list(APPEND CMAKE_MODULE_PATH ${YARP_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH ${ICUB_MODULE_PATH})
@@ -39,6 +40,7 @@ include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 
 add_subdirectory(app)
 add_subdirectory(yetAnotherAvoidance)
+add_subdirectory(visuoTactileCalib)
 
 #include(YarpIDL)
 
