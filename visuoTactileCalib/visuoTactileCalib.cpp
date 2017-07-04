@@ -166,7 +166,10 @@ protected:
                             yInfo("Contact! Skin part: %s\t Taxels' ID: ",iCubSkin[i].name.c_str());
                             for (size_t j=0; j<idv.size(); j++)
                             {
-                                yInfo("\t%i, WRFPos %s ", idv[j], iCubSkin[i].taxels[idv[j]]->getWRFPosition().toString().c_str());
+                                yDebug("iCubSkin[%i].taxels.size() = %lu",i,iCubSkin[i].taxels.size());
+                                for (size_t k=0; k<iCubSkin[i].taxels.size(); k++)
+                                    if (iCubSkin[i].taxels[k]->getID() == idv[j])
+                                        yInfo("\t%i, WRFPos %s ", idv[j], iCubSkin[i].taxels[k]->getWRFPosition().toString().c_str());
                             }
 
                             return true;
