@@ -71,6 +71,8 @@ protected:
     int             verbosity;
     double          timeNow;
 
+    vector<Vector>  contactPts;     //!< vector of skin contact points at a moment
+
 
     // Driver for "classical" interfaces
     PolyDriver          ddR; // right arm device driver
@@ -169,7 +171,12 @@ protected:
                                 yDebug("iCubSkin[%i].taxels.size() = %lu",i,iCubSkin[i].taxels.size());
                                 for (size_t k=0; k<iCubSkin[i].taxels.size(); k++)
                                     if (iCubSkin[i].taxels[k]->getID() == idv[j])
-                                        yInfo("\t%i, WRFPos %s ", idv[j], iCubSkin[i].taxels[k]->getWRFPosition().toString().c_str());
+                                    {
+                                        Vector contact(3,0.0);
+                                        contact = iCubSkin[i].taxels[k]->getWRFPosition();
+                                        yInfo("\t%i, WRFPos %s ", idv[j], contact.toString().c_str());
+                                        contactPts.push_back(contact);
+                                    }
                             }
 
                             return true;
@@ -1268,8 +1275,11 @@ public:
     //********************************************
     bool updateModule()
     {
+        ts.update();
+        // read skin contact
         skinContactList *skinContacts  = skinPortIn.read(false);
 
+        // update the kinematic chain wrt World Reference Frame
         readEncodersAndUpdateArmChains();
 //        readHeadEncodersAndUpdateEyeChains(); //has to be called after readEncodersAndUpdateArmChains(), which reads torso encoders
 
@@ -1279,7 +1289,6 @@ public:
             for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++)
             {
                 iCubSkin[i].taxels[j]->setWRFPosition(locateTaxel(iCubSkin[i].taxels[j]->getPosition(),iCubSkin[i].name));
-//                printMessage(7,"iCubSkin[%i].taxels[%i].WRFPos %s\n",i,j,iCubSkin[i].taxels[j]->getWRFPosition().toString().c_str());
             }
         }
 
@@ -1287,9 +1296,10 @@ public:
         {
             std::vector<unsigned int> IDv; IDv.clear();
             int IDx = -1;
+            contactPts.clear();
             if (detectContact(skinContacts, IDx, IDv))
             {
-                yInfo("Contact! Collect tactile data..");
+                yInfo("[%s] Contact! Collect tactile data..",name.c_str());
                 timeNow     = yarp::os::Time::now();
             }
         }
