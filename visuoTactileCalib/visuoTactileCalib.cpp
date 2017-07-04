@@ -65,9 +65,54 @@ class visuoTactileCalib: public RFModule
 {
 protected:
     string          name;
+    string          robot;
+    double          arm_version;
     double          period;
     int             verbosity;
     double          timeNow;
+
+
+    // Driver for "classical" interfaces
+    PolyDriver          ddR; // right arm device driver
+    PolyDriver          ddL; // left arm  device driver
+    PolyDriver          ddT; // torso controller  driver
+    PolyDriver          ddH; // head  controller  driver
+    PolyDriver          ddG; // gaze  controller  driver
+
+    // "Classical" interfaces - RIGHT ARM
+    IEncoders           *iencsR;
+    yarp::sig::Vector   *encsR;
+    iCubArm             *armR;
+    int                 jntsR; //all joints including fingers ~ 16
+    int                 jntsAR; //arm joints only ~ 7
+    // "Classical" interfaces - LEFT ARM
+    IEncoders           *iencsL;
+    yarp::sig::Vector   *encsL;
+    iCubArm             *armL;
+    int                 jntsL; //all joints including fingers ~ 16
+    int                 jntsAL; //arm joints only ~ 7
+    // "Classical" interfaces - TORSO
+    IEncoders           *iencsT;
+    yarp::sig::Vector   *encsT;
+    int                 jntsT;
+    // "Classical" interfaces - HEAD
+    IEncoders           *iencsH;
+    yarp::sig::Vector   *encsH;
+    int                 jntsH;
+    // Gaze controller interface
+    IGazeControl        *igaze;
+    int contextGaze;
+
+    ResourceFinder    armsRF;
+
+    //N.B. All angles in this thread are in degrees
+    yarp::sig::Vector qL; //current values of left arm joints (should be 7)
+    yarp::sig::Vector qR; //current values of right arm joints (should be 7)
+    yarp::sig::Vector qT; //current values of torso joints (3, in the order expected for iKin: yaw, roll, pitch)
+
+    // Stamp for the setEnvelope for the ports
+    yarp::os::Stamp ts;
+
     vector<string>          filenames;
     vector <skinPartPWE>    iCubSkin;
     int                     iCubSkinSize;
@@ -77,6 +122,7 @@ protected:
     BufferedPort<iCub::skinDynLib::skinContactList> skinPortIn;     //!< input from the skinManager
 
     //********************************************
+    // From vtRFThread
     bool detectContact(iCub::skinDynLib::skinContactList *_sCL, int &idx,
                                    std::vector <unsigned int> &idv)
     {
@@ -118,8 +164,10 @@ protected:
                                 printf("\n");
                             }
                             yInfo("Contact! Skin part: %s\t Taxels' ID: ",iCubSkin[i].name.c_str());
-                            for (size_t i=0; i<idv.size(); i++)
-                                yInfo("\t%i", idv[i]);
+                            for (size_t j=0; j<idv.size(); j++)
+                            {
+                                yInfo("\t%i, WRFPos %s ", idv[j], iCubSkin[i].taxels[idv[j]]->getWRFPosition().toString().c_str());
+                            }
 
                             return true;
                         }
@@ -131,6 +179,10 @@ protected:
     }
 
     //see also Compensator::setTaxelPosesFromFile in icub-main/src/modules/skinManager/src/compensator.cpp
+    // From vtRFThread
+    /**
+    * Finds out the positions of the taxels w.r.t. their respective limbs
+    **/
     bool setTaxelPosesFromFile(const string filePath, skinPartPWE &sP)
     {
         string line;
@@ -176,7 +228,7 @@ protected:
             yError("[%s::setTaxelPosesFromFile] No calibration group found!",name.c_str());
             return false;
         }
-        printMessage(6,"[%s::setTaxelPosesFromFile] found %i taxels (not all of them are valid taxels).\n", name.c_str(),calibration.size()-1);
+//        printMessage(6,"[%s::setTaxelPosesFromFile] found %i taxels (not all of them are valid taxels).\n", name.c_str(),calibration.size()-1);
 
         sP.spatial_sampling = "triangle";
         // First item of the bottle is "calibration", so we should not use it
@@ -187,7 +239,7 @@ protected:
             taxelPos = taxelPosNrm.subVector(0,2);
             taxelNrm = taxelPosNrm.subVector(3,5);
             j = i-1;   //! note that i == line in the calibration group of .txt file;  taxel_ID (j) == line nr (i) - 1
-            printMessage(10,"[vtRFThread::setTaxelPosesFromFile] reading %i th row: taxelPos: %s\n", i,taxelPos.toString(3,3).c_str());
+//            printMessage(10,"[vtRFThread::setTaxelPosesFromFile] reading %i th row: taxelPos: %s\n", i,taxelPos.toString(3,3).c_str());
 
             if (sP.name == SkinPart_s[SKIN_LEFT_FOREARM] || sP.name == SkinPart_s[SKIN_RIGHT_FOREARM])
             {
@@ -275,6 +327,11 @@ protected:
         return true;
     }
 
+    // From vtRFThread
+    /**
+    * If it is defined for the respective skin part, it fills the taxelIDtoRepresentativeTaxelID vector that is indexed by taxel IDs
+    * and returns taxel IDs of their representatives - e.g. triangle centers.
+    **/
     void initRepresentativeTaxels(skinPart &sP)
     {
         printMessage(6,"[vtRFThread::initRepresentativeTaxels] Initializing representative taxels for %s, version %s\n",sP.name.c_str(),sP.version.c_str());
@@ -772,6 +829,15 @@ protected:
         }
     }
 
+    // From vtRFThread
+    /**
+    * For all active taxels, it returns a set of "representative" active taxels if they were defined for the respective skin part
+    * E.g. if at least one taxel from a triangle was active, the center of this triangle will be part of the output list
+    * @param IDv  is a vector of IDs of the taxels activated
+    * @param IDx  is the index of the iCubSkin affected by the contact
+                  (basically, the index of the skinPart that has been touched)
+    * @param v    is a vector of IDs of the representative taxels activated
+    **/
     bool getRepresentativeTaxels(const std::vector<unsigned int> IDv, const int IDx, std::vector<unsigned int> &v)
     {
         //unordered_set would be better, but that is only experimentally supported by some compilers.
@@ -821,6 +887,85 @@ protected:
         return true;
     }
 
+    bool readEncodersAndUpdateArmChains()
+    {
+       Vector q1(jntsT+jntsAR,0.0);
+       Vector q2(jntsT+jntsAL,0.0);
+
+       iencsT->getEncoders(encsT->data());
+       qT[0]=(*encsT)[2]; //reshuffling from motor to iKin order (yaw, roll, pitch)
+       qT[1]=(*encsT)[1];
+       qT[2]=(*encsT)[0];
+
+       if (armsRF.check("rightHand") || armsRF.check("rightForeArm") ||
+            (!armsRF.check("rightHand") && !armsRF.check("rightForeArm") && !armsRF.check("leftHand") && !armsRF.check("leftForeArm")))
+       {
+            iencsR->getEncoders(encsR->data());
+            qR=encsR->subVector(0,jntsAR-1);
+            q1.setSubvector(0,qT);
+            q1.setSubvector(jntsT,qR);
+            armR -> setAng(q1*CTRL_DEG2RAD);
+       }
+       if (armsRF.check("leftHand") || armsRF.check("leftForeArm") ||
+               (!armsRF.check("rightHand") && !armsRF.check("rightForeArm") && !armsRF.check("leftHand") && !armsRF.check("leftForeArm")))
+       {
+            iencsL->getEncoders(encsL->data());
+            qL=encsL->subVector(0,jntsAL-1);
+            q2.setSubvector(0,qT);
+            q2.setSubvector(jntsT,qL);
+            armL -> setAng(q2*CTRL_DEG2RAD);
+       }
+
+       return true;
+    }
+/*
+    bool readHeadEncodersAndUpdateEyeChains()
+    {
+        iencsH->getEncoders(encsH->data());
+        yarp::sig::Vector  head=*encsH;
+
+        yarp::sig::Vector q(8);
+        q[0]=qT[0];       q[1]=qT[1];        q[2]=qT[2];
+        q[3]=head[0];        q[4]=head[1];
+        q[5]=head[2];        q[6]=head[3];
+
+        //left eye
+        q[7]=head[4]+head[5]/2.0;
+        eWL->eye->setAng(q*CTRL_DEG2RAD);
+        //right eye
+        q[7]=head[4]-head[5]/2.0;
+        eWR->eye->setAng(q*CTRL_DEG2RAD);
+
+        return true;
+    }
+*/
+
+    yarp::sig::Vector locateTaxel(const yarp::sig::Vector &_pos, const string &part)
+    {
+        yarp::sig::Vector pos=_pos;
+        yarp::sig::Vector WRFpos(4,0.0);
+        Matrix T = eye(4);
+
+//        printMessage(7,"locateTaxel(): Pos local frame: %s, skin part name: %s\n",_pos.toString(3,3).c_str(),part.c_str());
+        if (!((part == SkinPart_s[SKIN_LEFT_FOREARM]) || (part == SkinPart_s[SKIN_LEFT_HAND]) ||
+             (part == SkinPart_s[SKIN_RIGHT_FOREARM]) || (part == SkinPart_s[SKIN_RIGHT_HAND])))
+            yError("[%s] locateTaxel() failed - unknown skinPart!\n",name.c_str());
+
+        if      (part == SkinPart_s[SKIN_LEFT_FOREARM] ) { T = armL -> getH(3+4, true); } // torso + up to elbow
+        else if (part == SkinPart_s[SKIN_RIGHT_FOREARM]) { T = armR -> getH(3+4, true); } // torso + up to elbow
+        else if (part == SkinPart_s[SKIN_LEFT_HAND])     { T = armL -> getH(3+6, true); } // torso + up to wrist
+        else if (part == SkinPart_s[SKIN_RIGHT_HAND])    { T = armR -> getH(3+6, true); } // torso + up to wrist
+        else    {  yError("[%s] locateTaxel() failed!\n",name.c_str()); }
+
+//        printMessage(8,"    T Matrix: \n %s \n ",T.toString(3,3).c_str());
+        pos.push_back(1);
+        WRFpos = T * pos;
+        WRFpos.pop_back();
+
+        return WRFpos;
+    }
+
+    // From vtRFThread
     int printMessage(const int l, const char *f, ...) const
     {
         if (verbosity>=l)
@@ -844,8 +989,14 @@ public:
     bool configure(ResourceFinder &rf)
     {
         name        =rf.check("name",Value("visuoTactileCalib")).asString().c_str();
+        robot       =rf.check("robot",Value("icub")).asString().c_str();
         period      =rf.check("period",Value(0.0)).asDouble();
         modality    =rf.check("name",Value("1D")).asString().c_str();
+
+        if(robot == "icub")
+            arm_version = 2.0;
+        else //icubSim
+            arm_version = 1.0;
 
         skinPortIn.open(("/"+name+"/skin_events:i").c_str());
 //        skinPortIn.setReader(*this);
@@ -855,11 +1006,131 @@ public:
             yWarning("[%s] Cannot connect /skinManager/skin_events:o to %s!!!",name.c_str(), skinPortIn.getName().c_str());
 
 
+        //******************* ARMS, EYEWRAPPERS ******************
+
+        std::ostringstream strR;
+        strR<<"right_v"<<arm_version;
+        std::string typeR = strR.str();
+        armR = new iCubArm(typeR);
+
+        std::ostringstream strL;
+        strL<<"left_v"<<arm_version;
+        std::string typeL = strL.str();
+        armL = new iCubArm(typeL);
+
+        ts.update();
+
+        jntsT = 3; //nr torso joints
+        /********** Open right arm interfaces (if they are needed) ***************/
+        bool ok = true;
+
+        armsRF.setVerbose(false);
+        armsRF.setDefaultContext("periPersonalSpace");
+//        armsRF.setDefaultConfigFile("skinManAll.ini");
+        armsRF.configure(0,NULL);
+
+        if (armsRF.check("rightHand") || armsRF.check("rightForeArm") ||
+           (!armsRF.check("rightHand") && !armsRF.check("rightForeArm") && !armsRF.check("leftHand") && !armsRF.check("leftForeArm")))
+        {
+            for (int i = 0; i < jntsT; i++)
+                armR->releaseLink(i); //torso will be enabled
+            Property OptR;
+            OptR.put("robot",  robot.c_str());
+            OptR.put("part",   "right_arm");
+            OptR.put("device", "remote_controlboard");
+            OptR.put("remote",("/"+robot+"/right_arm").c_str());
+            OptR.put("local", ("/"+name +"/right_arm").c_str());
+
+            if (!ddR.open(OptR))
+            {
+                yError("[%s] : could not open right_arm PolyDriver!\n",name.c_str());
+                return false;
+            }
+            ok = 1;
+            if (ddR.isValid())
+            {
+                ok = ok && ddR.view(iencsR);
+            }
+            if (!ok)
+            {
+                yError("[%s] Problems acquiring right_arm interfaces!!!!\n",name.c_str());
+                return false;
+            }
+            iencsR->getAxes(&jntsR);
+            encsR = new yarp::sig::Vector(jntsR,0.0); //should be 16 - arm + fingers
+            jntsAR = 7; //nr. arm joints only - without fingers
+            qR.resize(jntsAR,0.0); //current values of arm joints (should be 7)
+
+        }
+
+        /********** Open left arm interfaces (if they are needed) ****************/
+        if (armsRF.check("leftHand") || armsRF.check("leftForeArm") ||
+           (!armsRF.check("rightHand") && !armsRF.check("rightForeArm") && !armsRF.check("leftHand") && !armsRF.check("leftForeArm")))
+        {
+            for (int i = 0; i < jntsT; i++)
+                armL->releaseLink(i); //torso will be enabled
+            Property OptL;
+            OptL.put("robot",  robot.c_str());
+            OptL.put("part",   "left_arm");
+            OptL.put("device", "remote_controlboard");
+            OptL.put("remote",("/"+robot+"/left_arm").c_str());
+            OptL.put("local", ("/"+name +"/left_arm").c_str());
+
+            if (!ddL.open(OptL))
+            {
+                yError("[%s] : could not open left_arm PolyDriver!\n",name.c_str());
+                return false;
+            }
+            ok = 1;
+            if (ddL.isValid())
+            {
+                ok = ok && ddL.view(iencsL);
+            }
+            if (!ok)
+            {
+                yError("[%s] Problems acquiring left_arm interfaces!!!!\n",name.c_str());
+                return false;
+            }
+            iencsL->getAxes(&jntsL);
+            encsL = new yarp::sig::Vector(jntsL,0.0); //should be 16 - arm + fingers
+            jntsAL = 7; //nr. arm joints only - without fingers
+            qL.resize(jntsAL,0.0); //current values of arm joints (should be 7)
+
+        }
+
+        /**************************/
+        Property OptT;
+        OptT.put("robot",  robot.c_str());
+        OptT.put("part",   "torso");
+        OptT.put("device", "remote_controlboard");
+        OptT.put("remote",("/"+robot+"/torso").c_str());
+        OptT.put("local", ("/"+name +"/torso").c_str());
+
+        if (!ddT.open(OptT))
+        {
+            yError("[%s] Could not open torso PolyDriver!",name.c_str());
+            return false;
+        }
+        ok = 1;
+        if (ddT.isValid())
+        {
+            ok = ok && ddT.view(iencsT);
+        }
+        if (!ok)
+        {
+            yError("[%s] Problems acquiring head interfaces!!!!",name.c_str());
+            return false;
+        }
+        iencsT->getAxes(&jntsT);
+        encsT = new yarp::sig::Vector(jntsT,0.0);
+        qT.resize(jntsT,0.0); //current values of torso joints (3, in the order expected for iKin: yaw, roll, pitch)
+
+
         //************* skinManager Resource finder **************
         ResourceFinder skinRF;
         skinRF.setVerbose(false);
         skinRF.setDefaultContext("skinGui");                //overridden by --context parameter
-        skinRF.setDefaultConfigFile("skinManAll.ini"); //overridden by --from parameter
+        skinRF.setDefaultConfigFile("skinManAll.ini");      //overridden by --from parameter
         skinRF.configure(0,NULL);
 
         //int partNum=4;
@@ -882,7 +1153,7 @@ public:
                         string filePath(skinRF.findFile(taxelPosFile.c_str()));
                         if (filePath!="")
                         {
-                            yInfo("[visuoTactileRF] filePath leftHand: %s\n",filePath.c_str());
+                            yInfo("[%s] filePath leftHand: %s\n",name.c_str(),filePath.c_str());
                             filenames.push_back(filePath);
                         }
                     }
@@ -892,7 +1163,7 @@ public:
                         string filePath(skinRF.findFile(taxelPosFile.c_str()));
                         if (filePath!="")
                         {
-                            yInfo("[visuoTactileRF] filePath leftForeArm: %s\n",filePath.c_str());
+                            yInfo("[%s] filePath leftForeArm: %s\n",name.c_str(),filePath.c_str());
                             filenames.push_back(filePath);
                         }
                     }
@@ -902,7 +1173,7 @@ public:
                         string filePath(skinRF.findFile(taxelPosFile.c_str()));
                         if (filePath!="")
                         {
-                            yInfo("[visuoTactileRF] filePath rightHand: %s\n",filePath.c_str());
+                            yInfo("[%s] filePath rightHand: %s\n",name.c_str(),filePath.c_str());
                             filenames.push_back(filePath);
                         }
                     }
@@ -912,7 +1183,7 @@ public:
                         string filePath(skinRF.findFile(taxelPosFile.c_str()));
                         if (filePath!="")
                         {
-                            yInfo("[visuoTactileRF] filePath rightForeArm: %s\n",filePath.c_str());
+                            yInfo("[%s] filePath rightForeArm: %s\n",name.c_str(),filePath.c_str());
                             filenames.push_back(filePath);
                         }
                     }
@@ -923,7 +1194,7 @@ public:
                     string filePath(skinRF.findFile(taxelPosFile.c_str()));
                     if (filePath!="")
                     {
-                        yInfo("[visuoTactileRF] filePath leftHand: %s\n",filePath.c_str());
+                        yInfo("[%s] filePath leftHand: %s\n",name.c_str(),filePath.c_str());
                         filenames.push_back(filePath);
                     }
                     taxelPosFile.clear(); filePath.clear();
@@ -932,7 +1203,7 @@ public:
                     filePath = skinRF.findFile(taxelPosFile.c_str());
                     if (filePath!="")
                     {
-                        yInfo("[visuoTactileRF] filePath leftForeArm: %s\n",filePath.c_str());
+                        yInfo("[%s] filePath leftForeArm: %s\n",name.c_str(),filePath.c_str());
                         filenames.push_back(filePath);
                     }
                     taxelPosFile.clear(); filePath.clear();
@@ -941,7 +1212,7 @@ public:
                     filePath = skinRF.findFile(taxelPosFile.c_str());
                     if (filePath!="")
                     {
-                        yInfo("[visuoTactileRF] filePath rightHand: %s\n",filePath.c_str());
+                        yInfo("[%s] filePath rightHand: %s\n",name.c_str(),filePath.c_str());
                         filenames.push_back(filePath);
                     }
                     taxelPosFile.clear(); filePath.clear();
@@ -950,7 +1221,7 @@ public:
                     filePath = skinRF.findFile(taxelPosFile.c_str());
                     if (filePath!="")
                     {
-                        yInfo("[visuoTactileRF] filePath rightForeArm: %s\n",filePath.c_str());
+                        yInfo("[%s] filePath rightForeArm: %s\n",name.c_str(),filePath.c_str());
                         filenames.push_back(filePath);
                     }
                 }
@@ -958,11 +1229,11 @@ public:
         }
         else
         {
-            yError(" No skin configuration files found.");
+            yError("[%s] No skin configuration files found.",name.c_str());
             return 0;
         }
 
-        yDebug("Setting up iCubSkin...");
+        yDebug("[%s] Setting up iCubSkin...",name.c_str());
         iCubSkinSize = filenames.size();
 
         for(unsigned int i=0;i<filenames.size();i++)
@@ -995,6 +1266,20 @@ public:
     bool updateModule()
     {
         skinContactList *skinContacts  = skinPortIn.read(false);
+
+        readEncodersAndUpdateArmChains();
+//        readHeadEncodersAndUpdateEyeChains(); //has to be called after readEncodersAndUpdateArmChains(), which reads torso encoders
+
+        // project taxels in World Reference Frame
+        for (size_t i = 0; i < iCubSkin.size(); i++)
+        {
+            for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++)
+            {
+                iCubSkin[i].taxels[j]->setWRFPosition(locateTaxel(iCubSkin[i].taxels[j]->getPosition(),iCubSkin[i].name));
+//                printMessage(7,"iCubSkin[%i].taxels[%i].WRFPos %s\n",i,j,iCubSkin[i].taxels[j]->getWRFPosition().toString().c_str());
+            }
+        }
+
         if (skinContacts)
         {
             std::vector<unsigned int> IDv; IDv.clear();
@@ -1005,6 +1290,7 @@ public:
                 timeNow     = yarp::os::Time::now();
             }
         }
+
         return true;
     }
 
@@ -1020,6 +1306,17 @@ public:
         yInfo("[%s] Closing module..",name.c_str());
 
         skinPortIn.close();
+        yDebug("[%s]Closing controllers..\n",name.c_str());
+        ddR.close();
+        ddL.close();
+        ddT.close();
+        ddH.close();
+
+        yDebug("[%s]Deleting misc stuff..\n",name.c_str());
+        delete armR;
+        armR = NULL;
+        delete armL;
+        armL = NULL;
 
         return true;
 
