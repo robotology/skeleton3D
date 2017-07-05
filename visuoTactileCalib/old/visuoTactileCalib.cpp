@@ -41,13 +41,10 @@
 #include <set>
 #include <list>
 
-//#include <cv.h>
-//#include <highgui.h>
 #include <iCub/ctrl/math.h>
 #include <iCub/periPersonalSpace/skinPartPWE.h>
 #include <iCub/skinDynLib/skinContact.h>
 #include <iCub/skinDynLib/skinContactList.h>
-
 
 #define SKIN_THRES	        7 // Threshold with which a contact is detected
 
@@ -75,23 +72,23 @@ protected:
 
 
     // Driver for "classical" interfaces
-    PolyDriver          ddR; // right arm device driver
-    PolyDriver          ddL; // left arm  device driver
-    PolyDriver          ddT; // torso controller  driver
-    PolyDriver          ddH; // head  controller  driver
-    PolyDriver          ddG; // gaze  controller  driver
+    PolyDriver          ddR;        //!< right arm device driver
+    PolyDriver          ddL;        //!< left arm  device driver
+    PolyDriver          ddT;        //!< torso controller  driver
+    PolyDriver          ddH;        //!< head  controller  driver
+    PolyDriver          ddG;        //!< gaze  controller  driver
 
     // "Classical" interfaces - RIGHT ARM
     IEncoders           *iencsR;
     yarp::sig::Vector   *encsR;
     iCubArm             *armR;
-    int                 jntsR; //all joints including fingers ~ 16
+    int                 jntsR;  //all joints including fingers ~ 16
     int                 jntsAR; //arm joints only ~ 7
     // "Classical" interfaces - LEFT ARM
     IEncoders           *iencsL;
     yarp::sig::Vector   *encsL;
     iCubArm             *armL;
-    int                 jntsL; //all joints including fingers ~ 16
+    int                 jntsL;  //all joints including fingers ~ 16
     int                 jntsAL; //arm joints only ~ 7
     // "Classical" interfaces - TORSO
     IEncoders           *iencsT;
@@ -108,9 +105,9 @@ protected:
     ResourceFinder    armsRF;
 
     //N.B. All angles in this thread are in degrees
-    yarp::sig::Vector qL; //current values of left arm joints (should be 7)
-    yarp::sig::Vector qR; //current values of right arm joints (should be 7)
-    yarp::sig::Vector qT; //current values of torso joints (3, in the order expected for iKin: yaw, roll, pitch)
+    yarp::sig::Vector qL;           //!< current values of left arm joints (should be 7)
+    yarp::sig::Vector qR;           //!< current values of right arm joints (should be 7)
+    yarp::sig::Vector qT;           //!< current values of torso joints (3, in the order expected for iKin: yaw, roll, pitch)
 
     // Stamp for the setEnvelope for the ports
     yarp::os::Stamp ts;
@@ -994,7 +991,6 @@ protected:
             return -1;
     }
 
-    // TODO: vector2bottle --> dumb contactPts;
     void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b)
     {
         for (int16_t i=0; i<vec.size(); i++)
