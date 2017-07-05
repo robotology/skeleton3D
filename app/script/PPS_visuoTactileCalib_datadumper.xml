@@ -34,7 +34,7 @@
     </module>
     <module>
         <name>yarpdatadumper</name>
-        <parameters>--name /data/handPose</parameters>
+        <parameters>--name /data/touchPartPose</parameters>
         <node>localhost</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
@@ -84,8 +84,8 @@
         <protocol>udp</protocol>
     </connection>
     <connection>
-        <from>/skeleton3D/handPose:o</from>
-        <to>/data/handPose</to>
+        <from>/visuoTactileCalib/touchPartPose:o</from>
+        <to>/data/touchPartPose</to>
         <protocol>udp</protocol>
     </connection>
 

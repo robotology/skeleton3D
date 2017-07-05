@@ -71,6 +71,7 @@ protected:
     double          timeNow;
 
     vector<Vector>  contactPts;     //!< vector of skin contact points at a moment
+    vector<Vector>  partKeypoints;  //!< vector of bodypart keypoints at the skin contact moment from skeleton3D
 
 
     // Driver for "classical" interfaces
@@ -121,7 +122,9 @@ protected:
     string                  modality;                                       //!< modality to use (either 1D or 2D)
 
     BufferedPort<iCub::skinDynLib::skinContactList> skinPortIn;             //!< input from the skinManager
+    BufferedPort<Bottle>                            skeleton3DPortIn;       //!< input port to obtain 3D body parts as objects
     Port                                            contactDumperPortOut;   //!< output to dump the contact points in World FoR
+    Port                                            partPoseDumperPortOut;  //!< output to dump the possible touch body part points in World FoR
 
     //********************************************
     // From vtRFThread
@@ -133,7 +136,7 @@ protected:
     /**
     * Finds out the positions of the taxels w.r.t. their respective limbs
     **/
-    bool setTaxelPosesFromFile(const string filePath, skinPartPWE &sP);
+    bool setTaxelPosesFromFile(const std::string filePath, skinPartPWE &sP);
 
     // From vtRFThread
     /**
@@ -164,6 +167,15 @@ protected:
     int printMessage(const int l, const char *f, ...) const;
 
     void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b);
+
+    bool obtainSkeleton3DParts(Bottle *partsBottle, std::vector<Vector> &partsPos);
+
+    /**
+     * @brief extractClosestPart2Touch Get the part that has highest possiblily to touch the robot, assume that there only robot skin part is touched at a moment
+     * @param partPos Vector of 3D position of the part that can touch the robot, which is closest to the touch points
+     * @return True/False if possible to obtain the partPos
+     */
+    bool extractClosestPart2Touch(yarp::sig::Vector &partPos);
 
 public:
     bool    configure(ResourceFinder &rf);

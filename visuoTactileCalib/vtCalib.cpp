@@ -835,6 +835,63 @@ void    vtCalib::vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle 
     }
 }
 
+bool    vtCalib::obtainSkeleton3DParts(Bottle *partsBottle, vector<Vector> &partsPos)
+{
+    if (partsBottle!=NULL)
+    {
+        if (Bottle *allParts = partsBottle->get(0).asList())
+        {
+            for (int8_t i=0; i<allParts->size(); i++)
+            {
+                Vector pos(3,0.0);
+                if (Bottle *part=allParts->get(i).asList())
+                {
+                    pos[i]=part->get(i).asDouble();
+                }
+                partsPos.push_back(pos);
+            }
+        }
+        else
+        {
+            yWarning("[%s] obtainSkeleton3DParts: receive wrong format",name.c_str());
+            return false;
+        }
+    }
+    else
+    {
+        yWarning("[%s] obtainSkeleton3DParts: empty message",name.c_str());
+        return false;
+    }
+}
+
+bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
+{
+    if (contactPts.size()>0 && partKeypoints.size()>0)
+    {
+        Vector touchPoint(3,0.0);
+        for (int8_t i=0; i<contactPts.size(); i++)
+        {
+            touchPoint += contactPts[i];
+        }
+        touchPoint /=contactPts.size();
+
+        double minDist = norm(partKeypoints[0]-touchPoint);
+        partPos = partKeypoints[0];
+        for (int8_t i=0; i<partKeypoints.size(); i++)
+        {
+            double dist = norm(partKeypoints[i]-touchPoint);
+            if (dist<minDist)
+            {
+                partPos = partKeypoints[i];
+                yInfo("[%s] extractClosestPart2Touch: closest distance = %3.3f",name.c_str(),dist);
+            }
+        }
+        return true;
+    }
+    else
+        return false;
+}
+
 //********************************************
 bool    vtCalib::configure(ResourceFinder &rf)
 {
@@ -856,6 +913,7 @@ bool    vtCalib::configure(ResourceFinder &rf)
         yWarning("[%s] Cannot connect /skinManager/skin_events:o to %s!!!",name.c_str(), skinPortIn.getName().c_str());
 
     contactDumperPortOut.open(("/"+name+"/contactPtsDumper:o").c_str());
+    partPoseDumperPortOut.open(("/"+name+"/touchPartPose:o").c_str());
 
     //******************* ARMS, EYEWRAPPERS ******************
 
@@ -1118,7 +1176,9 @@ bool    vtCalib::updateModule()
 {
     ts.update();
     // read skin contact
-    skinContactList *skinContacts  = skinPortIn.read(false);
+    skinContactList *skinContacts   = skinPortIn.read(false);
+    // read body parts from skeleton3D
+    Bottle          *bodyParts      = skeleton3DPortIn.read(false);
 
     // update the kinematic chain wrt World Reference Frame
     readEncodersAndUpdateArmChains();
@@ -1133,16 +1193,24 @@ bool    vtCalib::updateModule()
         }
     }
 
+    bool hasTouchPart = false;
+    Vector touchPart(3,0.0);
     // detect skin contact
     if (skinContacts)
     {
         std::vector<unsigned int> IDv; IDv.clear();
         int IDx = -1;
         contactPts.clear();
+        partKeypoints.clear();
         if (detectContact(skinContacts, IDx, IDv))
         {
             yInfo("[%s] Contact! Collect tactile data..",name.c_str());
             timeNow     = yarp::os::Time::now();
+            yInfo("[%s] obtain skeleton3D bodypart keypoints",name.c_str());
+            if (obtainSkeleton3DParts(bodyParts,partKeypoints))
+            {
+                hasTouchPart = extractClosestPart2Touch(touchPart);
+            }
         }
     }
 
@@ -1155,6 +1223,16 @@ bool    vtCalib::updateModule()
         vector2bottle(contactPts, contactBottle);
         contactDumperPortOut.setEnvelope(ts);
         contactDumperPortOut.write(contactBottle);
+    }
+    if (hasTouchPart)
+    {
+        Bottle touchHumanPartBottle;
+        touchHumanPartBottle.clear();
+        for (int8_t i; i<touchPart.size(); i++)
+            touchHumanPartBottle.addDouble(touchPart[i]);
+
+        partPoseDumperPortOut.setEnvelope(ts);
+        partPoseDumperPortOut.write(touchHumanPartBottle);
     }
 
     return true;
