@@ -912,6 +912,12 @@ bool    vtCalib::configure(ResourceFinder &rf)
     else
         yWarning("[%s] Cannot connect /skinManager/skin_events:o to %s!!!",name.c_str(), skinPortIn.getName().c_str());
 
+    skeleton3DPortIn.open(("/"+name+"/skeleton3D_parts:i").c_str());
+    if (Network::connect("/skeleton3D/visuoTactileWrapper/objects:o",("/"+name+"/skeleton3D_parts:i").c_str()))
+        yInfo("[%s] Connected /skeleton3D/visuoTactileWrapper/objects:o to %s successful",name.c_str(), skeleton3DPortIn.getName().c_str());
+    else
+        yWarning("[%s] Cannot connect /skeleton3D/visuoTactileWrapper/objects:o to %s!!!",name.c_str(), skeleton3DPortIn.getName().c_str());
+
     contactDumperPortOut.open(("/"+name+"/contactPtsDumper:o").c_str());
     partPoseDumperPortOut.open(("/"+name+"/touchPartPose:o").c_str());
 
