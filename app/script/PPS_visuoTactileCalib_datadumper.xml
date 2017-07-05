@@ -1,0 +1,103 @@
+<application>
+<name>PPS visuoTactileCalib datadumper</name>
+<dependencies>
+</dependencies>
+    <!--Modules-->
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/head</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/leftArm</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/rightArm</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/contactPts</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/handPose</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/images/left --type image</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/images/right --type image</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>yarpdatadumper</tag>
+    </module>
+    
+    <!--Connections-->
+    <connection>
+        <from>/icub/head/state:o</from>
+        <to>/data/head</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/torso/state:o</from>
+        <to>/data/torso</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/left_arm/state:o</from>
+        <to>/data/leftArm</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/right_arm/state:o</from>
+        <to>/data/rightArm</to>
+        <protocol>udp</protocol>
+    </connection>
+
+
+    <connection>
+        <from>/visuoTactileCalib/contactPtsDumper:o</from>
+        <to>/data/contactPts</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/skeleton3D/handPose:o</from>
+        <to>/data/handPose</to>
+        <protocol>udp</protocol>
+    </connection>
+
+
+    <connection>
+        <from>/icub/camcalib/left/out</from>
+        <to>/data/images/left</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/camcalib/right/out</from>
+        <to>/data/images/right</to>
+        <protocol>udp</protocol>
+    </connection>
+</application>
