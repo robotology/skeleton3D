@@ -119,9 +119,10 @@ protected:
     vector <skinPartPWE>    iCubSkin;
     int                     iCubSkinSize;
 
-    string                  modality;                               //!< modality to use (either 1D or 2D)
+    string                  modality;                                       //!< modality to use (either 1D or 2D)
 
-    BufferedPort<iCub::skinDynLib::skinContactList> skinPortIn;     //!< input from the skinManager
+    BufferedPort<iCub::skinDynLib::skinContactList> skinPortIn;             //!< input from the skinManager
+    Port                                            contactDumperPortOut;   //!< output to dump the contact points in World FoR
 
     //********************************************
     // From vtRFThread
@@ -993,6 +994,15 @@ protected:
             return -1;
     }
 
+    // TODO: vector2bottle --> dumb contactPts;
+    void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b)
+    {
+        for (int16_t i=0; i<vec.size(); i++)
+        {
+            for (int8_t j=0; j<vec[i].size(); j++)
+                b.addDouble(vec[i][j]);
+        }
+    }
 
 public:
     //********************************************
@@ -1015,6 +1025,7 @@ public:
         else
             yWarning("[%s] Cannot connect /skinManager/skin_events:o to %s!!!",name.c_str(), skinPortIn.getName().c_str());
 
+        contactDumperPortOut.open(("/"+name+"/contactPtsDumper:o").c_str());
 
         //******************* ARMS, EYEWRAPPERS ******************
 
@@ -1302,6 +1313,16 @@ public:
                 yInfo("[%s] Contact! Collect tactile data..",name.c_str());
                 timeNow     = yarp::os::Time::now();
             }
+        }
+
+        if (contactPts.size()>0)
+        {
+            Bottle contactBottle;
+            contactBottle.clear();
+
+            vector2bottle(contactPts, contactBottle);
+            contactDumperPortOut.setEnvelope(ts);
+            contactDumperPortOut.write(contactBottle);
         }
 
         return true;
