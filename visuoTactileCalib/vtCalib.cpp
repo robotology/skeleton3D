@@ -835,8 +835,12 @@ void    vtCalib::vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle 
     }
 }
 
-bool    vtCalib::obtainSkeleton3DParts(Bottle *partsBottle, vector<Vector> &partsPos)
+bool    vtCalib::obtainSkeleton3DParts(vector<Vector> &partsPos)
 {
+    mutexResourcesSkeleton.lock();
+    Bottle          *partsBottle     = skeleton3DPortIn.read(false);
+    mutexResourcesSkeleton.unlock();
+
     if (partsBottle!=NULL)
     {
         if (Bottle *allParts = partsBottle->get(0).asList())
@@ -1184,7 +1188,7 @@ bool    vtCalib::updateModule()
     // read skin contact
     skinContactList *skinContacts   = skinPortIn.read(false);
     // read body parts from skeleton3D
-    Bottle          *bodyParts      = skeleton3DPortIn.read(false);
+//    Bottle          *bodyParts      = skeleton3DPortIn.read(false);
 
     // update the kinematic chain wrt World Reference Frame
     readEncodersAndUpdateArmChains();
@@ -1213,7 +1217,7 @@ bool    vtCalib::updateModule()
             yInfo("[%s] Contact! Collect tactile data..",name.c_str());
             timeNow     = yarp::os::Time::now();
             yInfo("[%s] obtain skeleton3D bodypart keypoints",name.c_str());
-            if (obtainSkeleton3DParts(bodyParts,partKeypoints))
+            if (obtainSkeleton3DParts(partKeypoints))
             {
                 hasTouchPart = extractClosestPart2Touch(touchPart);
             }

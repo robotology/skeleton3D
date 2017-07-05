@@ -126,6 +126,8 @@ protected:
     Port                                            contactDumperPortOut;   //!< output to dump the contact points in World FoR
     Port                                            partPoseDumperPortOut;  //!< output to dump the possible touch body part points in World FoR
 
+    Mutex                   mutexResourcesSkeleton;
+
     //********************************************
     // From vtRFThread
     bool detectContact(iCub::skinDynLib::skinContactList *_sCL, int &idx,
@@ -168,7 +170,7 @@ protected:
 
     void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b);
 
-    bool obtainSkeleton3DParts(Bottle *partsBottle, std::vector<Vector> &partsPos);
+    bool obtainSkeleton3DParts(std::vector<Vector> &partsPos);
 
     /**
      * @brief extractClosestPart2Touch Get the part that has highest possiblily to touch the robot, assume that there only robot skin part is touched at a moment
