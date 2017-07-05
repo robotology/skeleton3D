@@ -848,10 +848,12 @@ bool    vtCalib::obtainSkeleton3DParts(vector<Vector> &partsPos)
             for (int8_t i=0; i<allParts->size(); i++)
             {
                 Vector pos(3,0.0);
+                yInfo("allParts->get(%i): %s ",i,allParts->get(i).asList()->toString().c_str());
                 if (Bottle *part=allParts->get(i).asList())
-                {
-                    pos[i]=part->get(i).asDouble();
-                }
+                    for (int8_t j=0; j<pos.size();j++)
+                    {
+                        pos[j]=part->get(j).asDouble();
+                    }
                 partsPos.push_back(pos);
             }
         }
@@ -866,6 +868,7 @@ bool    vtCalib::obtainSkeleton3DParts(vector<Vector> &partsPos)
         yWarning("[%s] obtainSkeleton3DParts: empty message",name.c_str());
         return false;
     }
+    return true;
 }
 
 bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
@@ -887,6 +890,7 @@ bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
             if (dist<minDist)
             {
                 partPos = partKeypoints[i];
+                minDist = dist;
                 yInfo("[%s] extractClosestPart2Touch: closest distance = %3.3f",name.c_str(),dist);
             }
         }
@@ -1219,13 +1223,16 @@ bool    vtCalib::updateModule()
             yInfo("[%s] obtain skeleton3D bodypart keypoints",name.c_str());
             if (obtainSkeleton3DParts(partKeypoints))
             {
+                for (int i=0; i<partKeypoints.size(); i++)
+                    yDebug("partKeypoints[%i] = %s",i,partKeypoints[i].toString(3,3).c_str());
                 hasTouchPart = extractClosestPart2Touch(touchPart);
+                yInfo("touchPart position: %s",touchPart.toString(3,3).c_str());
             }
         }
     }
 
     // dump the contact points
-    if (contactPts.size()>0)
+    if (contactPts.size()>0 && hasTouchPart)
     {
         Bottle contactBottle;
         contactBottle.clear();
@@ -1233,9 +1240,7 @@ bool    vtCalib::updateModule()
         vector2bottle(contactPts, contactBottle);
         contactDumperPortOut.setEnvelope(ts);
         contactDumperPortOut.write(contactBottle);
-    }
-    if (hasTouchPart)
-    {
+
         Bottle touchHumanPartBottle;
         touchHumanPartBottle.clear();
         for (int8_t i; i<touchPart.size(); i++)
@@ -1244,6 +1249,16 @@ bool    vtCalib::updateModule()
         partPoseDumperPortOut.setEnvelope(ts);
         partPoseDumperPortOut.write(touchHumanPartBottle);
     }
+//    if (hasTouchPart)
+//    {
+//        Bottle touchHumanPartBottle;
+//        touchHumanPartBottle.clear();
+//        for (int8_t i; i<touchPart.size(); i++)
+//            touchHumanPartBottle.addDouble(touchPart[i]);
+
+//        partPoseDumperPortOut.setEnvelope(ts);
+//        partPoseDumperPortOut.write(touchHumanPartBottle);
+//    }
 
     return true;
 }
@@ -1260,6 +1275,9 @@ bool    vtCalib::close()
     yInfo("[%s] Closing module..",name.c_str());
 
     skinPortIn.close();
+    skeleton3DPortIn.close();
+    partPoseDumperPortOut.close();
+    contactDumperPortOut.close();
     yDebug("[%s]Closing controllers..\n",name.c_str());
     ddR.close();
     ddL.close();
