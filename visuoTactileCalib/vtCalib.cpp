@@ -894,7 +894,14 @@ bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
                 yInfo("[%s] extractClosestPart2Touch: closest distance = %3.3f",name.c_str(),dist);
             }
         }
-        return true;
+        if (minDist<=0.25)
+            return true;
+        else
+        {
+            yWarning("[%s] extractClosestPart2Touch: minDist = %3.3f, too far!!!",name.c_str(),minDist);
+            partPos.zero();
+            return false;
+        }
     }
     else
         return false;
@@ -911,7 +918,7 @@ bool    vtCalib::obtainHandsFromOPC(std::vector<Vector> &handsPos)
         obtainPartFromOPC(partner,"handLeft",posL);
         handsPos.push_back(posR);
         handsPos.push_back(posL);
-        yInfo("[%s] obtainHansFromOPC: got hands %s %s",
+        yInfo("[%s] obtainHansFromOPC: got hands (%s), (%s)",
               name.c_str(),posR.toString(3,3).c_str(),posL.toString(3,3).c_str());
         return true;
     }
