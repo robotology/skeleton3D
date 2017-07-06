@@ -926,10 +926,11 @@ bool    vtCalib::obtainHandsFromOPC(std::vector<Vector> &handsPos)
         return false;
 }
 
-void    vtCalib::obtainPartFromOPC(Agent *a, const string &partName, Vector &partPos)
+Vector  vtCalib::obtainPartFromOPC(Agent *a, const string &partName, Vector partPos)
 {
     for (int8_t i=0; i<partPos.size(); i++)
         partPos[i] = a->m_body.m_parts[partName.c_str()][i];
+    return partPos;
 }
 
 //********************************************
@@ -1283,6 +1284,15 @@ bool    vtCalib::updateModule()
                     yDebug("partKeypoints[%i] = %s",i,partKeypoints[i].toString(3,3).c_str());
                 hasTouchPart = extractClosestPart2Touch(touchPart);
                 yInfo("touchPart position: %s",touchPart.toString(3,3).c_str());
+                touchArmKeypts.push_back(touchPart);
+                if (touchPart==obtainPartFromOPC(partner,"handRight"))
+                {
+                    touchArmKeypts.push_back(obtainPartFromOPC(partner,"elbowRight"));
+                }
+                else if (touchPart==obtainPartFromOPC(partner,"handLeft"))
+                {
+                    touchArmKeypts.push_back(obtainPartFromOPC(partner,"elbowLeft"));
+                }
             }
         }
     }
@@ -1299,9 +1309,10 @@ bool    vtCalib::updateModule()
 
         Bottle touchHumanPartBottle;
         touchHumanPartBottle.clear();
-        for (int8_t i; i<touchPart.size(); i++)
-            touchHumanPartBottle.addDouble(touchPart[i]);
+//        for (int8_t i; i<touchPart.size(); i++)
+//            touchHumanPartBottle.addDouble(touchPart[i]);
 
+        vector2bottle(touchArmKeypts, touchHumanPartBottle);
         partPoseDumperPortOut.setEnvelope(ts);
         partPoseDumperPortOut.write(touchHumanPartBottle);
     }

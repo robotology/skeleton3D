@@ -80,7 +80,7 @@ protected:
 
     vector<Vector>  contactPts;     //!< vector of skin contact points at a moment
     vector<Vector>  partKeypoints;  //!< vector of bodypart keypoints at the skin contact moment from skeleton3D
-
+    vector<Vector>  touchArmKeypts; //!< vector of hand and elbow of arm touch the skin to dump
 
     // Driver for "classical" interfaces
     PolyDriver          ddR;        //!< right arm device driver
@@ -183,7 +183,7 @@ protected:
     //TODO: obtainSkeletonFromOPC
     bool obtainHandsFromOPC(std::vector<Vector> &handsPos);
 
-    void obtainPartFromOPC(Agent *a, const string &partName, Vector &partPos);
+    Vector obtainPartFromOPC(Agent *a, const string &partName, Vector partPos=Vector(3,0.0));
 
     /**
      * @brief extractClosestPart2Touch Get the part that has highest possiblily to touch the robot, assume that there only robot skin part is touched at a moment
