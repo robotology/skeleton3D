@@ -229,7 +229,7 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     part.addDouble(a->m_body.m_parts[partName.c_str()][0]); // X
     part.addDouble(a->m_body.m_parts[partName.c_str()][1]); // Y
     part.addDouble(a->m_body.m_parts[partName.c_str()][2]); // Z
-    part.addDouble(part_dimension);                         // RADIUS
+    part.addDouble(part_dimension/2.0);                     // RADIUS
     if (use_part_conf)
         part.addDouble(computeValence(partName));
     else
