@@ -914,8 +914,8 @@ bool    vtCalib::obtainHandsFromOPC(std::vector<Vector> &handsPos)
     if (partner && partner->m_present == 1.0)
     {
         Vector posR(3,0.0), posL(3,0.0);
-        obtainPartFromOPC(partner,"handRight",posR);
-        obtainPartFromOPC(partner,"handLeft",posL);
+        posR = obtainPartFromOPC(partner,"handRight");
+        posL = obtainPartFromOPC(partner,"handLeft");
         handsPos.push_back(posR);
         handsPos.push_back(posL);
         yInfo("[%s] obtainHansFromOPC: got hands (%s), (%s)",
@@ -926,8 +926,9 @@ bool    vtCalib::obtainHandsFromOPC(std::vector<Vector> &handsPos)
         return false;
 }
 
-Vector  vtCalib::obtainPartFromOPC(Agent *a, const string &partName, Vector partPos)
+Vector  vtCalib::obtainPartFromOPC(Agent *a, const string &partName)
 {
+    Vector partPos(3,0.0);
     for (int8_t i=0; i<partPos.size(); i++)
         partPos[i] = a->m_body.m_parts[partName.c_str()][i];
     return partPos;

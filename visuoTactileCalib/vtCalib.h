@@ -183,7 +183,7 @@ protected:
     //TODO: obtainSkeletonFromOPC
     bool obtainHandsFromOPC(std::vector<Vector> &handsPos);
 
-    Vector obtainPartFromOPC(Agent *a, const string &partName, Vector partPos=Vector(3,0.0));
+    Vector obtainPartFromOPC(Agent *a, const string &partName);
 
     /**
      * @brief extractClosestPart2Touch Get the part that has highest possiblily to touch the robot, assume that there only robot skin part is touched at a moment
