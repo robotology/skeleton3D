@@ -18,7 +18,7 @@ source_group("Header Files" FILES ${header})
 
 add_executable(visuoTactileCalib ${source} ${header} )
 
-target_link_libraries(visuoTactileCalib ${periPersonalSpace_LIBRARIES} ${YARP_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(visuoTactileCalib ${periPersonalSpace_LIBRARIES} ${YARP_LIBRARIES} ${OpenCV_LIBRARIES} ${icubclient_LIBRARIES})
 
 install(TARGETS visuoTactileCalib DESTINATION bin)
 

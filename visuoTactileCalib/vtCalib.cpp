@@ -900,6 +900,31 @@ bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
         return false;
 }
 
+bool    vtCalib::obtainHandsFromOPC(std::vector<Vector> &handsPos)
+{
+    opc->checkout();
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
+    if (partner && partner->m_present == 1.0)
+    {
+        Vector posR(3,0.0), posL(3,0.0);
+        obtainPartFromOPC(partner,"handRight",posR);
+        obtainPartFromOPC(partner,"handLeft",posL);
+        handsPos.push_back(posR);
+        handsPos.push_back(posL);
+        yInfo("[%s] obtainHansFromOPC: got hands %s %s",
+              name.c_str(),posR.toString(3,3).c_str(),posL.toString(3,3).c_str());
+        return true;
+    }
+    else
+        return false;
+}
+
+void    vtCalib::obtainPartFromOPC(Agent *a, const string &partName, Vector &partPos)
+{
+    for (int8_t i=0; i<partPos.size(); i++)
+        partPos[i] = a->m_body.m_parts[partName.c_str()][i];
+}
+
 //********************************************
 bool    vtCalib::configure(ResourceFinder &rf)
 {
@@ -928,6 +953,29 @@ bool    vtCalib::configure(ResourceFinder &rf)
 
     contactDumperPortOut.open(("/"+name+"/contactPtsDumper:o").c_str());
     partPoseDumperPortOut.open(("/"+name+"/touchPartPose:o").c_str());
+
+
+
+    // Open the OPC Client
+    partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
+
+    string opcName=rf.check("opc",Value("OPC")).asString().c_str();
+    opc = new OPCClient(name);
+    while (!opc->connect(opcName))
+    {
+        yInfo()<<"Waiting connection to OPC...";
+        Time::delay(1.0);
+    }
+    opc->checkout();
+
+    list<shared_ptr<Entity>> entityList = opc->EntitiesCacheCopy();
+    for(auto e : entityList) {
+        if(e->entity_type() == ICUBCLIENT_OPC_ENTITY_AGENT && e->name() != "icub") {
+            partner_default_name = e->name();
+        }
+    }
+
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
 
     //******************* ARMS, EYEWRAPPERS ******************
 
@@ -1221,7 +1269,8 @@ bool    vtCalib::updateModule()
             yInfo("[%s] Contact! Collect tactile data..",name.c_str());
             timeNow     = yarp::os::Time::now();
             yInfo("[%s] obtain skeleton3D bodypart keypoints",name.c_str());
-            if (obtainSkeleton3DParts(partKeypoints))
+//            if (obtainSkeleton3DParts(partKeypoints))
+            if (obtainHandsFromOPC(partKeypoints))
             {
                 for (int i=0; i<partKeypoints.size(); i++)
                     yDebug("partKeypoints[%i] = %s",i,partKeypoints[i].toString(3,3).c_str());
@@ -1278,6 +1327,7 @@ bool    vtCalib::close()
     skeleton3DPortIn.close();
     partPoseDumperPortOut.close();
     contactDumperPortOut.close();
+    opc->close();
     yDebug("[%s]Closing controllers..\n",name.c_str());
     ddR.close();
     ddL.close();

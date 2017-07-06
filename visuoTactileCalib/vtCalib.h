@@ -43,6 +43,9 @@
 #include <set>
 #include <list>
 
+#include <icubclient/all.h>
+#include "kinectWrapper/kinectWrapper.h"
+
 #include <iCub/ctrl/math.h>
 #include <iCub/periPersonalSpace/skinPartPWE.h>
 #include <iCub/skinDynLib/skinContact.h>
@@ -59,6 +62,7 @@ using namespace yarp::dev;
 using namespace iCub::iKin;
 using namespace iCub::ctrl;
 using namespace iCub::skinDynLib;
+using namespace icubclient;
 
 class vtCalib: public yarp::os::RFModule
 {
@@ -69,6 +73,10 @@ protected:
     double          period;
     int             verbosity;
     double          timeNow;
+
+    icubclient::OPCClient   *opc;
+    icubclient::Agent       *partner;
+    string                  partner_default_name;
 
     vector<Vector>  contactPts;     //!< vector of skin contact points at a moment
     vector<Vector>  partKeypoints;  //!< vector of bodypart keypoints at the skin contact moment from skeleton3D
@@ -171,6 +179,11 @@ protected:
     void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b);
 
     bool obtainSkeleton3DParts(std::vector<Vector> &partsPos);
+
+    //TODO: obtainSkeletonFromOPC
+    bool obtainHandsFromOPC(std::vector<Vector> &handsPos);
+
+    void obtainPartFromOPC(Agent *a, const string &partName, Vector &partPos);
 
     /**
      * @brief extractClosestPart2Touch Get the part that has highest possiblily to touch the robot, assume that there only robot skin part is touched at a moment
