@@ -1272,6 +1272,7 @@ bool    vtCalib::updateModule()
         int IDx = -1;
         contactPts.clear();
         partKeypoints.clear();
+        touchArmKeypts.clear();
         if (detectContact(skinContacts, IDx, IDv))
         {
             yInfo("[%s] Contact! Collect tactile data..",name.c_str());
