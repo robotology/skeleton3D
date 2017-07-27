@@ -65,7 +65,7 @@ filename_queue_out = tf.train.string_input_producer(["../matlab/refMatrix.csv"])
 train_dir = './log/'
 model_dir = './model/'
 checkpoint_prefix = os.path.join(train_dir, 'saved_checkpoint')
-graph_name = 'mapping_graph'
+graph_name = 'mapping_graph.pb'
 
 reader_in = tf.TextLineReader()
 reader_out = tf.TextLineReader()
@@ -77,7 +77,7 @@ key_out, value_out = reader_out.read(filename_queue_out)
 record_defaults_in = [[1.], [1.], [1.], [1.], [1.], [1.]]
 col1, col2, col3, col4, col5, col6 = tf.decode_csv(
     value_in, record_defaults=record_defaults_in)
-features = tf.stack([col1, col2, col3, col4, col5, col6])
+features = tf.stack([col1, col2, col3, col4, col5, col6], name='input_features')
 record_defaults_out = [[1.], [1.], [1.]]
 col7, col8, col9 = tf.decode_csv(
     value_out, record_defaults=record_defaults_out)
@@ -87,7 +87,9 @@ col1_shape = col1.get_shape()
 layer1 = nn_layer(features, 6, 10, 'layer1')
 layer2 = nn_layer(layer1, 10, 10, 'layer2')
 layer3 = nn_layer(layer2, 10, 3, 'layer3')
-pred = layer3
+with tf.name_scope('pred'):
+    pred = layer3
+    variable_summaries(pred)
 with tf.name_scope('loss'):
     cost = tf.square(ref - pred)
     variable_summaries(cost)
@@ -108,7 +110,7 @@ tf.global_variables_initializer().run(session=sess)
 
 tf.train.write_graph(sess.graph_def, model_dir, graph_name)
 
-for i in range(1000):
+for i in range(1001):
     if i % 10 == 0:
         summary_str, _ = sess.run([summary_op, train_op])
         summary_writer.add_summary(summary_str, i)
