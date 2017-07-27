@@ -68,16 +68,6 @@ bool vtMappingTF::setInput(const yarp::sig::Vector &_handPose, const yarp::sig::
 
 bool vtMappingTF::computeMapping()
 {
-//    Tensor input(DT_FLOAT, TensorShape({6}));
-//    for (int i=0; i<3; i++)
-//        input.vec<float>()(i) = handPoseIn[i];
-//    for (int i=0; i<3; i++)
-//        input.vec<float>()(3+i) = elbowPoseIn[i];
-
-    // Actually run the contactPts and handPose through the model.
-
-
-//    std::vector<Tensor> outputs;
     Status run_status = session->Run({{input_layer, input}},
                                       {output_layer},{},&outputs);
     if (!run_status.ok()) {
