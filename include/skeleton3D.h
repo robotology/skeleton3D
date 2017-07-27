@@ -19,6 +19,9 @@
 
 #include "skeleton3D_IDL.h"
 
+#include "iCub/vtMappingTF/vtMappingTF.h"
+
+using namespace tensorflow;
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -66,6 +69,10 @@ protected:
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
 
     bool                        fakeHand;
+
+    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
+
+    vtMappingTF             *vtMapRight;
 
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);

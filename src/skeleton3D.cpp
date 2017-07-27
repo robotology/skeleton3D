@@ -7,6 +7,24 @@
 #include <set>
 #include "skeleton3D.h"
 
+// Reads a model graph definition from disk, and creates a session object you
+// can use to run it.
+//Status LoadGraph(const string& graph_file_name,
+//                 std::unique_ptr<tensorflow::Session>* session) {
+//  tensorflow::GraphDef graph_def;
+//  Status load_graph_status =
+//      ReadBinaryProto(tensorflow::Env::Default(), graph_file_name, &graph_def);
+//  if (!load_graph_status.ok()) {
+//    return tensorflow::errors::NotFound("Failed to load compute graph at '",
+//                                        graph_file_name, "'");
+//  }
+//  session->reset(tensorflow::NewSession(tensorflow::SessionOptions()));
+//  Status session_create_status = (*session)->Create(graph_def);
+//  if (!session_create_status.ok()) {
+//    return session_create_status;
+//  }
+//  return Status::OK();
+//}
 
 void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered)
 {
@@ -332,6 +350,21 @@ bool    skeleton3D::streamPartsToPPS()
 
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
+//    // First we load and initialize the tensorflow model.
+//    string root_dir = "/home/pnguyen/icub-workspace/skeleton3D/";
+//    string graph = "tensorflow/model/output_graph.pb";
+
+////    std::unique_ptr<tensorflow::Session> session;
+//    string graph_path = tensorflow::io::JoinPath(root_dir, graph);
+//    Status load_graph_status = LoadGraph(graph_path, &session);
+//    if (!load_graph_status.ok()) {
+//        LOG(ERROR) << load_graph_status;
+//        yError("[%s] Fail in loading graph", name.c_str());
+//        return -1;
+//    }
+//    else
+//        yInfo("[%s] Load graph sucessfully!!", name.c_str());
+
     name=rf.check("name",Value("skeleton3D")).asString().c_str();
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
@@ -420,6 +453,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     rpcPort.open("/"+name+"/rpc");
     attach(rpcPort);
 
+    // vtMappingTF
+    vtMapRight = new vtMappingTF(name,"right");
+
     return true;
 }
 
@@ -439,6 +475,7 @@ bool    skeleton3D::close()
 {
     yDebug("[%s] closing module",name.c_str());
 
+    delete vtMapRight;
     rpcPort.close();
     rpcGet3D.close();
     bodyPartsInPort.close();
@@ -464,6 +501,47 @@ bool    skeleton3D::updateModule()
     // Obtain body part from a Tensorflow-based module
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
+
+    // test tensorflow-base calibrator
+//    tensorflow::Tensor input(tensorflow::DT_FLOAT, tensorflow::TensorShape({6}));
+//    input.vec<float>()(0) = -0.2f;      // hand pose
+//    input.vec<float>()(1) = -0.15f;
+//    input.vec<float>()(2) =  0.15f;
+//    input.vec<float>()(3) = -0.3f;      // elbow pose
+//    input.vec<float>()(4) = -0.21f;
+//    input.vec<float>()(5) =  0.12f;
+
+//    // Actually run the contactPts and handPose through the model.
+//    string input_layer = "input_features";
+//    string output_layer = "layer3/activation";
+
+//    std::vector<Tensor> outputs;
+//    Status run_status = session->Run({{input_layer, input}},
+//                                      {output_layer},{},&outputs);
+//    if (!run_status.ok()) {
+//        LOG(ERROR) << "Running model failed: " << run_status;
+//        yError("[%s] Running the model failed!!", name.c_str());
+//    }
+//    else
+//    {
+//        yInfo("[%s] Running the model OK!!", name.c_str());
+//        auto output_mat = outputs[0].matrix<float>();
+//        yInfo("[%s] output of network is: [%f, %f, %f]", name.c_str(),
+//              output_mat(0,0), output_mat(0,1), output_mat(0,2));
+//    }
+
+    Vector handPose(3,0.0), elbowPose(3,0.0);
+    handPose[0] = -0.2; handPose[1] = -0.15; handPose[2] = 0.15;
+    elbowPose[0] = -0.3; elbowPose[1] = -0.21; elbowPose[2] = 0.12;
+
+
+    if (vtMapRight->setInput(handPose, elbowPose))
+        if (vtMapRight->computeMapping())
+        {
+            vtMapRight->getOutput(handPose);
+            yInfo("handPose after mapping: %s", handPose.toString(3,3).c_str());
+        }
+
 
     // Get the 3D pose of CvPoint of body parts
     if (bodyPartsCv.size()>=0 && connected3D)
