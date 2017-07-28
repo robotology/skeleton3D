@@ -420,7 +420,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     attach(rpcPort);
 
     // vtMappingTF
-    vtMapRight = new vtMappingTF(name,"right");
+    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
 
     return true;
 }
@@ -468,11 +468,12 @@ bool    skeleton3D::updateModule()
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
 
-    // test tensorflow-base calibrator
+    // test tensorflow-base calibrator (mapping)
     Vector handPose(3,0.0), elbowPose(3,0.0);
-    handPose[0] = -0.2; handPose[1] = -0.15; handPose[2] = 0.15;
+    handPose[0] = -0.13; handPose[1] = -0.15; handPose[2] = 0.15;
     elbowPose[0] = -0.3; elbowPose[1] = -0.21; elbowPose[2] = 0.12;
-
+//    handPose[0] = -0.32063; handPose[1] = 0.050248; handPose[2] = 0.10134;
+//    elbowPose[0] = -0.66542; elbowPose[1] = 0.064199; elbowPose[2] = 0.052125;
 
     if (vtMapRight->setInput(handPose, elbowPose))
         if (vtMapRight->computeMapping())

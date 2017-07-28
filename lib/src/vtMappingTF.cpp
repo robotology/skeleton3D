@@ -20,7 +20,8 @@ Status vtMappingTF::LoadGraph(const string& graph_file_name,
   return Status::OK();
 }
 
-vtMappingTF::vtMappingTF(const string& _name="vtMapping", const string& _part="left")
+vtMappingTF::vtMappingTF(const string& _name, const string& _part,
+                         const string& _output_layer, const string& _input_layer)
 {
     name        = _name;
     part        = _part;
@@ -29,8 +30,8 @@ vtMappingTF::vtMappingTF(const string& _name="vtMapping", const string& _part="l
     root_dir    = "/home/pnguyen/icub-workspace/skeleton3D/";
     graph       = "tensorflow/model/output_graph.pb";
 
-    input_layer = "input_features";
-    output_layer = "layer3/activation";
+    input_layer = _input_layer;
+    output_layer = _output_layer;
 
     string graph_path = tensorflow::io::JoinPath(root_dir, graph);
     Status load_graph_status = LoadGraph(graph_path, &session);

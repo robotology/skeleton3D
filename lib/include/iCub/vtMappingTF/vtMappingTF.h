@@ -17,12 +17,6 @@
 #ifndef VTMAPPINGTF_H
 #define VTMAPPINGTF_H
 
-#include <string>
-#include <deque>
-#include <map>
-#include <ctime>
-#include <vector>
-
 #include <yarp/os/all.h>
 #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
@@ -49,16 +43,18 @@
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/util/command_line_flags.h"
 
+using namespace std;
+
 class vtMappingTF
 {
 protected:
-    std::string                             name;               //!< name of module using vtMapping
-    std::string                             part;               //!< name of robot arm (left/right) to map visual information to
-    std::unique_ptr<tensorflow::Session>    session;            //!< TensorFlow session
-    std::string                             graph;              //!< path to Tensorflow trained graph file (.pb) of the corresponding part
-    std::string                             root_dir;
-    std::string                             input_layer;        //!< name of input layer to the graph
-    std::string                             output_layer;       //!< name of output layer of the graph
+    string                             name;               //!< name of module using vtMapping
+    string                             part;               //!< name of robot arm (left/right) to map visual information to
+    unique_ptr<tensorflow::Session>    session;            //!< TensorFlow session
+    string                             graph;              //!< path to Tensorflow trained graph file (.pb) of the corresponding part
+    string                             root_dir;
+    string                             input_layer;        //!< name of input layer to the graph
+    string                             output_layer;       //!< name of output layer of the graph
 
     yarp::sig::Vector       handPoseIn;         //!< Yarp Vector of sensed hand pose through visual system
     yarp::sig::Vector       elbowPoseIn;        //!< Yarp Vector of sensed elbow pose through visual system
@@ -68,7 +64,8 @@ protected:
     yarp::sig::Vector       handPoseOut;        //!< Yarp vecotr of calibrated hand pose
 
 public:
-    vtMappingTF(const std::string& _name, const std::string& _part);
+    vtMappingTF(const string& _name, const string& _part,
+                const string& _output_layer, const string& _input_layer);
 
     tensorflow::Status LoadGraph(const std::string& graph_file_name,
                                  std::unique_ptr<tensorflow::Session>* session);
