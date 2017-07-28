@@ -2,20 +2,21 @@
 # Author: Nguyen Dong Hai Phuong
 # CopyPolicy: Released under the terms of the GNU GPL v2.0.
 
-#make_minimum_required(VERSION 2.8)
-#project(motionPlan)
+cmake_minimum_required(VERSION 2.8)
 
-include(CMakeDependentOption)
+
+#include(CMakeDependentOption)
 
 set(PROJECTNAME vtMappingTF)
-#set(PROJECTNAME reaching-with-avoidance)
+
 project(${PROJECTNAME})
 
-find_package(TensorflowCC REQUIRED)
+find_package(IPOPT REQUIRED)
+find_package(TensorflowCC COMPONENTS Shared)
 
 include_directories(${YARP_INCLUDE_DIRS})
 include_directories(${ICUB_INCLUDE_DIRS})
-#include_directories(${IPOPT_INCLUDE_DIRS})
+include_directories(${IPOPT_INCLUDE_DIRS})
 
 set(folder_source src/vtMappingTF.cpp)
 
@@ -26,12 +27,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 source_group("Source Files" FILES ${folder_source})
 source_group("Header Files" FILES ${folder_header})
 
-#add_definitions(${IPOPT_DEFINITIONS} -D_USE_MATH_DEFINES)
+
 add_library(${PROJECTNAME} ${folder_source} ${folder_header})
-#set_property(TARGET ${PROJECTNAME} APPEND_STRING PROPERTY LINK_FLAGS " ${IPOPT_LINK_FLAGS}")
+set_property(TARGET ${PROJECTNAME} APPEND_STRING PROPERTY LINK_FLAGS " ${IPOPT_LINK_FLAGS}")
 target_link_libraries(${PROJECTNAME} ${YARP_LIBRARIES} TensorflowCC::Shared)
 icubcontrib_export_library(${PROJECTNAME} INTERNAL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include
-                                          EXTERNAL_INCLUDE_DIRS ${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS}}
+                                          EXTERNAL_INCLUDE_DIRS ${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS} ${TensorflowCC_INCLUDE_DIRS}
                                           DESTINATION include/iCub/${PROJECTNAME}
                                           FILES ${folder_header})
 # export library
