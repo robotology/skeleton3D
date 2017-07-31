@@ -149,6 +149,7 @@ protected:
 
     Mutex                   mutexResourcesSkeleton;
 
+    bool                    use_vtMappingTF;                                 //!< boolean flag to enable/disable vtMapRight, vtMapLeft
     vtMappingTF             *vtMapRight, *vtMapLeft;
 
     //********************************************

@@ -72,6 +72,8 @@ public:
 
     bool setInput(const yarp::sig::Vector& _handPose, const yarp::sig::Vector& _elbowPose);
 
+    bool setInput(const yarp::sig::Vector& _handPose);
+
     bool computeMapping();
 
     bool getOutput(yarp::sig::Vector& _handPose);

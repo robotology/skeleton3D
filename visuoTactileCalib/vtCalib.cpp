@@ -946,6 +946,8 @@ bool    vtCalib::configure(ResourceFinder &rf)
     period      =rf.check("period",Value(0.0)).asDouble();
     modality    =rf.check("name",Value("1D")).asString().c_str();
 
+    use_vtMappingTF = rf.check("use_vtMappingTF",Value(0)).asBool();
+
     if(robot == "icub")
         arm_version = 2.0;
     else //icubSim
@@ -976,8 +978,11 @@ bool    vtCalib::configure(ResourceFinder &rf)
 
 
     // vtMappingTF
-    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
-
+    if (use_vtMappingTF)
+    {
+        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
+        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "input_features");
+    }
 
     // Open the OPC Client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
@@ -1538,6 +1543,7 @@ bool vtCalib::projectIncomingEvents()
 {
     for (vector<IncomingEvent>::const_iterator it = incomingEvents.begin() ; it != incomingEvents.end(); it++)
     {
+        IncomingEvent evt = *it;
         for (int i = 0; i < iCubSkinSize; i++)
         {
             Matrix T_a = eye(4);               // transform matrix relative to the arm
@@ -1554,6 +1560,15 @@ bool vtCalib::projectIncomingEvents()
                     T_a = armR -> getH(3+4, true);
                 else //(iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_HAND])
                     T_a = armR -> getH(3+6, true);
+
+                // Using vtMappingTF
+                if (use_vtMappingTF)
+                {
+                    vtMapRight->setInput(it->Pos);
+                    vtMapRight->computeMapping();
+                    vtMapRight->getOutput(evt.Pos);
+                    yInfo("[%s] event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
+                }
             }
             else
                 yError("[%s] in projectIncomingEvent!\n", name.c_str());
@@ -1566,7 +1581,7 @@ bool vtCalib::projectIncomingEvents()
                 printMessage(6,"    Projecting onto taxel %d (Pos in Root FoR: %s Pos in local FoR: %s).\n",iCubSkin[i].taxels[j]->getID(),
                              iCubSkin[i].taxels[j]->getWRFPosition().toString().c_str(),
                              iCubSkin[i].taxels[j]->getPosition().toString().c_str());
-                projEvent = projectIntoTaxelRF(iCubSkin[i].taxels[j]->getFoR(),T_a,(*it)); //project's into taxel RF and subtracts object radius from z pos in the new frame
+                projEvent = projectIntoTaxelRF(iCubSkin[i].taxels[j]->getFoR(),T_a,evt); //project's into taxel RF and subtracts object radius from z pos in the new frame
                 printMessage(6,"\tProjected event: %s\n",projEvent.toString().c_str());
                 if(dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->insideRFCheck(projEvent)) ////events outside of taxel's RF will not be added
                 {
@@ -1659,7 +1674,7 @@ bool    vtCalib::close()
     armL = NULL;
 
     delete vtMapRight;
-    delete vtMapLeft;
+//    delete vtMapLeft;
     delete event;
     delete opc;
 

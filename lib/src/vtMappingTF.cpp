@@ -67,6 +67,20 @@ bool vtMappingTF::setInput(const yarp::sig::Vector &_handPose, const yarp::sig::
         return false;
 }
 
+bool vtMappingTF::setInput(const yarp::sig::Vector &_handPose)
+{
+    if (_handPose[0]<=0.0 && handPoseIn.size()==_handPose.size())
+    {
+        handPoseIn = _handPose;
+        for (int i=0; i<3; i++)
+            input.vec<float>()(i) = handPoseIn[i];
+        return true;
+    }
+    else
+        return false;
+}
+
+
 bool vtMappingTF::computeMapping()
 {
     Status run_status = session->Run({{input_layer, input}},
