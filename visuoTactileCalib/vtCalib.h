@@ -51,6 +51,8 @@
 #include <iCub/skinDynLib/skinContact.h>
 #include <iCub/skinDynLib/skinContactList.h>
 
+#include "iCub/vtMappingTF/vtMappingTF.h"
+
 #define SKIN_THRES	        7 // Threshold with which a contact is detected
 
 using namespace std;
@@ -129,12 +131,25 @@ protected:
 
     string                  modality;                                       //!< modality to use (either 1D or 2D)
 
+
+    BufferedPort<Bottle>    eventsPort;                                     //!< input from the visuoTactileWrapper
+    Bottle                  *event;
+    vector <IncomingEvent>  incomingEvents;
+
+    BufferedPort<Bottle> skinGuiPortForearmL;                               //!< output to the skinGui
+    BufferedPort<Bottle> skinGuiPortForearmR;
+    BufferedPort<Bottle>    skinGuiPortHandL;
+    BufferedPort<Bottle>    skinGuiPortHandR;
+
+    BufferedPort<yarp::os::Bottle>                  ppsEventsPortOut;       //!< output for the events
     BufferedPort<iCub::skinDynLib::skinContactList> skinPortIn;             //!< input from the skinManager
     BufferedPort<Bottle>                            skeleton3DPortIn;       //!< input port to obtain 3D body parts as objects
     Port                                            contactDumperPortOut;   //!< output to dump the contact points in World FoR
     Port                                            partPoseDumperPortOut;  //!< output to dump the possible touch body part points in World FoR
 
     Mutex                   mutexResourcesSkeleton;
+
+    vtMappingTF             *vtMapRight, *vtMapLeft;
 
     //********************************************
     // From vtRFThread
@@ -175,6 +190,27 @@ protected:
 
     // From vtRFThread
     int printMessage(const int l, const char *f, ...) const;
+
+    /**
+    *
+    **/
+    bool projectIncomingEvents();
+
+    /**
+    * Creates aggregated PPS activation for every skin part and sends it out to pps event out port.
+    **/
+    void managePPSevents();
+
+    /**
+    * For all the skinParts, process the response according to the inputEvent and parse them properly before sending them to the
+    * skinGuis
+    **/
+    void sendContactsToSkinGui();
+
+    /**
+    *
+    **/
+    IncomingEvent4TaxelPWE projectIntoTaxelRF(const Matrix &RF,const Matrix &T_a,const IncomingEvent &e);
 
     void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b);
 

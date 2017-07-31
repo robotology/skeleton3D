@@ -1,4 +1,8 @@
 #include "vtCalib.h"
+
+#define RESP_GAIN_FOR_SKINGUI 100 //To amplify PPS activations from <0,1> to <0,100>
+#define PPS_AGGREG_ACT_THRESHOLD 0.2 //Threshold for aggregated events per skin part
+
 bool    vtCalib::detectContact(iCub::skinDynLib::skinContactList *_sCL, int &idx,
                                std::vector <unsigned int> &idv)
 {
@@ -208,7 +212,7 @@ bool    vtCalib::setTaxelPosesFromFile(const string filePath, skinPartPWE &sP)
 
 void    vtCalib::initRepresentativeTaxels(skinPart &sP)
 {
-    printMessage(6,"[vtRFThread::initRepresentativeTaxels] Initializing representative taxels for %s, version %s\n",sP.name.c_str(),sP.version.c_str());
+    printMessage(6,"[%s::initRepresentativeTaxels] Initializing representative taxels for %s, version %s\n",name.c_str(),sP.name.c_str(),sP.version.c_str());
     int j=0; //here j will start from 0 and correspond to taxel ID
     list<unsigned int> taxels_list;
     if (sP.name == SkinPart_s[SKIN_LEFT_FOREARM] || sP.name == SkinPart_s[SKIN_RIGHT_FOREARM])
@@ -784,7 +788,7 @@ bool    vtCalib::readEncodersAndUpdateArmChains()
    return true;
 }
 
-yarp::sig::Vector vtCalib::locateTaxel(const yarp::sig::Vector &_pos, const string &part)
+Vector  vtCalib::locateTaxel(const yarp::sig::Vector &_pos, const string &part)
 {
     yarp::sig::Vector pos=_pos;
     yarp::sig::Vector WRFpos(4,0.0);
@@ -947,8 +951,15 @@ bool    vtCalib::configure(ResourceFinder &rf)
     else //icubSim
         arm_version = 1.0;
 
+    eventsPort.open(("/"+name+"/events:i").c_str());
+    skinGuiPortForearmL.open(("/"+name+"/skinGuiForearmL:o").c_str());
+    skinGuiPortForearmR.open(("/"+name+"/skinGuiForearmR:o").c_str());
+    skinGuiPortHandL.open(("/"+name+"/skinGuiHandL:o").c_str());
+    skinGuiPortHandR.open(("/"+name+"/skinGuiHandR:o").c_str());
     skinPortIn.open(("/"+name+"/skin_events:i").c_str());
-//        skinPortIn.setReader(*this);
+
+    ppsEventsPortOut.open(("/"+name+"/pps_events_aggreg:o").c_str());
+
     if (Network::connect("/skinManager/skin_events:o",("/"+name+"/skin_events:i").c_str()))
         yInfo("[%s] Connected /skinManager/skin_events:o to %s successful",name.c_str(), skinPortIn.getName().c_str());
     else
@@ -963,6 +974,9 @@ bool    vtCalib::configure(ResourceFinder &rf)
     contactDumperPortOut.open(("/"+name+"/contactPtsDumper:o").c_str());
     partPoseDumperPortOut.open(("/"+name+"/touchPartPose:o").c_str());
 
+
+    // vtMappingTF
+    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
 
 
     // Open the OPC Client
@@ -1230,6 +1244,7 @@ bool    vtCalib::configure(ResourceFinder &rf)
 //        rpcSrvr.open(("/"+name+"/rpc:i").c_str());
 //        attach(rpcSrvr);
 
+
     return true;
 }
 
@@ -1246,6 +1261,9 @@ bool    vtCalib::respond(const Bottle &command, Bottle &reply)
 bool    vtCalib::updateModule()
 {
     ts.update();
+
+    // PPS event (in this case only human pose)
+    event                           = eventsPort.read(false);
     // read skin contact
     skinContactList *skinContacts   = skinPortIn.read(false);
     // read body parts from skeleton3D
@@ -1263,6 +1281,27 @@ bool    vtCalib::updateModule()
             iCubSkin[i].taxels[j]->setWRFPosition(locateTaxel(iCubSkin[i].taxels[j]->getPosition(),iCubSkin[i].name));
         }
     }
+
+    incomingEvents.clear();
+
+    // process the port coming from the visuoTactileWrapper
+    if (event != NULL)
+    {
+        // read the events
+        for (int i = 0; i < event->size(); i++)
+        {
+            incomingEvents.push_back(IncomingEvent(*(event->get(i).asList())));
+            printMessage(3,"\n[EVENT] %s\n", incomingEvents.back().toString().c_str());
+        }
+    }
+    if (incomingEvents.size()>0)
+    {
+        projectIncomingEvents();     // project event onto the taxels' FoR and add them to taxels' representation
+        // only if event lies inside taxel's RF
+    }
+
+    sendContactsToSkinGui();
+    managePPSevents();
 
     bool hasTouchPart = false;
     Vector touchPart(3,0.0);
@@ -1332,6 +1371,242 @@ bool    vtCalib::updateModule()
     return true;
 }
 
+void vtCalib::managePPSevents()
+{
+    // main/src/modules/skinManager/src/compensationThread.cpp:250
+    vector <int> taxelsIDs;
+    string part = SkinPart_s[SKIN_PART_UNKNOWN];
+    int iCubSkinID=-1;
+    bool isThereAnEvent = false;
+
+    Bottle & out = ppsEventsPortOut.prepare();     out.clear();
+    Bottle b;     b.clear();
+
+    if (incomingEvents.size()>0)  // if there's an event
+    {
+        for (int i = 0; i < iCubSkinSize; i++) // cycle through the skinparts
+        {
+            b.clear(); //so there will be one bottle per skin part (if there was a significant event)
+            taxelsIDs.clear();
+            isThereAnEvent = false;
+
+            //take only highly activated "taxels"
+            for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++) // cycle through the taxels
+            {
+                if (dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->Resp > PPS_AGGREG_ACT_THRESHOLD)
+
+                {
+                    taxelsIDs.push_back(iCubSkin[i].taxels[j]->getID());
+                    isThereAnEvent = true;
+                }
+            }
+
+            if (isThereAnEvent && taxelsIDs.size()>0)
+            {
+                Vector geoCenter(3,0.0), normalDir(3,0.0);
+                Vector geoCenterWRF(3,0.0), normalDirWRF(3,0.0); //in world reference frame
+                double w = 0.0;
+                double w_max = 0.0;
+                double w_sum = 0.0;
+                part  = iCubSkin[i].name;
+
+                //the output format on the port will be:
+                //(SkinPart_enum x_linkFoR y_linkFoR z_linkFoR n1_linkFoR n2_linkFoR n3_linkFoR x_RootFoR y_RootFoR z_RootFoR n1_RootFoR n2_RootFoR n3_RootFoR magnitude SkinPart_string)
+                //paralleling the one produced in skinEventsAggregator skinEventsAggregThread::run()
+
+                b.addInt(getSkinPartFromString(iCubSkin[i].name));
+
+                for (size_t k = 0; k < taxelsIDs.size(); k++)
+                {
+                    for (size_t p = 0; p < iCubSkin[i].taxels.size(); p++) //these two loops are not an efficient implementation
+                    {
+                        if (iCubSkin[i].taxels[p]->getID() == taxelsIDs[k])
+                        {
+                            w = dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[p])->Resp;
+                            printMessage(4,"part %s: pps taxel ID %d, pos (%s), activation: %.2f\n",part.c_str(),taxelsIDs[k],iCubSkin[i].taxels[p]->getPosition().toString(3,3).c_str(),w);
+                            //The final geoCenter and normalDir will be a weighted average of the activations
+                            geoCenter += iCubSkin[i].taxels[p]->getPosition()*w; //Matej, 24.2., changing convention - link not Root FoR
+                            normalDir += iCubSkin[i].taxels[p]->getNormal()*w;
+                            geoCenterWRF += iCubSkin[i].taxels[p]->getWRFPosition()*w; //original code
+                            normalDirWRF += locateTaxel(iCubSkin[i].taxels[p]->getNormal(),part)*w;
+                            w_sum += w;
+                            if (w>w_max)
+                                w_max = w;
+                        }
+                    }
+                }
+
+                geoCenter /= w_sum;
+                normalDir /= w_sum;
+                geoCenterWRF /= w_sum;
+                normalDirWRF /= w_sum;
+                vectorIntoBottle(geoCenter,b);
+                vectorIntoBottle(normalDir,b);
+                vectorIntoBottle(geoCenterWRF,b);
+                vectorIntoBottle(normalDirWRF,b);
+                b.addDouble(w_max);
+                //b.addDouble(w_max/255.0); // used to be this before adapting parzenWindowEstimator1D::getF_X_scaled
+                //should be inside <0,1> but if the event has a >0 threat value, response is amplified and may exceed 1
+                b.addString(part);
+                out.addList().read(b);
+            }
+        }
+
+        ppsEventsPortOut.setEnvelope(ts);
+        ppsEventsPortOut.write();     // let's send only if there was en event
+    }
+}
+
+void vtCalib::sendContactsToSkinGui()
+{
+    Vector respToSkin;
+
+    for(int i=0; i<iCubSkinSize; i++)
+    {
+        respToSkin.resize(iCubSkin[i].size,0.0);   // resize the vector to the skinPart
+
+        if (incomingEvents.size()>0)
+        {
+            for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++)
+            {
+                if(iCubSkin[i].repr2TaxelList.empty())
+                {
+                    //we simply light up the taxels themselves
+                    respToSkin[iCubSkin[i].taxels[j]->getID()] = RESP_GAIN_FOR_SKINGUI * dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->Resp;
+                }
+                else
+                {
+                    //we light up all the taxels represented by the particular taxel
+                    list<unsigned int> l = iCubSkin[i].repr2TaxelList[iCubSkin[i].taxels[j]->getID()];
+
+                    if (l.empty())
+                    {
+                        yWarning("skinPart %d Taxel %d : no list of represented taxels is available, even if repr2TaxelList is not empty",i,iCubSkin[i].taxels[j]->getID());
+                        respToSkin[iCubSkin[i].taxels[j]->getID()] = RESP_GAIN_FOR_SKINGUI * dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->Resp;
+                    }
+                    else
+                    {
+                        for(list<unsigned int>::const_iterator iter_list = l.begin(); iter_list != l.end(); iter_list++)
+                        {
+                            //for all the represented taxels, we assign the activation of the super-taxel
+                            respToSkin[*iter_list] =  RESP_GAIN_FOR_SKINGUI * dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->Resp;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        Bottle colorBottle;
+        colorBottle.addInt(0);
+        colorBottle.addInt(200);
+        colorBottle.addInt(100);
+
+        BufferedPort<Bottle> *outPort;
+        if(iCubSkin[i].name == SkinPart_s[SKIN_LEFT_FOREARM])
+        {
+            outPort = &skinGuiPortForearmL;
+        }
+        else if(iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_FOREARM])
+        {
+            outPort = &skinGuiPortForearmR;
+        }
+        else if(iCubSkin[i].name == SkinPart_s[SKIN_LEFT_HAND])
+        {
+            outPort = &skinGuiPortHandL;
+        }
+        else if(iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_HAND])
+        {
+            outPort = &skinGuiPortHandR;
+        }
+
+        Bottle dataBottle;
+        dataBottle.addList().read(respToSkin);
+
+        Bottle& outputBottle=outPort->prepare();
+        outputBottle.clear();
+
+        outputBottle.addList() = *(dataBottle.get(0).asList());
+        outputBottle.addList() = colorBottle;
+
+        outPort->setEnvelope(ts);
+        outPort->write();
+    }
+}
+
+bool vtCalib::projectIncomingEvents()
+{
+    for (vector<IncomingEvent>::const_iterator it = incomingEvents.begin() ; it != incomingEvents.end(); it++)
+    {
+        for (int i = 0; i < iCubSkinSize; i++)
+        {
+            Matrix T_a = eye(4);               // transform matrix relative to the arm
+            if ((iCubSkin[i].name == SkinPart_s[SKIN_LEFT_FOREARM]) || (iCubSkin[i].name == SkinPart_s[SKIN_LEFT_HAND]))
+            {
+                if (iCubSkin[i].name == SkinPart_s[SKIN_LEFT_FOREARM])
+                    T_a = armL -> getH(3+4, true);
+                else //(iCubSkin[i].name == SkinPart_s[SKIN_LEFT_HAND])
+                    T_a = armL -> getH(3+6, true);
+            }
+            else if ((iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_FOREARM]) || (iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_HAND]))
+            {
+                if (iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_FOREARM])
+                    T_a = armR -> getH(3+4, true);
+                else //(iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_HAND])
+                    T_a = armR -> getH(3+6, true);
+            }
+            else
+                yError("[%s] in projectIncomingEvent!\n", name.c_str());
+
+            // yInfo("T_A:\n%s",T_a.toString().c_str());
+            printMessage(5,"\nProject incoming event %s \t onto %s taxels\n",it->toString().c_str(),iCubSkin[i].name.c_str());
+            IncomingEvent4TaxelPWE projEvent;
+            for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++)
+            {
+                printMessage(6,"    Projecting onto taxel %d (Pos in Root FoR: %s Pos in local FoR: %s).\n",iCubSkin[i].taxels[j]->getID(),
+                             iCubSkin[i].taxels[j]->getWRFPosition().toString().c_str(),
+                             iCubSkin[i].taxels[j]->getPosition().toString().c_str());
+                projEvent = projectIntoTaxelRF(iCubSkin[i].taxels[j]->getFoR(),T_a,(*it)); //project's into taxel RF and subtracts object radius from z pos in the new frame
+                printMessage(6,"\tProjected event: %s\n",projEvent.toString().c_str());
+                if(dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->insideRFCheck(projEvent)) ////events outside of taxel's RF will not be added
+                {
+                    dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->Evnts.push_back(projEvent); //here every taxel (TaxelPWE) is updated with the events
+                    printMessage(6,"\tLies inside RF - pushing to taxelPWE.Events.\n");
+                }
+                else
+                    printMessage(6,"\tLies outside RF.\n");
+
+                //printMessage(5,"Repr. taxel ID %i\tEvent: %s\n",j,dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->Evnt.toString().c_str());
+            }
+        }
+    }
+    return true;
+}
+
+IncomingEvent4TaxelPWE vtCalib::projectIntoTaxelRF(const Matrix &RF,const Matrix &T_a,const IncomingEvent &e)
+{
+    IncomingEvent4TaxelPWE Event_projected = e;
+
+    Matrix T_a_proj = T_a * RF;
+
+    Vector p=e.Pos; p.push_back(1);
+    Vector v=e.Vel; v.push_back(1);
+
+    Event_projected.Pos = SE3inv(T_a_proj)*p;        Event_projected.Pos.pop_back();
+    Event_projected.Vel = SE3inv(T_a_proj)*v;        Event_projected.Vel.pop_back();
+
+    if (e.Radius != -1.0)
+    {
+        Event_projected.Pos(2) -= Event_projected.Radius; //considering the radius, this brings the object closer in z  by the radius
+        //for the rest of the calculations (in particular in x,y), the object is treated as a point
+    }
+
+    Event_projected.computeNRMTTC();
+
+    return Event_projected;
+}
+
+
 //********************************************
 double  vtCalib::getPeriod()
 {
@@ -1342,6 +1617,29 @@ double  vtCalib::getPeriod()
 bool    vtCalib::close()
 {
     yInfo("[%s] Closing module..",name.c_str());
+
+    eventsPort.interrupt();
+    eventsPort.close();
+
+    ppsEventsPortOut.interrupt();
+    ppsEventsPortOut.close();
+    yDebug("ppsEventsPortOut successfully closed!\n");
+
+    // closePort(skinGuiPortForearmL);
+    skinGuiPortForearmL.interrupt();
+    skinGuiPortForearmL.close();
+    yDebug("  skinGuiPortForearmL successfully closed!\n");
+    // closePort(skinGuiPortForearmR);
+    skinGuiPortForearmR.interrupt();
+    skinGuiPortForearmR.close();
+    yDebug("  skinGuiPortForearmR successfully closed!\n");
+    // closePort(skinGuiPortHandL);
+    skinGuiPortHandL.interrupt();
+    skinGuiPortHandL.close();
+    yDebug("  skinGuiPortHandL successfully closed!\n");
+    // closePort(skinGuiPortHandR);
+    skinGuiPortHandR.interrupt();
+    skinGuiPortHandR.close();
 
     skinPortIn.close();
     skeleton3DPortIn.close();
@@ -1359,6 +1657,11 @@ bool    vtCalib::close()
     armR = NULL;
     delete armL;
     armL = NULL;
+
+    delete vtMapRight;
+    delete vtMapLeft;
+    delete event;
+    delete opc;
 
     return true;
 
