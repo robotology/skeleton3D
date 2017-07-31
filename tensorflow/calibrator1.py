@@ -77,16 +77,16 @@ key_out, value_out = reader_out.read(filename_queue_out)
 record_defaults_in = [[1.], [1.], [1.], [1.], [1.], [1.]]
 col1, col2, col3, col4, col5, col6 = tf.decode_csv(
     value_in, record_defaults=record_defaults_in)
-features = tf.stack([col1, col2, col3, col4, col5, col6], name='input_features')
-# features = tf.stack([col1, col2, col3], name='input_features')
+# features = tf.stack([col1, col2, col3, col4, col5, col6], name='input_features')
+features = tf.stack([col1, col2, col3], name='input_features')
 record_defaults_out = [[1.], [1.], [1.]]
 col7, col8, col9 = tf.decode_csv(
     value_out, record_defaults=record_defaults_out)
 ref = tf.stack([col7, col8, col9])
 col1_shape = col1.get_shape()
 
-layer1 = nn_layer(features, 6, 10, 'layer1')
-# layer1 = nn_layer(features, 3, 10, 'layer1')
+# layer1 = nn_layer(features, 6, 10, 'layer1')
+layer1 = nn_layer(features, 3, 10, 'layer1')
 layer2 = nn_layer(layer1, 10, 10, 'layer2')
 layer3 = nn_layer(layer2, 10, 3, 'layer3', tf.identity)
 
@@ -132,8 +132,8 @@ coord.join(threads)
 
 x_test = np.array([-0.32063, 0.050248, 0.10134, -0.66542, 0.064199, 0.052125])
 elbow = x_test[3:]
-y_test = sess.run(pred, feed_dict={features: x_test})
-# y_test = sess.run(pred, feed_dict={features: x_test[:3]})
+# y_test = sess.run(pred, feed_dict={features: x_test})
+y_test = sess.run(pred, feed_dict={features: x_test[:3]})
 print('y_test= {:s}'.format(y_test))
 
 touch = y_test.reshape(3)
