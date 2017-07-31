@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-set(PROJECTNAME skeleton3D)
+set(PROJECTNAME human-pose3D)
 project(${PROJECTNAME})
 #list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/lib/cmake)
 
@@ -33,45 +33,51 @@ icubcontrib_set_default_prefix()
 add_definitions(${YARP_DEFINES})   # add yarp definitions - this contains also -D_REENTRANT
 include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 
-#set(main_project_path ${CMAKE_CURRENT_SOURCE_DIR})
+set(main_project_path ${CMAKE_CURRENT_SOURCE_DIR})
 #set(main_project_name ${PROJECTNAME})
 
 
 #add_subdirectory(modules)
 
 add_subdirectory(app)
-add_subdirectory(lib)
 add_subdirectory(yetAnotherAvoidance)
 add_subdirectory(visuoTactileCalib)
+add_subdirectory(skeleton3D)
+#add_subdirectory(lib)
 
 #include(YarpIDL)
 
-set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/include/skeleton3D.h
-			${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
+#set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/include/skeleton3D.h)
+#			${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
 
-set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/src/skeleton3D.cpp
-			${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp
-		 	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+#set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/src/skeleton3D.cpp
+#			${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp
+#		 	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
-set(idl_files    skeleton3D.thrift)
+set (lib_files          ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp)
 
-yarp_add_idl(IDL_GEN_FILES skeleton3D.thrift)
 
-source_group("IDL Files" FILES ${idl_files})
+#set(idl_files    skeleton3D.thrift)
 
-include_directories(    ${YARP_INCLUDE_DIRS}
-                        ${ICUB_INCLUDE_DIRS}
-                        ${kinectWrapper_INCLUDE_DIRS}
-                        ${CMAKE_CURRENT_SOURCE_DIR}
-                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/include
-                        ${CMAKE_CURRENT_SOURCE_DIR}/include)
+#yarp_add_idl(IDL_GEN_FILES skeleton3D.thrift)
 
-add_definitions(-D_USE_MATH_DEFINES)
+#source_group("IDL Files" FILES ${idl_files})
 
-add_executable(${PROJECTNAME} ${SRC_LIST} ${lib_files} ${source_files} ${include_files} ${IDL_GEN_FILES} ${idl_files})
-target_link_libraries(${PROJECTNAME} ${YARP_LIBRARIES} ctrlLib ${icubclient_LIBRARIES} TensorflowCC::Shared)
+#include_directories(    ${YARP_INCLUDE_DIRS}
+#                        ${ICUB_INCLUDE_DIRS}
+#                        ${kinectWrapper_INCLUDE_DIRS}
+#                        ${CMAKE_CURRENT_SOURCE_DIR}
+#                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/include
+#                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF
+#                        ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-install (TARGETS ${PROJECTNAME} DESTINATION bin)
+#add_definitions(-D_USE_MATH_DEFINES)
+
+#add_executable(${PROJECTNAME} ${SRC_LIST} ${source_files} ${include_files} ${IDL_GEN_FILES} ${idl_files} ${lib_files})
+#target_link_libraries(${PROJECTNAME} ${YARP_LIBRARIES} ctrlLib ${icubclient_LIBRARIES} TensorflowCC::Shared)
+
+#install (TARGETS ${PROJECTNAME} DESTINATION bin)
 
 #icubcontrib_finalize_export(${PROJECTNAME})
 icubcontrib_add_uninstall_target()

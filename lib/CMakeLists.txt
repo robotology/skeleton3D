@@ -32,7 +32,7 @@ add_library(${PROJECTNAME} ${folder_source} ${folder_header})
 set_property(TARGET ${PROJECTNAME} APPEND_STRING PROPERTY LINK_FLAGS " ${IPOPT_LINK_FLAGS}")
 target_link_libraries(${PROJECTNAME} ${YARP_LIBRARIES} TensorflowCC::Shared)
 icubcontrib_export_library(${PROJECTNAME} INTERNAL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include
-                                          EXTERNAL_INCLUDE_DIRS ${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS} ${TensorflowCC_INCLUDE_DIRS}
+                                          EXTERNAL_INCLUDE_DIRS ${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS} TensorflowCC::Shared
                                           DESTINATION include/iCub/${PROJECTNAME}
                                           FILES ${folder_header})
 # export library
