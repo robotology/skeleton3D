@@ -21,7 +21,6 @@
 
 #include "iCub/vtMappingTF/vtMappingTF.h"
 
-using namespace tensorflow;
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -70,7 +69,7 @@ protected:
 
     bool                        fakeHand;
 
-    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
+//    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
 
     vtMappingTF             *vtMapRight;
 
