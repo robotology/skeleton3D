@@ -420,7 +420,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     attach(rpcPort);
 
     // vtMappingTF
-    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
+//    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
 
     return true;
 }
@@ -441,7 +441,7 @@ bool    skeleton3D::close()
 {
     yDebug("[%s] closing module",name.c_str());
 
-    delete vtMapRight;
+//    delete vtMapRight;
     rpcPort.close();
     rpcGet3D.close();
     bodyPartsInPort.close();
@@ -475,12 +475,12 @@ bool    skeleton3D::updateModule()
 //    handPose[0] = -0.32063; handPose[1] = 0.050248; handPose[2] = 0.10134;
 //    elbowPose[0] = -0.66542; elbowPose[1] = 0.064199; elbowPose[2] = 0.052125;
 
-    if (vtMapRight->setInput(handPose, elbowPose))
-        if (vtMapRight->computeMapping())
-        {
-            vtMapRight->getOutput(handPose);
-            yInfo("handPose after mapping: %s", handPose.toString(3,3).c_str());
-        }
+//    if (vtMapRight->setInput(handPose, elbowPose))
+//        if (vtMapRight->computeMapping())
+//        {
+//            vtMapRight->getOutput(handPose);
+//            yInfo("handPose after mapping: %s", handPose.toString(3,3).c_str());
+//        }
 
 
     // Get the 3D pose of CvPoint of body parts

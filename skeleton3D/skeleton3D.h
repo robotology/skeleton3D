@@ -19,7 +19,7 @@
 
 #include "skeleton3D_IDL.h"
 
-#include "iCub/vtMappingTF/vtMappingTF.h"
+//#include "iCub/vtMappingTF/vtMappingTF.h"
 
 using namespace std;
 using namespace yarp::os;
@@ -71,7 +71,7 @@ protected:
 
 //    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
 
-    vtMappingTF             *vtMapRight;
+//    vtMappingTF             *vtMapRight;
 
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
