@@ -190,6 +190,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         joints.insert(std::pair<string,kinectWrapper::Joint>("handRight",joint));
         addConf(0.9,"handRight");
 
+        joint.x = -1.5;
+        joint.y = 0.0;
+        joint.z = 0.0;
+        for (int partID=0; partID < mapPartsKinect.size(); partID++)
+            if (mapPartsKinect[partID]!="handRight")
+                joints.insert(std::pair<string,kinectWrapper::Joint>(mapPartsKinect[partID].c_str(),joint));
+        joints.insert(std::pair<string,kinectWrapper::Joint>("spine",joint));
+
         player.skeleton = joints;
 
         ts.update();
@@ -456,8 +464,6 @@ bool    skeleton3D::interruptModule()
 bool    skeleton3D::close()
 {
     yDebug("[%s] closing module",name.c_str());
-
-//    delete vtMapRight;
     rpcPort.close();
     rpcGet3D.close();
     bodyPartsInPort.close();
