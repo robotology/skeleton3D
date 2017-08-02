@@ -115,7 +115,7 @@ tf.global_variables_initializer().run(session=sess)
 
 tf.train.write_graph(sess.graph_def, model_dir, graph_name)
 
-for i in range(1001):
+for i in range(101):
     if i % 10 == 0:
         summary_str, _ = sess.run([summary_op, train_op])
         summary_writer.add_summary(summary_str, i)
