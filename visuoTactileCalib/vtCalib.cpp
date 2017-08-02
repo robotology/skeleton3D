@@ -1634,8 +1634,11 @@ bool vtCalib::projectIncomingEvents()
 
                 // Using vtMappingTF
 //                yInfo("[%s] ORIGIN event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
-                if (use_vtMappingTF && norm(evt.Pos)<=1.0)
+                if (use_vtMappingTF && norm(evt.Pos)<=1.0 &&
+                        (evt.Pos==obtainPartFromOPC(partner,"handRight") || evt.Pos==obtainPartFromOPC(partner,"handLeft")))
                 {
+                    yInfo("[%s] handRight pose: %s",name.c_str(),obtainPartFromOPC(partner,"handRight").toString(3,3).c_str());
+                    yInfo("[%s] handLeft pose: %s",name.c_str(),obtainPartFromOPC(partner,"handLeft").toString(3,3).c_str());
                     yInfo("[%s] ORIGIN event position: %s",name.c_str(),(*it).Pos.toString(3,3).c_str());
                     vtMapRight->setInput(evt.Pos);
                     vtMapRight->computeMapping();
