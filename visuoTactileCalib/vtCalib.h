@@ -75,6 +75,10 @@ protected:
     double          period;
     int             verbosity;
     double          timeNow;
+    double          stress;
+
+    string          path;
+    string          taxelsFile;
 
     icubclient::OPCClient   *opc;
     icubclient::Agent       *partner;
@@ -212,6 +216,22 @@ protected:
     *
     **/
     IncomingEvent4TaxelPWE projectIntoTaxelRF(const Matrix &RF,const Matrix &T_a,const IncomingEvent &e);
+
+    /**
+    *
+    **/
+    bool computeResponse(double stress_modulation);
+
+    /**
+    * Resets vector of remapped events pertaining to the taxel
+    **/
+    void resetTaxelEventVectors();
+
+    /**
+    * Loading function. It saves the skinParts as well as their receptive fields.
+    **/
+    string load();
+
 
     void vector2bottle(const std::vector<Vector> &vec, yarp::os::Bottle &b);
 
