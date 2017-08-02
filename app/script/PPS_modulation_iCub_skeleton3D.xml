@@ -84,6 +84,13 @@
         <node>icub21</node>
         <stdio></stdio>
     </module>
+    
+    <module>
+        <name>visuoTactileCalib</name>
+        <parameters>--robot icub --taxelsFile taxelsFiles/taxels1D_45cmRF_skinV2_perfect_all.ini --rate 20</parameters>
+        <node>icub21</node>
+        <stdio></stdio>
+    </module>
 
     <!--GUI modules-->
     <module>
@@ -137,32 +144,6 @@
         <tag>skinGuiRH</tag>
     </module>
 
-    <!--sensationManager and behaviorManager modules
-    <module>
-        <name>sensationManager</name>
-        <parameters>--from pps.ini</parameters>
-        <node>icub21</node>
-        <tag>sensationManager</tag>
-    </module>
-    <module>
-        <name>homeostasis</name>
-        <parameters>--from pps.ini</parameters>
-        <node>icub22</node>
-        <tag>homeostasis</tag>
-    </module>
-    <module>
-        <name>allostaticController</name>
-        <parameters>--from pps.ini</parameters>
-        <node>icub22</node>
-        <tag>allostaticController</tag>
-    </module>
-    <module>
-        <name>behaviorManager</name>
-        <parameters>--from pps.ini</parameters>
-        <node>icub21</node>
-        <tag>behaviorManager</tag>
-    </module>-->
-
 	<ensure>
 		<wait>5.0</wait>
 	</ensure>
@@ -185,6 +166,12 @@
         <to>/visuoTactileRF/events:i</to>
         <protocol>tcp</protocol>
     </connection>
+    
+    <connection>
+        <from>/visuoTactileWrapper/events:o</from>
+        <to>/visuoTactileCalib/events:i</to>
+        <protocol>tcp</protocol>
+    </connection>
 
     <connection>
         <from>/visuoTactileWrapper/gui:o</from>
@@ -200,6 +187,18 @@
 
     <connection>
        <from>/visuoTactileRF/pps_events_aggreg:o</from>
+       <to>/reactController/pps_events_aggreg:i</to>
+       <protocol>udp</protocol>
+    </connection>
+    
+    <connection>
+        <from>/visuoTactileCalib/pps_events_aggreg:o</from>
+        <to>/ppsAggregEventsForiCubGui/pps_events_aggreg:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+       <from>/visuoTactileCalib/pps_events_aggreg:o</from>
        <to>/reactController/pps_events_aggreg:i</to>
        <protocol>udp</protocol>
     </connection>
@@ -334,6 +333,30 @@
         <to>/skinGui/right_hand_virtual:i</to>
         <protocol>udp</protocol>
     </connection>
+    
+        <connection>
+        <from>/visuoTactileCalib/skinGuiForearmL:o</from>
+        <to>/skinGui/left_forearm_virtual:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/visuoTactileCalib/skinGuiForearmR:o</from>
+        <to>/skinGui/right_forearm_virtual:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/visuoTactileCalib/skinGuiHandL:o</from>
+        <to>/skinGui/left_hand_virtual:i</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/visuoTactileCalib/skinGuiHandR:o</from>
+        <to>/skinGui/right_hand_virtual:i</to>
+        <protocol>udp</protocol>
+    </connection>
 
     <connection>
         <from>/icub/skin/left_hand_comp</from>
@@ -370,19 +393,6 @@
         <to>/skinGui/right_arm:i</to>
         <protocol>udp</protocol>
     </connection>
-
-    <!--sensation and behaviorManager connections
-    <connection>
-        <from>/opcSensation/objects:o</from>
-        <to>/visuoTactileWrapper/sensManager:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/homeostasis/stress:o</from>
-        <to>/visuoTactileRF/stress:i</to>
-        <protocol>udp</protocol>
-    </connection>-->
 
 </application>
 
