@@ -65,7 +65,8 @@ protected:
 
 public:
     vtMappingTF(const string& _name, const string& _part,
-                const string& _output_layer, const string& _input_layer);
+                const string& _output_layer, const string& _input_layer,
+                bool _use_elbow);
 
     tensorflow::Status LoadGraph(const std::string& graph_file_name,
                                  std::unique_ptr<tensorflow::Session>* session);

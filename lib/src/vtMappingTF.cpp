@@ -21,7 +21,8 @@ Status vtMappingTF::LoadGraph(const string& graph_file_name,
 }
 
 vtMappingTF::vtMappingTF(const string& _name, const string& _part,
-                         const string& _output_layer, const string& _input_layer)
+                         const string& _output_layer, const string& _input_layer,
+                         bool _use_elbow=false)
 {
     name        = _name;
     part        = _part;
@@ -46,7 +47,10 @@ vtMappingTF::vtMappingTF(const string& _name, const string& _part,
     handPoseIn.resize(3,0.0);
     elbowPoseIn.resize(3,0.0);
     handPoseOut.resize(3,0.0);
-    input = Tensor(DT_FLOAT, TensorShape({6}));
+    if (_use_elbow)
+        input = Tensor(DT_FLOAT, TensorShape({6}));
+    else
+        input = Tensor(DT_FLOAT, TensorShape({3}));
 
 }
 

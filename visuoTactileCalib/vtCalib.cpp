@@ -980,8 +980,8 @@ bool    vtCalib::configure(ResourceFinder &rf)
     // vtMappingTF
     if (use_vtMappingTF)
     {
-        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
-        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "input_features");
+        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features", false);
+        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "input_features", false);
     }
 
     // Open the OPC Client
@@ -1673,8 +1673,11 @@ bool    vtCalib::close()
     delete armL;
     armL = NULL;
 
-    delete vtMapRight;
+    if (use_vtMappingTF)
+    {
+        delete vtMapRight;
 //    delete vtMapLeft;
+    }
     delete event;
     delete opc;
 
