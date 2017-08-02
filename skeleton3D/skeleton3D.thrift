@@ -59,6 +59,19 @@ service skeleton3D_IDL
   double get_threshold_disparition();
 
   /**
+  * Sets fake hand position (useful in simulation).
+  * @param _pos fake hand position.
+  * @return true/false on success/failure.
+  */
+  bool set_fake_hand_pos(1:Vector _pos);
+
+  /**
+  * Gets the fake hand position (useful in simulation).
+  * @return the current fakeHandPos value.
+  */
+  Vector get_fake_hand_pos();
+
+  /**
   * Enables the function to create a fake rightHand
   * @return true/false on success/failure.
   */

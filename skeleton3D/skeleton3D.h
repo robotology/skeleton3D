@@ -67,7 +67,8 @@ protected:
     int                         filterOrder;        //!< integer value for order of the median filter of the body parts
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
 
-    bool                        fakeHand;
+    bool                        use_fake_hand;
+    yarp::sig::Vector           fakeHandPos;        //!< position of fake hand
 
 //    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
 
@@ -152,7 +153,7 @@ public:
 
     /************************************************************************/
     // Thrift methods
-    bool set_valence(const double _valence)
+    bool set_valence(const double& _valence)
     {
         if (_valence<=1.0 && _valence>=-1.0)
         {
@@ -168,7 +169,7 @@ public:
         return body_valence;
     }
 
-    bool set_filter_order(const int16_t _order)
+    bool set_filter_order(const int16_t& _order)
     {
         if (_order>=0)
         {
@@ -184,7 +185,7 @@ public:
         return filterOrder;
     }
 
-    bool set_threshold_disparition(const double _thr)
+    bool set_threshold_disparition(const double& _thr)
     {
         if (_thr>0.0)
         {
@@ -200,15 +201,31 @@ public:
         return dThresholdDisparition;
     }
 
+    bool set_fake_hand_pos(const yarp::sig::Vector& _pos)
+    {
+        if (fakeHandPos.size() == _pos.size())
+        {
+            fakeHandPos = _pos;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    yarp::sig::Vector get_fake_hand_pos()
+    {
+        return fakeHandPos;
+    }
+
     bool enable_fake_hand()
     {
-        fakeHand = true;
+        use_fake_hand = true;
         return true;
     }
 
     bool disable_fake_hand()
     {
-        fakeHand = false;
+        use_fake_hand = false;
         return true;
     }
 

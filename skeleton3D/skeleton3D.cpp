@@ -139,7 +139,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                             {
 //                                yInfo("part %s",part->toString().c_str());
                                 string partName = part->get(0).asString();
-                                yDebug("[skeleton3D] found part as %s",partName.c_str());
+                                yDebug("[%s] found part as %s",name.c_str(),partName.c_str());
                                 CvPoint partCv;
                                 double partConf = part->get(3).asDouble();
                                 partCv.x = (int)part->get(1).asDouble();
@@ -152,11 +152,11 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                     addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
                                 }
                                 else
-                                    yDebug("[skeleton3D] ignore part with confidence lower than 0.0001%%");
+                                    yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
                             }
                         }
                         else
-                            yDebug("[skeleton3D] obtainBodyParts: don't deal with face parts!");
+                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
                     }
                 }
 
@@ -173,19 +173,20 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
             }
             else
             {
-                yDebug("[skeleton3D] obtainBodyParts wrong format");
+                yDebug("[%s] obtainBodyParts wrong format",name.c_str());
                 return false;
             }
         }
     }
-    else if (fakeHand)
+    else if (use_fake_hand)
     {
-        yDebug("[skeleton3D] obtainBodyParts create a fake hand");
+        yDebug("[%s] obtainBodyParts: create a fake hand %s",name.c_str(),
+               fakeHandPos.toString(3,3).c_str());
         map<string, kinectWrapper::Joint> joints;
         kinectWrapper::Joint joint;
-        joint.x = -0.3;
-        joint.y = 0.05;
-        joint.z = 0.05;
+        joint.x = fakeHandPos[0];
+        joint.y = fakeHandPos[1];
+        joint.z = fakeHandPos[2];
         joints.insert(std::pair<string,kinectWrapper::Joint>("handRight",joint));
         addConf(0.9,"handRight");
 
@@ -195,7 +196,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
     else
     {
-        yDebug("[skeleton3D] obtainBodyParts return empty");
+        yDebug("[%s] obtainBodyParts return empty",name.c_str());
         return false;
     }
 
@@ -338,7 +339,14 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
-    fakeHand = rf.check("fakeHand",Value(0)).asBool();
+    use_fake_hand = rf.check("use_fake_hand",Value(0)).asBool();
+    if (use_fake_hand)
+    {
+        fakeHandPos.resize(3,0.0);
+        fakeHandPos[0] = -0.3;
+        fakeHandPos[1] = 0.05;
+        fakeHandPos[2] = 0.05;
+    }
 
     if (use_part_conf)
         yInfo("[%s] Use part confidence as valence", name.c_str());
@@ -433,7 +441,15 @@ bool    skeleton3D::interruptModule()
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
-    opc->interrupt();
+
+    yDebug("[%s] Remove partner", name.c_str());
+    opc->checkout();                        yDebug("check 1");
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);    yDebug("check 2");
+    partner->m_present=0.0;                 yDebug("check 3");
+    opc->commit(partner);                   yDebug("check 4");
+    opc->removeEntity(partner->opc_id());   yDebug("check 5");
+    delete partner;                         yDebug("check 6");
+    opc->interrupt();                       yDebug("check 7");
     return true;
 }
 
@@ -500,15 +516,20 @@ bool    skeleton3D::updateModule()
     if (tracked)
     {
         bool reallyTracked = false;
-        for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ;
-            jnt != player.skeleton.end() ; jnt++)
+        if (!use_fake_hand)
         {
-            if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
+            for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ;
+                jnt != player.skeleton.end() ; jnt++)
             {
-                reallyTracked = true;
-                break;
+                if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
+                {
+                    reallyTracked = true;
+                    break;
+                }
             }
         }
+        else
+            reallyTracked = true;
         if (reallyTracked)
         {
             dSince = (clock() - dTimingLastApparition) / (double) CLOCKS_PER_SEC;
