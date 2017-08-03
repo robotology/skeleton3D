@@ -6,21 +6,21 @@
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/head</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/leftArm</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/rightArm</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
@@ -28,14 +28,14 @@
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/contactPts</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/touchPartPose</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
@@ -43,14 +43,14 @@
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/images/left --type image</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
     <module>
         <name>yarpdatadumper</name>
         <parameters>--name /data/images/right --type image</parameters>
-        <node>localhost</node>
+        <node>icub21</node>
         <stdio></stdio>
         <tag>yarpdatadumper</tag>
     </module>
