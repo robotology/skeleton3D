@@ -1063,6 +1063,523 @@ node {
   }
 }
 node {
+  name: "shuffle/Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_BOOL
+        tensor_shape {
+        }
+        bool_val: true
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/random_shuffle_queue"
+  op: "RandomShuffleQueueV2"
+  attr {
+    key: "capacity"
+    value {
+      i: 15003
+    }
+  }
+  attr {
+    key: "component_types"
+    value {
+      list {
+        type: DT_FLOAT
+        type: DT_FLOAT
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "min_after_dequeue"
+    value {
+      i: 15000
+    }
+  }
+  attr {
+    key: "seed"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "seed2"
+    value {
+      i: 0
+    }
+  }
+  attr {
+    key: "shapes"
+    value {
+      list {
+        shape {
+          dim {
+            size: 3
+          }
+        }
+        shape {
+          dim {
+            size: 3
+          }
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "shuffle/cond/Switch"
+  op: "Switch"
+  input: "shuffle/Const"
+  input: "shuffle/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "shuffle/cond/switch_t"
+  op: "Identity"
+  input: "shuffle/cond/Switch:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "shuffle/cond/switch_f"
+  op: "Identity"
+  input: "shuffle/cond/Switch"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "shuffle/cond/pred_id"
+  op: "Identity"
+  input: "shuffle/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "shuffle/cond/random_shuffle_queue_enqueue/Switch"
+  op: "Switch"
+  input: "shuffle/random_shuffle_queue"
+  input: "shuffle/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_RESOURCE
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@shuffle/random_shuffle_queue"
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/cond/random_shuffle_queue_enqueue/Switch_1"
+  op: "Switch"
+  input: "input_features"
+  input: "shuffle/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@input_features"
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/cond/random_shuffle_queue_enqueue/Switch_2"
+  op: "Switch"
+  input: "stack"
+  input: "shuffle/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@stack"
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/cond/random_shuffle_queue_enqueue"
+  op: "QueueEnqueueV2"
+  input: "shuffle/cond/random_shuffle_queue_enqueue/Switch:1"
+  input: "shuffle/cond/random_shuffle_queue_enqueue/Switch_1:1"
+  input: "shuffle/cond/random_shuffle_queue_enqueue/Switch_2:1"
+  attr {
+    key: "Tcomponents"
+    value {
+      list {
+        type: DT_FLOAT
+        type: DT_FLOAT
+      }
+    }
+  }
+  attr {
+    key: "timeout_ms"
+    value {
+      i: -1
+    }
+  }
+}
+node {
+  name: "shuffle/cond/control_dependency"
+  op: "Identity"
+  input: "shuffle/cond/switch_t"
+  input: "^shuffle/cond/random_shuffle_queue_enqueue"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@shuffle/cond/switch_t"
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/cond/NoOp"
+  op: "NoOp"
+  input: "^shuffle/cond/switch_f"
+}
+node {
+  name: "shuffle/cond/control_dependency_1"
+  op: "Identity"
+  input: "shuffle/cond/switch_f"
+  input: "^shuffle/cond/NoOp"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@shuffle/cond/switch_f"
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/cond/Merge"
+  op: "Merge"
+  input: "shuffle/cond/control_dependency_1"
+  input: "shuffle/cond/control_dependency"
+  attr {
+    key: "N"
+    value {
+      i: 2
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "shuffle/random_shuffle_queue_Close"
+  op: "QueueCloseV2"
+  input: "shuffle/random_shuffle_queue"
+  attr {
+    key: "cancel_pending_enqueues"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "shuffle/random_shuffle_queue_Close_1"
+  op: "QueueCloseV2"
+  input: "shuffle/random_shuffle_queue"
+  attr {
+    key: "cancel_pending_enqueues"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "shuffle/random_shuffle_queue_Size"
+  op: "QueueSizeV2"
+  input: "shuffle/random_shuffle_queue"
+}
+node {
+  name: "shuffle/sub/y"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 15000
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/sub"
+  op: "Sub"
+  input: "shuffle/random_shuffle_queue_Size"
+  input: "shuffle/sub/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "shuffle/Maximum/x"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 0
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/Maximum"
+  op: "Maximum"
+  input: "shuffle/Maximum/x"
+  input: "shuffle/sub"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "shuffle/Cast"
+  op: "Cast"
+  input: "shuffle/Maximum"
+  attr {
+    key: "DstT"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "SrcT"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "shuffle/mul/y"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.333333343267
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/mul"
+  op: "Mul"
+  input: "shuffle/Cast"
+  input: "shuffle/mul/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "shuffle/fraction_over_15000_of_3_full/tags"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "shuffle/fraction_over_15000_of_3_full"
+      }
+    }
+  }
+}
+node {
+  name: "shuffle/fraction_over_15000_of_3_full"
+  op: "ScalarSummary"
+  input: "shuffle/fraction_over_15000_of_3_full/tags"
+  input: "shuffle/mul"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "shuffle/n"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "shuffle"
+  op: "QueueDequeueManyV2"
+  input: "shuffle/random_shuffle_queue"
+  input: "shuffle/n"
+  attr {
+    key: "component_types"
+    value {
+      list {
+        type: DT_FLOAT
+        type: DT_FLOAT
+      }
+    }
+  }
+  attr {
+    key: "timeout_ms"
+    value {
+      i: -1
+    }
+  }
+}
+node {
+  name: "example"
+  op: "Identity"
+  input: "shuffle"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "label"
+  op: "Identity"
+  input: "shuffle:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
   name: "input/shape"
   op: "Const"
   attr {
@@ -1089,7 +1606,7 @@ node {
 node {
   name: "input"
   op: "Reshape"
-  input: "input_features"
+  input: "example"
   input: "input/shape"
   attr {
     key: "T"
@@ -6139,7 +6656,7 @@ node {
 node {
   name: "loss/sub"
   op: "Sub"
-  input: "stack"
+  input: "label"
   input: "layer3/activation"
   attr {
     key: "T"
@@ -6595,6 +7112,7 @@ node {
   op: "MergeSummary"
   input: "input_producer/fraction_of_32_full"
   input: "input_producer_1/fraction_of_32_full"
+  input: "shuffle/fraction_over_15000_of_3_full"
   input: "layer1/weights/summaries/mean"
   input: "layer1/weights/summaries/stddev_1"
   input: "layer1/weights/summaries/max"
@@ -6644,7 +7162,7 @@ node {
   attr {
     key: "N"
     value {
-      i: 48
+      i: 49
     }
   }
 }
@@ -7554,10 +8072,10 @@ node {
         dtype: DT_INT32
         tensor_shape {
           dim {
-            size: 1
+            size: 2
           }
         }
-        int_val: 3
+        tensor_content: "\001\000\000\000\003\000\000\000"
       }
     }
   }

@@ -985,8 +985,8 @@ bool    vtCalib::configure(ResourceFinder &rf)
     /********** vtMappingTF ***************/
     if (use_vtMappingTF)
     {
-        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features", false);
-        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "input_features", false);
+        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "example", false);
+        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "example", false);
     }
 
     /********** OPC Client ***************/

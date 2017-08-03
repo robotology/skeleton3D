@@ -29,7 +29,7 @@ output_graph_name = "output_graph.pb"
 input_graph_path = os.path.join(model_dir, input_graph_name)
 input_saver_def_path = ""
 input_binary = False
-input_checkpoint_path = os.path.join(train_dir, 'saved_checkpoint') + "-100"
+input_checkpoint_path = os.path.join(train_dir, 'saved_checkpoint') + "-10000"
 
 # Note that we this normally should be only "output_node"!!!
 output_node_names = "layer3/activation"

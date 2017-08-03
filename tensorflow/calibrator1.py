@@ -66,6 +66,7 @@ train_dir = './log/'
 model_dir = './model/'
 checkpoint_prefix = os.path.join(train_dir, 'saved_checkpoint')
 graph_name = 'mapping_graph.pb'
+batch_size = 1
 
 reader_in = tf.TextLineReader()
 reader_out = tf.TextLineReader()
@@ -85,8 +86,23 @@ col7, col8, col9 = tf.decode_csv(
 ref = tf.stack([col7, col8, col9])
 col1_shape = col1.get_shape()
 
+min_after_dequeue = 15000
+capacity = min_after_dequeue + 3 * batch_size
+example_batch, label_batch = tf.train.shuffle_batch(
+    [features, ref], batch_size=batch_size, capacity=capacity,
+    min_after_dequeue=min_after_dequeue, name='shuffle')
+
+# with tf.name_scope('example'):
+#     example = example_batch
+# with tf.name_scope('label'):
+#     label = label_batch
+
+example = tf.identity(example_batch, name='example')
+label = tf.identity(label_batch, name='label')
+
+# Model
 # layer1 = nn_layer(features, 6, 10, 'layer1')
-layer1 = nn_layer(features, 3, 10, 'layer1')
+layer1 = nn_layer(example, 3, 10, 'layer1')
 layer2 = nn_layer(layer1, 10, 10, 'layer2')
 layer3 = nn_layer(layer2, 10, 3, 'layer3', tf.identity)
 
@@ -95,7 +111,7 @@ with tf.name_scope('pred'):
     pred = layer3
     variable_summaries(pred)
 with tf.name_scope('loss'):
-    squared_deltas = tf.square(ref - pred)
+    squared_deltas = tf.square(label - pred)
     loss = tf.reduce_sum(squared_deltas)
     variable_summaries(loss)
 
@@ -106,16 +122,29 @@ train_op = tf.train.GradientDescentOptimizer(0.01).minimize(loss) # construct an
 sess = tf.Session()
 
 summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
+
 # Start populating the filename queue.
 coord = tf.train.Coordinator()
 threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
 tf.global_variables_initializer().run(session=sess)
 
-
 tf.train.write_graph(sess.graph_def, model_dir, graph_name)
 
-for i in range(101):
+# Read the old checkpoint to resume training if possible
+ckpt = tf.train.get_checkpoint_state(train_dir)
+prev_step = 0
+if ckpt and ckpt.model_checkpoint_path:
+    prev_step = int(ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1])
+    print('prev_step %d' % prev_step)
+
+    saver.restore(sess, ckpt.model_checkpoint_path)
+    # global_step = int(ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1])
+    print('Found checkpoint')
+
+
+# Train
+for i in range(prev_step, 10001):
     if i % 10 == 0:
         summary_str, _ = sess.run([summary_op, train_op])
         summary_writer.add_summary(summary_str, i)
