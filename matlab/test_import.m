@@ -149,6 +149,17 @@ title('Contact points in 3D')
 grid on;
 
 %% Plot
+figure;
+
+plot3(contactPts(:,1),contactPts(:,2),contactPts(:,3),'rx',...
+    touchPts(:,1),touchPts(:,2),touchPts(:,3),'b*');
+legend('contactPts','touchPts');
+xlabel('x (m)'); ylabel('y (m)'); zlabel('z (m)'); 
+xlim([-0.7 0.0]); ylim([-0.3 0.3]); zlim([-0.2 0.4])
+title('Contact points in 3D')
+grid on;
+
+%% Plot
 % figure;
 % 
 % plot3(contactPts0(:,1),contactPts0(:,2),contactPts0(:,3),'rx',touchPartPose0(:,1),touchPartPose0(:,2),touchPartPose0(:,3),'go');
