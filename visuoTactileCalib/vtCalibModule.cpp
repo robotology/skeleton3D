@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
     {
         yInfo(" ");
         yInfo("Options:");
-        yInfo("   --context     path:  where to find the called resource (default skeleton3D).");
+        yInfo("   --context     path:  where to find the called resource (default human-pose3D).");
         yInfo("   --from        from:  the name of the .ini file (default visuoTactileCalib.ini).");
         yInfo("   --name        name:  the name of the module (default visuoTactileCalib).");
         yInfo(" ");
