@@ -31,7 +31,7 @@ int main(int argc, char * argv[])
 
     ResourceFinder moduleRF;
     moduleRF.setVerbose(false);
-    moduleRF.setDefaultContext("skeleton3D");
+    moduleRF.setDefaultContext("human-pose3D");
     moduleRF.setDefaultConfigFile("visuoTactileCalib.ini");
     moduleRF.configure(argc,argv);
 
