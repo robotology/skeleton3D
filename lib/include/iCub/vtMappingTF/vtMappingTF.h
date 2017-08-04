@@ -65,6 +65,7 @@ protected:
 
 public:
     vtMappingTF(const string& _name, const string& _part,
+                const string& _root_dir,
                 const string& _output_layer, const string& _input_layer,
                 bool _use_elbow);
 

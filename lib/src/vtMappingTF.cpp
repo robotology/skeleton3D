@@ -21,6 +21,7 @@ Status vtMappingTF::LoadGraph(const string& graph_file_name,
 }
 
 vtMappingTF::vtMappingTF(const string& _name, const string& _part,
+                         const string& _root_dir,
                          const string& _output_layer, const string& _input_layer,
                          bool _use_elbow=false)
 {
@@ -28,7 +29,7 @@ vtMappingTF::vtMappingTF(const string& _name, const string& _part,
     part        = _part;
 
     // First we load and initialize the tensorflow model.
-    root_dir    = "/home/pnguyen/icub-workspace/skeleton3D/";
+    root_dir    = _root_dir;
     graph       = "tensorflow/model/output_graph.pb";
 
     input_layer = _input_layer;
@@ -38,7 +39,7 @@ vtMappingTF::vtMappingTF(const string& _name, const string& _part,
     Status load_graph_status = LoadGraph(graph_path, &session);
     if (!load_graph_status.ok()) {
         LOG(ERROR) << load_graph_status;
-        yError("[%s] [vtMapping]: Fail in loading graph", name.c_str());
+        yError("[%s] [vtMapping]: Fail in loading graph at %s", name.c_str(),graph_path.c_str());
 //        return -1;
     }
     else

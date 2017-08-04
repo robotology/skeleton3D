@@ -952,6 +952,8 @@ bool    vtCalib::configure(ResourceFinder &rf)
 
     use_vtMappingTF = rf.check("use_vtMappingTF",Value(0)).asBool();
     use_elbow       = rf.check("use_elbow",Value(0)).asBool();
+    root_dir        = rf.check("root_dir",Value("/home/pnguyen/icub-workspace/skeleton3D/")).asString().c_str();
+    yDebug("root_dir: %s", root_dir.c_str());
 
     if(robot == "icub")
         arm_version = 2.0;
@@ -986,8 +988,8 @@ bool    vtCalib::configure(ResourceFinder &rf)
     /********** vtMappingTF ***************/
     if (use_vtMappingTF)
     {
-        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "example", use_elbow);
-        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "example", use_elbow);
+        vtMapRight = new vtMappingTF(name,"right", root_dir, "layer3/activation", "example", use_elbow);
+        vtMapLeft = new vtMappingTF(name,"left", root_dir, "layer3/activation",  "example", use_elbow);
     }
 
     /********** OPC Client ***************/

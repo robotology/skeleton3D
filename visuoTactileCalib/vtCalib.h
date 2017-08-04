@@ -155,6 +155,7 @@ protected:
 
     bool                    use_vtMappingTF;                                 //!< boolean flag to enable/disable vtMapRight, vtMapLeft
     bool                    use_elbow;
+    string                  root_dir;
     vtMappingTF             *vtMapRight, *vtMapLeft;
 
     //********************************************
