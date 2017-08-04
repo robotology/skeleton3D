@@ -951,6 +951,7 @@ bool    vtCalib::configure(ResourceFinder &rf)
     stress = 0.0;
 
     use_vtMappingTF = rf.check("use_vtMappingTF",Value(0)).asBool();
+    use_elbow       = rf.check("use_elbow",Value(0)).asBool();
 
     if(robot == "icub")
         arm_version = 2.0;
@@ -985,8 +986,8 @@ bool    vtCalib::configure(ResourceFinder &rf)
     /********** vtMappingTF ***************/
     if (use_vtMappingTF)
     {
-        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "example", false);
-        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "example", false);
+        vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "example", use_elbow);
+        vtMapLeft = new vtMappingTF(name,"left", "layer3/activation", "example", use_elbow);
     }
 
     /********** OPC Client ***************/
@@ -1354,7 +1355,7 @@ bool    vtCalib::updateModule()
 //    if (event != NULL)
     if (inputEvents.size() != 0)
     {
-        yDebug("[%s] Got pps events!!!",name.c_str());
+//        yDebug("[%s] Got pps events!!!",name.c_str());
         // read the events
 //        for (int i = 0; i < event->size(); i++)
         for (int i = 0; i < inputEvents.size(); i++)
@@ -1541,7 +1542,7 @@ void vtCalib::sendContactsToSkinGui()
 
         if (incomingEvents.size()>0)
         {
-            yInfo("[%s] sendContactsToSkinGui: incomingEvents not empty!!!",name.c_str());
+//            yInfo("[%s] sendContactsToSkinGui: incomingEvents not empty!!!",name.c_str());
             for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++)
             {
                 if(iCubSkin[i].repr2TaxelList.empty())
@@ -1634,16 +1635,38 @@ bool vtCalib::projectIncomingEvents()
 
                 // Using vtMappingTF
 //                yInfo("[%s] ORIGIN event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
-                if (use_vtMappingTF && norm(evt.Pos)<=1.0 &&
-                        (evt.Pos==obtainPartFromOPC(partner,"handRight") || evt.Pos==obtainPartFromOPC(partner,"handLeft")))
+                if (use_vtMappingTF && norm(evt.Pos)<=1.0)
                 {
-                    yInfo("[%s] handRight pose: %s",name.c_str(),obtainPartFromOPC(partner,"handRight").toString(3,3).c_str());
-                    yInfo("[%s] handLeft pose: %s",name.c_str(),obtainPartFromOPC(partner,"handLeft").toString(3,3).c_str());
-                    yInfo("[%s] ORIGIN event position: %s",name.c_str(),(*it).Pos.toString(3,3).c_str());
-                    vtMapRight->setInput(evt.Pos);
-                    vtMapRight->computeMapping();
-                    vtMapRight->getOutput(evt.Pos);
-                    yInfo("[%s] MAPPED event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
+                    Vector hR(3,0.0),hL(3,0.0),eb(3,0.0);
+                    opc->checkout();
+                    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
+                    if (partner && partner->m_present==1.0)
+                    {
+                        hR = obtainPartFromOPC(partner,"handRight");
+                        hL = obtainPartFromOPC(partner,"handLeft");
+
+                        if (norm(evt.Pos-hR)<=0.001 || norm(evt.Pos-hL)<=0.001)
+                        {
+                            yInfo("[%s] handRight pose: %s",name.c_str(),hR.toString(3,3).c_str());
+                            yInfo("[%s] handLeft pose: %s",name.c_str(),hL.toString(3,3).c_str());
+                            yInfo("[%s] ORIGIN event position: %s",name.c_str(),(*it).Pos.toString(3,3).c_str());
+
+                            if (use_elbow)
+                            {
+                                if (norm(evt.Pos-hR)<=0.001)
+                                    eb = obtainPartFromOPC(partner,"elbowRight");
+                                else if (norm(evt.Pos-hL)<=0.001)
+                                    eb = obtainPartFromOPC(partner,"elbowLeft");
+                                yInfo("[%s] elbow pose: %s",name.c_str(),eb.toString(3,3).c_str());
+                                vtMapRight->setInput(evt.Pos,eb);
+                            }
+                            else
+                                vtMapRight->setInput(evt.Pos);
+                            vtMapRight->computeMapping();
+                            vtMapRight->getOutput(evt.Pos);
+                            yInfo("[%s] MAPPED event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
+                        }
+                    }
                 }
             }
             else
@@ -1701,11 +1724,11 @@ IncomingEvent4TaxelPWE vtCalib::projectIntoTaxelRF(const Matrix &RF,const Matrix
 
 bool vtCalib::computeResponse(double stress_modulation)
 {
-//    printMessage(4,"\n\n *** [vtRFThread::computeResponse] Taxel responses ***:\n");
-    yDebug("[%s] computeResponse",name.c_str());
+    printMessage(4,"\n\n *** [vtRFThread::computeResponse] Taxel responses ***:\n");
+//    yDebug("[%s] computeResponse",name.c_str());
     for (int i = 0; i < iCubSkinSize; i++)
     {
-//        printMessage(4,"\n ** %s ** \n",iCubSkin[i].name.c_str());
+        printMessage(4,"\n ** %s ** \n",iCubSkin[i].name.c_str());
         for (size_t j = 0; j < iCubSkin[i].taxels.size(); j++)
         {
             dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->computeResponse(stress_modulation);
