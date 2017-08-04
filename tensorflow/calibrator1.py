@@ -67,6 +67,11 @@ model_dir = './model/'
 checkpoint_prefix = os.path.join(train_dir, 'saved_checkpoint')
 graph_name = 'mapping_graph.pb'
 batch_size = 1
+use_elbow = True
+INITIAL_LEARNING_RATE = 0.1
+NUM_EPOCHS_PER_DECAY = 1000.0      # Epochs after which learning rate decays.
+LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
 
 reader_in = tf.TextLineReader()
 reader_out = tf.TextLineReader()
@@ -78,8 +83,10 @@ key_out, value_out = reader_out.read(filename_queue_out)
 record_defaults_in = [[1.], [1.], [1.], [1.], [1.], [1.]]
 col1, col2, col3, col4, col5, col6 = tf.decode_csv(
     value_in, record_defaults=record_defaults_in)
-# features = tf.stack([col1, col2, col3, col4, col5, col6], name='input_features')
-features = tf.stack([col1, col2, col3], name='input_features')
+if use_elbow:
+    features = tf.stack([col1, col2, col3, col4, col5, col6], name='input_features')
+else:
+    features = tf.stack([col1, col2, col3], name='input_features')
 record_defaults_out = [[1.], [1.], [1.]]
 col7, col8, col9 = tf.decode_csv(
     value_out, record_defaults=record_defaults_out)
@@ -101,8 +108,10 @@ example = tf.identity(example_batch, name='example')
 label = tf.identity(label_batch, name='label')
 
 # Model
-# layer1 = nn_layer(features, 6, 10, 'layer1')
-layer1 = nn_layer(example, 3, 10, 'layer1')
+if use_elbow:
+    layer1 = nn_layer(example, 6, 10, 'layer1')
+else:
+    layer1 = nn_layer(example, 3, 10, 'layer1')
 layer2 = nn_layer(layer1, 10, 10, 'layer2')
 layer3 = nn_layer(layer2, 10, 3, 'layer3', tf.identity)
 
@@ -112,13 +121,31 @@ with tf.name_scope('pred'):
     variable_summaries(pred)
 with tf.name_scope('loss'):
     squared_deltas = tf.square(label - pred)
-    loss = tf.reduce_sum(squared_deltas)
-    variable_summaries(loss)
+    # loss = tf.reduce_sum(squared_deltas)
+    loss = tf.reduce_mean(squared_deltas)
+    tf.summary.scalar('loss', loss)
+    # variable_summaries(loss)
+
+num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / batch_size
+# decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
+decay_steps = int(NUM_EPOCHS_PER_DECAY)
+
+global_step = tf.contrib.framework.get_or_create_global_step()
+# Decay the learning rate exponentially based on the number of steps.
+with tf.name_scope('learning_rate'):
+    lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
+                                    global_step,
+                                    decay_steps,
+                                    LEARNING_RATE_DECAY_FACTOR,
+                                    staircase=True)
+    tf.summary.scalar('rate', lr)
 
 summary_op = tf.summary.merge_all()
 saver = tf.train.Saver()
 
-train_op = tf.train.GradientDescentOptimizer(0.01).minimize(loss) # construct an optimizer to minimize cost and fit line to my data
+# train_op = tf.train.GradientDescentOptimizer(lr).minimize(loss, global_step) # construct an optimizer to minimize cost and fit line to my data
+# train_op = tf.train.AdamOptimizer(0.1).minimize(loss, global_step) # construct an optimizer to minimize cost and fit line to my data
+train_op = tf.train.AdadeltaOptimizer(0.1).minimize(loss, global_step) # construct an optimizer to minimize cost and fit line to my data
 sess = tf.Session()
 
 summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
@@ -144,11 +171,13 @@ if ckpt and ckpt.model_checkpoint_path:
 
 
 # Train
-for i in range(prev_step, 10001):
-    if i % 10 == 0:
+for global_step in range(prev_step, NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN+1):
+    if global_step % 10 == 0:
         summary_str, _ = sess.run([summary_op, train_op])
-        summary_writer.add_summary(summary_str, i)
-        saver.save(sess, checkpoint_prefix, global_step=i)
+        summary_writer.add_summary(summary_str, global_step)
+        saver.save(sess, checkpoint_prefix, global_step=global_step)
+        if global_step % 50 == 0:
+            print('step= {:d}: loss= {:0.6f}'.format(global_step, sess.run(loss)))
     else:
         sess.run(train_op)
 summary_writer.close()
@@ -161,8 +190,10 @@ coord.join(threads)
 
 x_test = np.array([-0.32063, 0.050248, 0.10134, -0.66542, 0.064199, 0.052125])
 elbow = x_test[3:]
-# y_test = sess.run(pred, feed_dict={features: x_test})
-y_test = sess.run(pred, feed_dict={features: x_test[:3]})
+if use_elbow:
+    y_test = sess.run(pred, feed_dict={features: x_test})
+else:
+    y_test = sess.run(pred, feed_dict={features: x_test[:3]})
 print('y_test= {:s}'.format(y_test))
 
 touch = y_test.reshape(3)

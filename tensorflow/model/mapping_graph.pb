@@ -922,10 +922,13 @@ node {
   input: "DecodeCSV"
   input: "DecodeCSV:1"
   input: "DecodeCSV:2"
+  input: "DecodeCSV:3"
+  input: "DecodeCSV:4"
+  input: "DecodeCSV:5"
   attr {
     key: "N"
     value {
-      i: 3
+      i: 6
     }
   }
   attr {
@@ -1131,7 +1134,7 @@ node {
       list {
         shape {
           dim {
-            size: 3
+            size: 6
           }
         }
         shape {
@@ -1598,7 +1601,7 @@ node {
             size: 2
           }
         }
-        tensor_content: "\001\000\000\000\003\000\000\000"
+        tensor_content: "\001\000\000\000\006\000\000\000"
       }
     }
   }
@@ -1640,7 +1643,7 @@ node {
             size: 2
           }
         }
-        tensor_content: "\003\000\000\000\n\000\000\000"
+        tensor_content: "\006\000\000\000\n\000\000\000"
       }
     }
   }
@@ -1760,7 +1763,7 @@ node {
     value {
       shape {
         dim {
-          size: 3
+          size: 6
         }
         dim {
           size: 10
@@ -6701,8 +6704,8 @@ node {
   }
 }
 node {
-  name: "loss/Sum"
-  op: "Sum"
+  name: "loss/Mean"
+  op: "Mean"
   input: "loss/Square"
   input: "loss/Const"
   attr {
@@ -6725,7 +6728,195 @@ node {
   }
 }
 node {
-  name: "loss/summaries/Const"
+  name: "loss/loss/tags"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+        }
+        string_val: "loss/loss"
+      }
+    }
+  }
+}
+node {
+  name: "loss/loss"
+  op: "ScalarSummary"
+  input: "loss/loss/tags"
+  input: "loss/Mean"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "global_step/Initializer/Const"
+  op: "Const"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@global_step"
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT64
+        tensor_shape {
+        }
+        int64_val: 0
+      }
+    }
+  }
+}
+node {
+  name: "global_step"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@global_step"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "global_step/Assign"
+  op: "Assign"
+  input: "global_step"
+  input: "global_step/Initializer/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@global_step"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "global_step/read"
+  op: "Identity"
+  input: "global_step"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@global_step"
+      }
+    }
+  }
+}
+node {
+  name: "learning_rate/ExponentialDecay/learning_rate"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.10000000149
+      }
+    }
+  }
+}
+node {
+  name: "learning_rate/ExponentialDecay/Cast"
+  op: "Cast"
+  input: "global_step/read"
+  attr {
+    key: "DstT"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "SrcT"
+    value {
+      type: DT_INT64
+    }
+  }
+}
+node {
+  name: "learning_rate/ExponentialDecay/Cast_1/x"
   op: "Const"
   attr {
     key: "dtype"
@@ -6739,39 +6930,99 @@ node {
       tensor {
         dtype: DT_INT32
         tensor_shape {
-          dim {
-          }
         }
+        int_val: 1000
       }
     }
   }
 }
 node {
-  name: "loss/summaries/Mean"
-  op: "Mean"
-  input: "loss/Sum"
-  input: "loss/summaries/Const"
+  name: "learning_rate/ExponentialDecay/Cast_1"
+  op: "Cast"
+  input: "learning_rate/ExponentialDecay/Cast_1/x"
+  attr {
+    key: "DstT"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "SrcT"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "learning_rate/ExponentialDecay/Cast_2/x"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.10000000149
+      }
+    }
+  }
+}
+node {
+  name: "learning_rate/ExponentialDecay/truediv"
+  op: "RealDiv"
+  input: "learning_rate/ExponentialDecay/Cast"
+  input: "learning_rate/ExponentialDecay/Cast_1"
   attr {
     key: "T"
     value {
       type: DT_FLOAT
     }
   }
+}
+node {
+  name: "learning_rate/ExponentialDecay/Floor"
+  op: "Floor"
+  input: "learning_rate/ExponentialDecay/truediv"
   attr {
-    key: "Tidx"
+    key: "T"
     value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
+      type: DT_FLOAT
     }
   }
 }
 node {
-  name: "loss/summaries/mean/tags"
+  name: "learning_rate/ExponentialDecay/Pow"
+  op: "Pow"
+  input: "learning_rate/ExponentialDecay/Cast_2/x"
+  input: "learning_rate/ExponentialDecay/Floor"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "learning_rate/ExponentialDecay"
+  op: "Mul"
+  input: "learning_rate/ExponentialDecay/learning_rate"
+  input: "learning_rate/ExponentialDecay/Pow"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "learning_rate/rate/tags"
   op: "Const"
   attr {
     key: "dtype"
@@ -6786,320 +7037,16 @@ node {
         dtype: DT_STRING
         tensor_shape {
         }
-        string_val: "loss/summaries/mean"
+        string_val: "learning_rate/rate"
       }
     }
   }
 }
 node {
-  name: "loss/summaries/mean"
+  name: "learning_rate/rate"
   op: "ScalarSummary"
-  input: "loss/summaries/mean/tags"
-  input: "loss/summaries/Mean"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev/sub"
-  op: "Sub"
-  input: "loss/Sum"
-  input: "loss/summaries/Mean"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev/Square"
-  op: "Square"
-  input: "loss/summaries/stddev/sub"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev/Const"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev/Mean"
-  op: "Mean"
-  input: "loss/summaries/stddev/Square"
-  input: "loss/summaries/stddev/Const"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev/Sqrt"
-  op: "Sqrt"
-  input: "loss/summaries/stddev/Mean"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev_1/tags"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-        }
-        string_val: "loss/summaries/stddev_1"
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/stddev_1"
-  op: "ScalarSummary"
-  input: "loss/summaries/stddev_1/tags"
-  input: "loss/summaries/stddev/Sqrt"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/Const_1"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/Max"
-  op: "Max"
-  input: "loss/Sum"
-  input: "loss/summaries/Const_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "loss/summaries/max/tags"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-        }
-        string_val: "loss/summaries/max"
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/max"
-  op: "ScalarSummary"
-  input: "loss/summaries/max/tags"
-  input: "loss/summaries/Max"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/Const_2"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-          }
-        }
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/Min"
-  op: "Min"
-  input: "loss/Sum"
-  input: "loss/summaries/Const_2"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "loss/summaries/min/tags"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-        }
-        string_val: "loss/summaries/min"
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/min"
-  op: "ScalarSummary"
-  input: "loss/summaries/min/tags"
-  input: "loss/summaries/Min"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "loss/summaries/histogram/tag"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-        }
-        string_val: "loss/summaries/histogram"
-      }
-    }
-  }
-}
-node {
-  name: "loss/summaries/histogram"
-  op: "HistogramSummary"
-  input: "loss/summaries/histogram/tag"
-  input: "loss/Sum"
+  input: "learning_rate/rate/tags"
+  input: "learning_rate/ExponentialDecay"
   attr {
     key: "T"
     value {
@@ -7154,15 +7101,12 @@ node {
   input: "pred/summaries/max"
   input: "pred/summaries/min"
   input: "pred/summaries/histogram"
-  input: "loss/summaries/mean"
-  input: "loss/summaries/stddev_1"
-  input: "loss/summaries/max"
-  input: "loss/summaries/min"
-  input: "loss/summaries/histogram"
+  input: "loss/loss"
+  input: "learning_rate/rate"
   attr {
     key: "N"
     value {
-      i: 49
+      i: 46
     }
   }
 }
@@ -7203,9 +7147,10 @@ node {
         dtype: DT_STRING
         tensor_shape {
           dim {
-            size: 6
+            size: 7
           }
         }
+        string_val: "global_step"
         string_val: "layer1/biases/Variable"
         string_val: "layer1/weights/Variable"
         string_val: "layer2/biases/Variable"
@@ -7232,9 +7177,10 @@ node {
         dtype: DT_STRING
         tensor_shape {
           dim {
-            size: 6
+            size: 7
           }
         }
+        string_val: ""
         string_val: ""
         string_val: ""
         string_val: ""
@@ -7251,6 +7197,7 @@ node {
   input: "save/Const"
   input: "save/SaveV2/tensor_names"
   input: "save/SaveV2/shape_and_slices"
+  input: "global_step"
   input: "layer1/biases/Variable"
   input: "layer1/weights/Variable"
   input: "layer2/biases/Variable"
@@ -7261,6 +7208,7 @@ node {
     key: "dtypes"
     value {
       list {
+        type: DT_INT64
         type: DT_FLOAT
         type: DT_FLOAT
         type: DT_FLOAT
@@ -7310,7 +7258,7 @@ node {
             size: 1
           }
         }
-        string_val: "layer1/biases/Variable"
+        string_val: "global_step"
       }
     }
   }
@@ -7349,7 +7297,7 @@ node {
     key: "dtypes"
     value {
       list {
-        type: DT_FLOAT
+        type: DT_INT64
       }
     }
   }
@@ -7357,19 +7305,19 @@ node {
 node {
   name: "save/Assign"
   op: "Assign"
-  input: "layer1/biases/Variable"
+  input: "global_step"
   input: "save/RestoreV2"
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
+      type: DT_INT64
     }
   }
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@layer1/biases/Variable"
+        s: "loc:@global_step"
       }
     }
   }
@@ -7405,7 +7353,7 @@ node {
             size: 1
           }
         }
-        string_val: "layer1/weights/Variable"
+        string_val: "layer1/biases/Variable"
       }
     }
   }
@@ -7452,7 +7400,7 @@ node {
 node {
   name: "save/Assign_1"
   op: "Assign"
-  input: "layer1/weights/Variable"
+  input: "layer1/biases/Variable"
   input: "save/RestoreV2_1"
   attr {
     key: "T"
@@ -7464,7 +7412,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@layer1/weights/Variable"
+        s: "loc:@layer1/biases/Variable"
       }
     }
   }
@@ -7500,7 +7448,7 @@ node {
             size: 1
           }
         }
-        string_val: "layer2/biases/Variable"
+        string_val: "layer1/weights/Variable"
       }
     }
   }
@@ -7547,7 +7495,7 @@ node {
 node {
   name: "save/Assign_2"
   op: "Assign"
-  input: "layer2/biases/Variable"
+  input: "layer1/weights/Variable"
   input: "save/RestoreV2_2"
   attr {
     key: "T"
@@ -7559,7 +7507,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@layer2/biases/Variable"
+        s: "loc:@layer1/weights/Variable"
       }
     }
   }
@@ -7595,7 +7543,7 @@ node {
             size: 1
           }
         }
-        string_val: "layer2/weights/Variable"
+        string_val: "layer2/biases/Variable"
       }
     }
   }
@@ -7642,7 +7590,7 @@ node {
 node {
   name: "save/Assign_3"
   op: "Assign"
-  input: "layer2/weights/Variable"
+  input: "layer2/biases/Variable"
   input: "save/RestoreV2_3"
   attr {
     key: "T"
@@ -7654,7 +7602,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@layer2/weights/Variable"
+        s: "loc:@layer2/biases/Variable"
       }
     }
   }
@@ -7690,7 +7638,7 @@ node {
             size: 1
           }
         }
-        string_val: "layer3/biases/Variable"
+        string_val: "layer2/weights/Variable"
       }
     }
   }
@@ -7737,7 +7685,7 @@ node {
 node {
   name: "save/Assign_4"
   op: "Assign"
-  input: "layer3/biases/Variable"
+  input: "layer2/weights/Variable"
   input: "save/RestoreV2_4"
   attr {
     key: "T"
@@ -7749,7 +7697,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@layer3/biases/Variable"
+        s: "loc:@layer2/weights/Variable"
       }
     }
   }
@@ -7785,7 +7733,7 @@ node {
             size: 1
           }
         }
-        string_val: "layer3/weights/Variable"
+        string_val: "layer3/biases/Variable"
       }
     }
   }
@@ -7832,8 +7780,103 @@ node {
 node {
   name: "save/Assign_5"
   op: "Assign"
-  input: "layer3/weights/Variable"
+  input: "layer3/biases/Variable"
   input: "save/RestoreV2_5"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "save/RestoreV2_6/tensor_names"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        string_val: "layer3/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "save/RestoreV2_6/shape_and_slices"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_STRING
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_STRING
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        string_val: ""
+      }
+    }
+  }
+}
+node {
+  name: "save/RestoreV2_6"
+  op: "RestoreV2"
+  input: "save/Const"
+  input: "save/RestoreV2_6/tensor_names"
+  input: "save/RestoreV2_6/shape_and_slices"
+  attr {
+    key: "dtypes"
+    value {
+      list {
+        type: DT_FLOAT
+      }
+    }
+  }
+}
+node {
+  name: "save/Assign_6"
+  op: "Assign"
+  input: "layer3/weights/Variable"
+  input: "save/RestoreV2_6"
   attr {
     key: "T"
     value {
@@ -7870,6 +7913,7 @@ node {
   input: "^save/Assign_3"
   input: "^save/Assign_4"
   input: "^save/Assign_5"
+  input: "^save/Assign_6"
 }
 node {
   name: "gradients/Shape"
@@ -7927,7 +7971,7 @@ node {
   }
 }
 node {
-  name: "gradients/loss/Sum_grad/Reshape/shape"
+  name: "gradients/loss/Mean_grad/Reshape/shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -7951,10 +7995,10 @@ node {
   }
 }
 node {
-  name: "gradients/loss/Sum_grad/Reshape"
+  name: "gradients/loss/Mean_grad/Reshape"
   op: "Reshape"
   input: "gradients/Fill"
-  input: "gradients/loss/Sum_grad/Reshape/shape"
+  input: "gradients/loss/Mean_grad/Reshape/shape"
   attr {
     key: "T"
     value {
@@ -7969,7 +8013,7 @@ node {
   }
 }
 node {
-  name: "gradients/loss/Sum_grad/Tile/multiples"
+  name: "gradients/loss/Mean_grad/Tile/multiples"
   op: "Const"
   attr {
     key: "dtype"
@@ -7993,10 +8037,10 @@ node {
   }
 }
 node {
-  name: "gradients/loss/Sum_grad/Tile"
+  name: "gradients/loss/Mean_grad/Tile"
   op: "Tile"
-  input: "gradients/loss/Sum_grad/Reshape"
-  input: "gradients/loss/Sum_grad/Tile/multiples"
+  input: "gradients/loss/Mean_grad/Reshape"
+  input: "gradients/loss/Mean_grad/Tile/multiples"
   attr {
     key: "T"
     value {
@@ -8011,9 +8055,225 @@ node {
   }
 }
 node {
+  name: "gradients/loss/Mean_grad/Shape"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 2
+          }
+        }
+        tensor_content: "\001\000\000\000\003\000\000\000"
+      }
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Shape_1"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+          }
+        }
+      }
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 0
+      }
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Prod"
+  op: "Prod"
+  input: "gradients/loss/Mean_grad/Shape"
+  input: "gradients/loss/Mean_grad/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Const_1"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 1
+          }
+        }
+        int_val: 0
+      }
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Prod_1"
+  op: "Prod"
+  input: "gradients/loss/Mean_grad/Shape_1"
+  input: "gradients/loss/Mean_grad/Const_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "Tidx"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "keep_dims"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Maximum/y"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Maximum"
+  op: "Maximum"
+  input: "gradients/loss/Mean_grad/Prod_1"
+  input: "gradients/loss/Mean_grad/Maximum/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/floordiv"
+  op: "FloorDiv"
+  input: "gradients/loss/Mean_grad/Prod"
+  input: "gradients/loss/Mean_grad/Maximum"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/Cast"
+  op: "Cast"
+  input: "gradients/loss/Mean_grad/floordiv"
+  attr {
+    key: "DstT"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "SrcT"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "gradients/loss/Mean_grad/truediv"
+  op: "RealDiv"
+  input: "gradients/loss/Mean_grad/Tile"
+  input: "gradients/loss/Mean_grad/Cast"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
   name: "gradients/loss/Square_grad/mul/x"
   op: "Const"
-  input: "^gradients/loss/Sum_grad/Tile"
+  input: "^gradients/loss/Mean_grad/truediv"
   attr {
     key: "dtype"
     value {
@@ -8047,7 +8307,7 @@ node {
 node {
   name: "gradients/loss/Square_grad/mul_1"
   op: "Mul"
-  input: "gradients/loss/Sum_grad/Tile"
+  input: "gradients/loss/Mean_grad/truediv"
   input: "gradients/loss/Square_grad/mul"
   attr {
     key: "T"
@@ -9218,7 +9478,1423 @@ node {
   }
 }
 node {
-  name: "GradientDescent/learning_rate"
+  name: "zeros"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 6
+          }
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer1/weights/Variable/Adadelta"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 6
+        }
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer1/weights/Variable/Adadelta/Assign"
+  op: "Assign"
+  input: "layer1/weights/Variable/Adadelta"
+  input: "zeros"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer1/weights/Variable/Adadelta/read"
+  op: "Identity"
+  input: "layer1/weights/Variable/Adadelta"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_1"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 6
+          }
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer1/weights/Variable/Adadelta_1"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 6
+        }
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer1/weights/Variable/Adadelta_1/Assign"
+  op: "Assign"
+  input: "layer1/weights/Variable/Adadelta_1"
+  input: "zeros_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer1/weights/Variable/Adadelta_1/read"
+  op: "Identity"
+  input: "layer1/weights/Variable/Adadelta_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_2"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer1/biases/Variable/Adadelta"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer1/biases/Variable/Adadelta/Assign"
+  op: "Assign"
+  input: "layer1/biases/Variable/Adadelta"
+  input: "zeros_2"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer1/biases/Variable/Adadelta/read"
+  op: "Identity"
+  input: "layer1/biases/Variable/Adadelta"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/biases/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_3"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer1/biases/Variable/Adadelta_1"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer1/biases/Variable/Adadelta_1/Assign"
+  op: "Assign"
+  input: "layer1/biases/Variable/Adadelta_1"
+  input: "zeros_3"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer1/biases/Variable/Adadelta_1/read"
+  op: "Identity"
+  input: "layer1/biases/Variable/Adadelta_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer1/biases/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_4"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer2/weights/Variable/Adadelta"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer2/weights/Variable/Adadelta/Assign"
+  op: "Assign"
+  input: "layer2/weights/Variable/Adadelta"
+  input: "zeros_4"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer2/weights/Variable/Adadelta/read"
+  op: "Identity"
+  input: "layer2/weights/Variable/Adadelta"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_5"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer2/weights/Variable/Adadelta_1"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer2/weights/Variable/Adadelta_1/Assign"
+  op: "Assign"
+  input: "layer2/weights/Variable/Adadelta_1"
+  input: "zeros_5"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer2/weights/Variable/Adadelta_1/read"
+  op: "Identity"
+  input: "layer2/weights/Variable/Adadelta_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_6"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer2/biases/Variable/Adadelta"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer2/biases/Variable/Adadelta/Assign"
+  op: "Assign"
+  input: "layer2/biases/Variable/Adadelta"
+  input: "zeros_6"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer2/biases/Variable/Adadelta/read"
+  op: "Identity"
+  input: "layer2/biases/Variable/Adadelta"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/biases/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_7"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer2/biases/Variable/Adadelta_1"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer2/biases/Variable/Adadelta_1/Assign"
+  op: "Assign"
+  input: "layer2/biases/Variable/Adadelta_1"
+  input: "zeros_7"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer2/biases/Variable/Adadelta_1/read"
+  op: "Identity"
+  input: "layer2/biases/Variable/Adadelta_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer2/biases/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_8"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+          dim {
+            size: 3
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer3/weights/Variable/Adadelta"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+        dim {
+          size: 3
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer3/weights/Variable/Adadelta/Assign"
+  op: "Assign"
+  input: "layer3/weights/Variable/Adadelta"
+  input: "zeros_8"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer3/weights/Variable/Adadelta/read"
+  op: "Identity"
+  input: "layer3/weights/Variable/Adadelta"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_9"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+          dim {
+            size: 3
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer3/weights/Variable/Adadelta_1"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+        dim {
+          size: 3
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer3/weights/Variable/Adadelta_1/Assign"
+  op: "Assign"
+  input: "layer3/weights/Variable/Adadelta_1"
+  input: "zeros_9"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/weights/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer3/weights/Variable/Adadelta_1/read"
+  op: "Identity"
+  input: "layer3/weights/Variable/Adadelta_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/weights/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_10"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 3
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer3/biases/Variable/Adadelta"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 3
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer3/biases/Variable/Adadelta/Assign"
+  op: "Assign"
+  input: "layer3/biases/Variable/Adadelta"
+  input: "zeros_10"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer3/biases/Variable/Adadelta/read"
+  op: "Identity"
+  input: "layer3/biases/Variable/Adadelta"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "zeros_11"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 3
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "layer3/biases/Variable/Adadelta_1"
+  op: "VariableV2"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 3
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "layer3/biases/Variable/Adadelta_1/Assign"
+  op: "Assign"
+  input: "layer3/biases/Variable/Adadelta_1"
+  input: "zeros_11"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "layer3/biases/Variable/Adadelta_1/read"
+  op: "Identity"
+  input: "layer3/biases/Variable/Adadelta_1"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@layer3/biases/Variable"
+      }
+    }
+  }
+}
+node {
+  name: "Adadelta/lr"
   op: "Const"
   attr {
     key: "dtype"
@@ -9233,16 +10909,62 @@ node {
         dtype: DT_FLOAT
         tensor_shape {
         }
-        float_val: 0.00999999977648
+        float_val: 0.10000000149
       }
     }
   }
 }
 node {
-  name: "GradientDescent/update_layer1/weights/Variable/ApplyGradientDescent"
-  op: "ApplyGradientDescent"
+  name: "Adadelta/rho"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.949999988079
+      }
+    }
+  }
+}
+node {
+  name: "Adadelta/epsilon"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 9.99999993923e-09
+      }
+    }
+  }
+}
+node {
+  name: "Adadelta/update_layer1/weights/Variable/ApplyAdadelta"
+  op: "ApplyAdadelta"
   input: "layer1/weights/Variable"
-  input: "GradientDescent/learning_rate"
+  input: "layer1/weights/Variable/Adadelta"
+  input: "layer1/weights/Variable/Adadelta_1"
+  input: "Adadelta/lr"
+  input: "Adadelta/rho"
+  input: "Adadelta/epsilon"
   input: "gradients/layer1/Wx_plus_b/MatMul_grad/tuple/control_dependency_1"
   attr {
     key: "T"
@@ -9266,10 +10988,14 @@ node {
   }
 }
 node {
-  name: "GradientDescent/update_layer1/biases/Variable/ApplyGradientDescent"
-  op: "ApplyGradientDescent"
+  name: "Adadelta/update_layer1/biases/Variable/ApplyAdadelta"
+  op: "ApplyAdadelta"
   input: "layer1/biases/Variable"
-  input: "GradientDescent/learning_rate"
+  input: "layer1/biases/Variable/Adadelta"
+  input: "layer1/biases/Variable/Adadelta_1"
+  input: "Adadelta/lr"
+  input: "Adadelta/rho"
+  input: "Adadelta/epsilon"
   input: "gradients/layer1/Wx_plus_b/add_grad/tuple/control_dependency_1"
   attr {
     key: "T"
@@ -9293,10 +11019,14 @@ node {
   }
 }
 node {
-  name: "GradientDescent/update_layer2/weights/Variable/ApplyGradientDescent"
-  op: "ApplyGradientDescent"
+  name: "Adadelta/update_layer2/weights/Variable/ApplyAdadelta"
+  op: "ApplyAdadelta"
   input: "layer2/weights/Variable"
-  input: "GradientDescent/learning_rate"
+  input: "layer2/weights/Variable/Adadelta"
+  input: "layer2/weights/Variable/Adadelta_1"
+  input: "Adadelta/lr"
+  input: "Adadelta/rho"
+  input: "Adadelta/epsilon"
   input: "gradients/layer2/Wx_plus_b/MatMul_grad/tuple/control_dependency_1"
   attr {
     key: "T"
@@ -9320,10 +11050,14 @@ node {
   }
 }
 node {
-  name: "GradientDescent/update_layer2/biases/Variable/ApplyGradientDescent"
-  op: "ApplyGradientDescent"
+  name: "Adadelta/update_layer2/biases/Variable/ApplyAdadelta"
+  op: "ApplyAdadelta"
   input: "layer2/biases/Variable"
-  input: "GradientDescent/learning_rate"
+  input: "layer2/biases/Variable/Adadelta"
+  input: "layer2/biases/Variable/Adadelta_1"
+  input: "Adadelta/lr"
+  input: "Adadelta/rho"
+  input: "Adadelta/epsilon"
   input: "gradients/layer2/Wx_plus_b/add_grad/tuple/control_dependency_1"
   attr {
     key: "T"
@@ -9347,10 +11081,14 @@ node {
   }
 }
 node {
-  name: "GradientDescent/update_layer3/weights/Variable/ApplyGradientDescent"
-  op: "ApplyGradientDescent"
+  name: "Adadelta/update_layer3/weights/Variable/ApplyAdadelta"
+  op: "ApplyAdadelta"
   input: "layer3/weights/Variable"
-  input: "GradientDescent/learning_rate"
+  input: "layer3/weights/Variable/Adadelta"
+  input: "layer3/weights/Variable/Adadelta_1"
+  input: "Adadelta/lr"
+  input: "Adadelta/rho"
+  input: "Adadelta/epsilon"
   input: "gradients/layer3/Wx_plus_b/MatMul_grad/tuple/control_dependency_1"
   attr {
     key: "T"
@@ -9374,10 +11112,14 @@ node {
   }
 }
 node {
-  name: "GradientDescent/update_layer3/biases/Variable/ApplyGradientDescent"
-  op: "ApplyGradientDescent"
+  name: "Adadelta/update_layer3/biases/Variable/ApplyAdadelta"
+  op: "ApplyAdadelta"
   input: "layer3/biases/Variable"
-  input: "GradientDescent/learning_rate"
+  input: "layer3/biases/Variable/Adadelta"
+  input: "layer3/biases/Variable/Adadelta_1"
+  input: "Adadelta/lr"
+  input: "Adadelta/rho"
+  input: "Adadelta/epsilon"
   input: "gradients/layer3/Wx_plus_b/add_grad/tuple/control_dependency_1"
   attr {
     key: "T"
@@ -9401,14 +11143,70 @@ node {
   }
 }
 node {
-  name: "GradientDescent"
+  name: "Adadelta/update"
   op: "NoOp"
-  input: "^GradientDescent/update_layer1/weights/Variable/ApplyGradientDescent"
-  input: "^GradientDescent/update_layer1/biases/Variable/ApplyGradientDescent"
-  input: "^GradientDescent/update_layer2/weights/Variable/ApplyGradientDescent"
-  input: "^GradientDescent/update_layer2/biases/Variable/ApplyGradientDescent"
-  input: "^GradientDescent/update_layer3/weights/Variable/ApplyGradientDescent"
-  input: "^GradientDescent/update_layer3/biases/Variable/ApplyGradientDescent"
+  input: "^Adadelta/update_layer1/weights/Variable/ApplyAdadelta"
+  input: "^Adadelta/update_layer1/biases/Variable/ApplyAdadelta"
+  input: "^Adadelta/update_layer2/weights/Variable/ApplyAdadelta"
+  input: "^Adadelta/update_layer2/biases/Variable/ApplyAdadelta"
+  input: "^Adadelta/update_layer3/weights/Variable/ApplyAdadelta"
+  input: "^Adadelta/update_layer3/biases/Variable/ApplyAdadelta"
+}
+node {
+  name: "Adadelta/value"
+  op: "Const"
+  input: "^Adadelta/update"
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@global_step"
+      }
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT64
+        tensor_shape {
+        }
+        int64_val: 1
+      }
+    }
+  }
+}
+node {
+  name: "Adadelta"
+  op: "AssignAdd"
+  input: "global_step"
+  input: "Adadelta/value"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT64
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@global_step"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: false
+    }
+  }
 }
 node {
   name: "init"
@@ -9419,6 +11217,19 @@ node {
   input: "^layer2/biases/Variable/Assign"
   input: "^layer3/weights/Variable/Assign"
   input: "^layer3/biases/Variable/Assign"
+  input: "^global_step/Assign"
+  input: "^layer1/weights/Variable/Adadelta/Assign"
+  input: "^layer1/weights/Variable/Adadelta_1/Assign"
+  input: "^layer1/biases/Variable/Adadelta/Assign"
+  input: "^layer1/biases/Variable/Adadelta_1/Assign"
+  input: "^layer2/weights/Variable/Adadelta/Assign"
+  input: "^layer2/weights/Variable/Adadelta_1/Assign"
+  input: "^layer2/biases/Variable/Adadelta/Assign"
+  input: "^layer2/biases/Variable/Adadelta_1/Assign"
+  input: "^layer3/weights/Variable/Adadelta/Assign"
+  input: "^layer3/weights/Variable/Adadelta_1/Assign"
+  input: "^layer3/biases/Variable/Adadelta/Assign"
+  input: "^layer3/biases/Variable/Adadelta_1/Assign"
 }
 versions {
   producer: 21
