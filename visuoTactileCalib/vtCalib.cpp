@@ -944,7 +944,7 @@ bool    vtCalib::configure(ResourceFinder &rf)
     name        =rf.check("name",Value("visuoTactileCalib")).asString().c_str();
     robot       =rf.check("robot",Value("icub")).asString().c_str();
     period      =rf.check("period",Value(0.0)).asDouble();
-    modality    =rf.check("name",Value("1D")).asString().c_str();
+    modality    =rf.check("modality",Value("1D")).asString().c_str();
 
     verbosity = 0;
 
