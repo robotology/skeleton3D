@@ -112,20 +112,65 @@ touchPartPose(idx_out,:) = [];
 elbowPose(idx_out,:) = [];
 contactPts(idx_out,:) = [];
 
-touchPartPose(idx_out(1),:)
+touchPartPose(idx_out(1),:);
 
-%% Move the touchPartPose closer to contactPts by the bounding radius
 touchPts = touchPartPose + v*radius./dist;
 
-inMatrix = [touchPts, elbowPose]
+%% Move the touchPartPose closer to contactPts by the bounding radius
+inMatrix = [touchPts, elbowPose];
 csvwrite('inMatrix.csv',inMatrix)
 csvwrite('refMatrix.csv',contactPts)
 
+%% Make dataset more balance in term of number of samples
+rng default
+k = 10;
+[idCluster, C] = kmeans(contactPts,k);
+
+% figure;
+minSz = length(contactPts);
+for id=1:k
+    szCluster = length(find(idCluster==id));
+    fprintf('cluster %2d:\t %4d samples,\t has centroid at [%s] \n',id,szCluster,num2str(C(id,:),4))
+%     contactPts_clustered[;:] = contactPts(idx==1,:);
+    if (szCluster < minSz)
+        minSz = szCluster;
+    end
+end
+minSz
+inMatrix_balanced = [];
+refMatrix_balanced = [];
+
+for id = 1:k
+    contactPts_clustered = contactPts(idCluster==id,:);
+    [y_sampled, id_sample] = datasample(contactPts_clustered,minSz);
+    inMatrix_clustered = inMatrix(idCluster==id,:);
+    x_sampled = inMatrix_clustered(id_sample,:);
+    
+    refMatrix_balanced = [refMatrix_balanced;y_sampled];
+    inMatrix_balanced = [inMatrix_balanced;x_sampled];
+    
+end
+    
+csvwrite('inMatrix_balanced.csv',inMatrix_balanced)
+csvwrite('refMatrix_balanced.csv',refMatrix_balanced)
+% 
+% [idCluster_, C_] = kmeans(refMatrix_balanced,k);
+% 
+% minSz = length(refMatrix_balanced);
+% for id=1:k
+%     szCluster = length(find(idCluster_==id));
+%     fprintf('cluster %2d:\t %4d samples,\t has centroid at [%s] \n',id,szCluster,num2str(C_(id,:),4))
+% %     contactPts_clustered[;:] = contactPts(idx==1,:);
+%     if (szCluster < minSz)
+%         minSz = szCluster;
+%     end
+% end
+
 %% Cluster the contact points
 
-[idx0,idx1] = cluster_3d_points(contactPts, 0.15);
-contactPts0 = contactPts(idx0,:);   touchPartPose0 = touchPartPose(idx0,:);
-contactPts1 = contactPts(idx1,:);   touchPartPose1 = touchPartPose(idx1,:);
+% [idx0,idx1] = cluster_3d_points(contactPts, 0.15);
+% contactPts0 = contactPts(idx0,:);   touchPartPose0 = touchPartPose(idx0,:);
+% contactPts1 = contactPts(idx1,:);   touchPartPose1 = touchPartPose(idx1,:);
 
 % [idx1,idx2] = cluster_3d_points(contactPts1, 0.01);
 % contactPts1 = contactPts(idx1,:);   touchPartPose1 = touchPartPose(idx1,:);
