@@ -59,8 +59,8 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
         tf.summary.histogram('activations', activations)
         return activations
 
-filename_queue_in  = tf.train.string_input_producer(["../matlab/inMatrix.csv"])
-filename_queue_out = tf.train.string_input_producer(["../matlab/refMatrix.csv"])
+filename_queue_in  = tf.train.string_input_producer(["../matlab/inMatrix_balanced.csv"])
+filename_queue_out = tf.train.string_input_producer(["../matlab/refMatrix_balanced.csv"])
 
 train_dir = './log/'
 model_dir = './model/'
@@ -69,9 +69,9 @@ graph_name = 'mapping_graph.pb'
 batch_size = 1
 use_elbow = True
 INITIAL_LEARNING_RATE = 0.1
-NUM_EPOCHS_PER_DECAY = 1000.0      # Epochs after which learning rate decays.
+NUM_EPOCHS_PER_DECAY = 500.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 3500
 
 reader_in = tf.TextLineReader()
 reader_out = tf.TextLineReader()

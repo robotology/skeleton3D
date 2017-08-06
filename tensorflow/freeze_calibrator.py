@@ -29,14 +29,14 @@ output_graph_name = "output_graph.pb"
 input_graph_path = os.path.join(model_dir, input_graph_name)
 input_saver_def_path = ""
 input_binary = False
-input_checkpoint_path = os.path.join(train_dir, 'saved_checkpoint') + "-10000"
+input_checkpoint_path = os.path.join(train_dir, 'saved_checkpoint') + "-3500"
 
 # Note that we this normally should be only "output_node"!!!
 output_node_names = "layer3/activation"
 restore_op_name = "save/restore_all"
 filename_tensor_name = "save/Const:0"
 output_graph_path = os.path.join(model_dir, output_graph_name)
-clear_devices = False
+clear_devices = True
 
 freeze_graph.freeze_graph(input_graph_path, input_saver_def_path,
                           input_binary, input_checkpoint_path,
