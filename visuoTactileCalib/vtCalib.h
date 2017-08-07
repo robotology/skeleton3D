@@ -156,6 +156,7 @@ protected:
     bool                    use_vtMappingTF;                                 //!< boolean flag to enable/disable vtMapRight, vtMapLeft
     bool                    use_elbow;
     string                  root_dir;
+    double                  conf_thres;                                      //!< part confident threshold to use vtMappingTF
     vtMappingTF             *vtMapRight, *vtMapLeft;
 
     //********************************************

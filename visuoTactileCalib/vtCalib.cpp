@@ -952,6 +952,7 @@ bool    vtCalib::configure(ResourceFinder &rf)
 
     use_vtMappingTF = rf.check("use_vtMappingTF",Value(0)).asBool();
     use_elbow       = rf.check("use_elbow",Value(0)).asBool();
+    conf_thres      = rf.check("conf_thres",Value(0.5)).asDouble();
     root_dir        = rf.check("root_dir",Value("/home/pnguyen/icub-workspace/skeleton3D/")).asString().c_str();
     yDebug("root_dir: %s", root_dir.c_str());
 
@@ -1640,7 +1641,7 @@ bool vtCalib::projectIncomingEvents()
                 double conf = 2.0 - (evt.Threat+1.0)/1.0;
                 yInfo("[%s] threat: %0.3f, conf: %0.3f",name.c_str(), evt.Threat, conf);
 
-                if (use_vtMappingTF && norm(evt.Pos)<=0.7 && conf<=0.5)
+                if (use_vtMappingTF && norm(evt.Pos)<=0.7 && conf<=conf_thres)
                 {
                     Vector hR(3,0.0),hL(3,0.0),eb(3,0.0);
                     opc->checkout();
