@@ -1369,7 +1369,7 @@ bool    vtCalib::updateModule()
     }
     if (incomingEvents.size()>0)
     {
-        yDebug("[%s] Project pps events onto taxels FoR!!!",name.c_str());
+//        yDebug("[%s] Project pps events onto taxels FoR!!!",name.c_str());
         projectIncomingEvents();     // project event onto the taxels' FoR and add them to taxels' representation
         // only if event lies inside taxel's RF
 
@@ -1637,7 +1637,10 @@ bool vtCalib::projectIncomingEvents()
 
                 // Using vtMappingTF
 //                yInfo("[%s] ORIGIN event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
-                if (use_vtMappingTF && norm(evt.Pos)<=1.0)
+                double conf = 2.0 - (evt.Threat+1.0)/1.0;
+                yInfo("[%s] threat: %0.3f, conf: %0.3f",name.c_str(), evt.Threat, conf);
+
+                if (use_vtMappingTF && norm(evt.Pos)<=0.7 && conf<=0.5)
                 {
                     Vector hR(3,0.0),hL(3,0.0),eb(3,0.0);
                     opc->checkout();
