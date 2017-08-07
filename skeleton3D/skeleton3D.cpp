@@ -344,7 +344,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
-    part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
+    part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
     use_fake_hand = rf.check("use_fake_hand",Value(0)).asBool();
