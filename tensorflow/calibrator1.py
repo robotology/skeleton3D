@@ -71,7 +71,7 @@ use_elbow = True
 INITIAL_LEARNING_RATE = 0.1
 NUM_EPOCHS_PER_DECAY = 500.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 3500
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 5000
 
 reader_in = tf.TextLineReader()
 reader_out = tf.TextLineReader()
