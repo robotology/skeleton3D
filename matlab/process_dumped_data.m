@@ -117,7 +117,8 @@ touchPartPose(idx_out(1),:);
 touchPts = touchPartPose + v*radius./dist;
 
 %% Move the touchPartPose closer to contactPts by the bounding radius
-inMatrix = [touchPts, elbowPose];
+% inMatrix = [touchPts, elbowPose];
+inMatrix = [touchPartPose, elbowPose];
 csvwrite('inMatrix.csv',inMatrix)
 csvwrite('refMatrix.csv',contactPts)
 
