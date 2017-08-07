@@ -122,9 +122,25 @@ csvwrite('inMatrix.csv',inMatrix)
 csvwrite('refMatrix.csv',contactPts)
 
 %% Make dataset more balance in term of number of samples
-rng default
-k = 10;
-[idCluster, C] = kmeans(contactPts,k);
+% rng('default')
+
+% Evaluate k para of kmeans method by visualization
+sumD = [];
+
+K = 1:30;
+for k=K
+    [id_cluster, C_, sumd_] = kmeans(contactPts,k);
+    sumD = [sumD; sum(sumd_)];
+end
+
+figure;
+plot(K,sumD,'*--')
+
+% Evaluate k para of kmeans method by Matlab support method
+eva = evalclusters(contactPts,'kmeans','DaviesBouldin','KList',K)
+
+k = 6;
+[idCluster, C, sumd] = kmeans(contactPts,k);
 
 % figure;
 minSz = length(contactPts);
