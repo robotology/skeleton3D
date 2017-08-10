@@ -20,7 +20,7 @@ struct Vector {
 service skeleton3D_IDL
 {
   /**
-  * Sets body valence (thread).
+  * Sets body valence (threat).
   * @param _valence thread value for all body parts.
   * @return true/false on success/failure.
   */
