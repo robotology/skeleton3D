@@ -123,7 +123,7 @@ csvwrite('inMatrix.csv',inMatrix)
 csvwrite('refMatrix.csv',contactPts)
 
 %% Make dataset more balance in term of number of samples
-% rng('default')
+rng('default')
 
 % Evaluate k para of kmeans method by visualization
 sumD = [];
@@ -167,7 +167,13 @@ for id = 1:k
     inMatrix_balanced = [inMatrix_balanced;x_sampled];
     
 end
-    
+
+% shuffle the exported matrix before write as csv files
+rng('shuffle')
+n = length(refMatrix_balanced);
+refMatrix_balanced = refMatrix_balanced(randperm(n),:);
+inMatrix_balanced = inMatrix_balanced(randperm(n),:);
+
 csvwrite('inMatrix_balanced.csv',inMatrix_balanced)
 csvwrite('refMatrix_balanced.csv',refMatrix_balanced)
 % 
