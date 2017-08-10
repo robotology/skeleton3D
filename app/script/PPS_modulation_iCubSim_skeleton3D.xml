@@ -38,6 +38,13 @@
         <node>localhost</node>
     </module>
 
+    <module>
+        <name>yetAnotherAvoidance</name>
+        <parameters>--robot icubSim --stiff 0</parameters>
+        <node>localhost</node>
+        <tag>avoidance</tag>
+    </module>
+
     <!--OPC and related modules-->
     <module>
         <name>objectsPropertiesCollector</name>
@@ -199,7 +206,19 @@
        <to>/reactController/pps_events_aggreg:i</to>
        <protocol>udp</protocol>
     </connection>
+    
+    <connection>
+       <from>/visuoTactileRF/pps_events_aggreg:o</from>
+       <to>/yetAnotherAvoidance/data:i</to>
+       <protocol>udp</protocol>
+    </connection>
 
+    <connection>
+       <from>/visuoTactileCalib/pps_events_aggreg:o</from>
+       <to>/yetAnotherAvoidance/data:i</to>
+       <protocol>udp</protocol>
+    </connection>
+    
     <connection>
         <from>/ppsAggregEventsForiCubGui/contacts:o</from>
         <to>/iCubGui/forces</to>
