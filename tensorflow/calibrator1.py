@@ -35,14 +35,14 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 
-def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.relu):
+def nn_layer(input_tensor, input_dim, output_dim, layer_name, batch_size=1, act=tf.nn.relu):
     """Reusable code for making a simple neural net layer.
 
     It does a matrix multiply, bias add, and then uses relu to nonlinearize.
     It also sets up name scoping so that the resultant graph is easy to read,
     and adds a number of summary ops.
     """
-    input_tensor = tf.reshape(tensor=input_tensor, shape=[1, input_dim], name='input')
+    input_tensor = tf.reshape(tensor=input_tensor, shape=[batch_size, input_dim], name='input')
     # Adding a name scope ensures logical grouping of the layers in the graph.
     with tf.name_scope(layer_name):
         # This Variable will hold the state of the weights for the layer
@@ -93,7 +93,7 @@ col7, col8, col9 = tf.decode_csv(
 ref = tf.stack([col7, col8, col9])
 col1_shape = col1.get_shape()
 
-min_after_dequeue = 15000
+min_after_dequeue = 5000
 capacity = min_after_dequeue + 3 * batch_size
 example_batch, label_batch = tf.train.shuffle_batch(
     [features, ref], batch_size=batch_size, capacity=capacity,
@@ -109,11 +109,11 @@ label = tf.identity(label_batch, name='label')
 
 # Model
 if use_elbow:
-    layer1 = nn_layer(example, 6, 10, 'layer1')
+    layer1 = nn_layer(example, 6, 10, 'layer1', batch_size)
 else:
-    layer1 = nn_layer(example, 3, 10, 'layer1')
-layer2 = nn_layer(layer1, 10, 10, 'layer2')
-layer3 = nn_layer(layer2, 10, 3, 'layer3', tf.identity)
+    layer1 = nn_layer(example, 3, 10, 'layer1', batch_size)
+layer2 = nn_layer(layer1, 10, 10, 'layer2', batch_size)
+layer3 = nn_layer(layer2, 10, 3, 'layer3', batch_size, tf.identity)
 
 # layer1 = nn_layer(features, 6, 3, 'layer1')
 with tf.name_scope('pred'):
@@ -127,6 +127,7 @@ with tf.name_scope('loss'):
     # variable_summaries(loss)
 
 num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / batch_size
+print ('num_batches_per_epoch {:0.2f}'.format(num_batches_per_epoch))
 # decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
 decay_steps = int(NUM_EPOCHS_PER_DECAY)
 
@@ -171,7 +172,7 @@ if ckpt and ckpt.model_checkpoint_path:
 
 
 # Train
-for global_step in range(prev_step, NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN+1):
+for global_step in range(prev_step, num_batches_per_epoch+1):
     if global_step % 10 == 0:
         summary_str, _ = sess.run([summary_op, train_op])
         summary_writer.add_summary(summary_str, global_step)
@@ -196,15 +197,15 @@ else:
     y_test = sess.run(pred, feed_dict={features: x_test[:3]})
 print('y_test= {:s}'.format(y_test))
 
-touch = y_test.reshape(3)
-
-print('elbow= {:s}'.format(elbow))
-print('touch= {:s}'.format(touch))
-
-v = elbow-touch
-hand = touch + v*0.035/np.linalg.norm(v)
-print('v= {:s}'.format(v))
-print('length= {:0.3f}'.format(np.linalg.norm(v)))
-print('hand= {:s}'.format(hand))
+# touch = y_test.reshape(3)
+#
+# print('elbow= {:s}'.format(elbow))
+# print('touch= {:s}'.format(touch))
+#
+# v = elbow-touch
+# hand = touch + v*0.035/np.linalg.norm(v)
+# print('v= {:s}'.format(v))
+# print('length= {:0.3f}'.format(np.linalg.norm(v)))
+# print('hand= {:s}'.format(hand))
 
 
