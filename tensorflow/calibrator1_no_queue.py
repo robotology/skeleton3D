@@ -59,17 +59,18 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, batch_size=1, act=
             tf.summary.histogram('pre_activations', preactivate)
         activations = act(preactivate, name='activation')
         tf.summary.histogram('activations', activations)
-        return activations
+        return activations, weights
 
 
 def model(_input, _batch_size = 1):
     if use_elbow:
-        _layer1 = nn_layer(_input, 6, 10, 'layer1', _batch_size)
+        _layer1, w1 = nn_layer(_input, 6, 10, 'layer1', _batch_size)
     else:
-        _layer1 = nn_layer(_input, 3, 10, 'layer1', _batch_size)
-    _layer2 = nn_layer(_layer1, 10, 10, 'layer2', _batch_size)
-    _layer3 = nn_layer(_layer2, 10, 3, 'layer3', _batch_size, tf.identity)
-    return _layer3
+        _layer1, w1 = nn_layer(_input, 3, 10, 'layer1', _batch_size)
+    _layer2, w2 = nn_layer(_layer1, 10, 10, 'layer2', _batch_size)
+    _layer3, w3 = nn_layer(_layer2, 10, 3, 'layer3', _batch_size, tf.identity)
+    _regu = tf.nn.l2_loss(w1) + tf.nn.l2_loss(w2) + tf.nn.l2_loss(w3)
+    return _layer3, _regu
 
 train_dir = './log/'
 model_dir = './model/'
@@ -77,6 +78,7 @@ checkpoint_prefix = os.path.join(train_dir, 'saved_checkpoint')
 graph_name = 'mapping_graph.pb'
 batch_size = 1
 use_elbow = True
+lambd = 0.0001
 
 NUM_EPOCHS_PER_DECAY = 500.0      # Epochs after which learning rate decays.
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 5000
@@ -126,8 +128,11 @@ test_label = tf.identity(test_input[1], name='test_label')
 # Model
 # X = tf.placeholder(tf.float32, [None, training_data.shape[1]], name='example')
 # Y = tf.placeholder(tf.float32, [None, 3], name='ref')
-output = model(example, 1)
+output, regu = model(example, 1)
 
+with tf.name_scope('regularization'):
+    regularization = lambd*regu
+    tf.summary.scalar('regularization', regularization)
 with tf.name_scope('pred'):
     pred = output
     variable_summaries(pred)
@@ -136,6 +141,9 @@ with tf.name_scope('loss'):
     # loss = tf.reduce_sum(squared_deltas)
     loss = tf.reduce_mean(squared_deltas)
     tf.summary.scalar('loss', loss)
+with tf.name_scope('regularized_loss'):
+    loss_regu = tf.reduce_mean(loss + regularization)
+    tf.summary.scalar('regularized loss', loss_regu)
 
 num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / batch_size
 
@@ -143,9 +151,9 @@ global_step = tf.contrib.framework.get_or_create_global_step()
 summary_op = tf.summary.merge_all()
 saver = tf.train.Saver()
 
-# train_op = tf.train.GradientDescentOptimizer(lr).minimize(loss, global_step) # construct an optimizer to minimize cost and fit line to my data
-# train_op = tf.train.AdamOptimizer(0.1).minimize(loss, global_step) # construct an optimizer to minimize cost and fit line to my data
-train_op = tf.train.AdadeltaOptimizer(0.1).minimize(loss, global_step) # construct an optimizer to minimize cost and fit line to my data
+# train_op = tf.train.GradientDescentOptimizer(lr).minimize(loss_regu, global_step) # construct an optimizer to minimize cost and fit line to my data
+# train_op = tf.train.AdamOptimizer(0.1).minimize(loss_regu, global_step) # construct an optimizer to minimize cost and fit line to my data
+train_op = tf.train.AdadeltaOptimizer(0.1).minimize(loss_regu, global_step) # construct an optimizer to minimize cost and fit line to my data
 sess = tf.Session()
 tf.global_variables_initializer().run(session=sess) # This has to be called before other run
 
@@ -181,7 +189,7 @@ for global_step in range(prev_step, (dataset_sz-testset_sz)):
         summary_writer.add_summary(summary_str, global_step)
         saver.save(sess, checkpoint_prefix, global_step=global_step)
         if global_step % 50 == 0:
-            print('step= {:d}: loss= {:0.6f}'.format(global_step, sess.run(loss)))
+            print('step= {:d}: loss= {:0.6f}'.format(global_step, sess.run(loss_regu)))
     else:
         sess.run(train_op)
 summary_writer.close()
@@ -191,7 +199,7 @@ L = 0
 for i in range(testset_sz):
     ex = test_example.eval(session=sess)
     la = test_label.eval(session=sess)
-    l = sess.run(loss, feed_dict={example: ex, label: la})
+    l = sess.run(loss_regu, feed_dict={example: ex, label: la})
     L += l
     if i % 50 == 0 or i == testset_sz-1:
         print('step= {:d}: loss= {:0.6f}'.format(i, l))
