@@ -29,6 +29,7 @@
 
 #include <iCub/ctrl/math.h>
 #include <iCub/skinDynLib/common.h>
+#include <iCub/ctrl/minJerkCtrl.h>
 
 #define PPS_AVOIDANCE_RADIUS        0.4     // [m]  0.2 (demoAvoidance) --> 0.4 to adapt with new RF
 #define PPS_AVOIDANCE_VELOCITY      0.10    // [m/s]
@@ -186,6 +187,49 @@ protected:
             iCartCtrl->tweakSet(tweakOptions);
         }
     }
+
+//    /************************************************************************/
+//    void setTaskVelocities(yarp::dev::ICartesianControl *iCartCtrl, const Vector& xs, const Vector& xf)
+//    {
+//        double Ts=0.1;  // controller's sample time [s]
+//        double T=4.0;   // how long it takes to move to the target [s]
+//        double v_max=0.1;   // max cartesian velocity [m/s]
+
+//        // instantiate the controller
+//        iCub::ctrl::minJerkVelCtrlForIdealPlant ctrl(Ts,xf.length());
+
+//        bool done=false;
+//        Vector dir=(xf-xs)/norm(xf-xs); // direction to the target
+
+//        double start = yarp::os::Time::now();
+//        double checkTime;
+//        while (!done)
+//        {
+//            Vector x,o;
+//            iCartCtrl->getPose(x,o);
+
+//            Vector e=xf-x;  // compute current distance to the target
+//            Vector vel_x=dir*ctrl.computeCmd(T,e);  // control upon the feedback
+
+//            // enforce velocity bounds
+//            for (size_t i=0; i<vel_x.length(); i++)
+//                vel_x[i]=sign(e[i])*std::min(v_max,fabs(vel_x[i]));
+
+//            // call the proper method
+//            iCartCtrl->setTaskVelocities(vel_x,Vector(4,0.0));
+//            Time::delay(Ts);
+//            checkTime = yarp::os::Time::now();
+
+//            done=(norm(e.subVector(0,1))<0.02 || (checkTime-start)>=15.0);
+//            if (done)
+//            {
+//                yDebug("xf= %s; x= %s",xf.toString(3,3).c_str(),x.toString(3,3).c_str());
+//                yDebug("checktime %f",checkTime-start);
+//            }
+//        }
+
+//        iCartCtrl->stopControl();
+//    }
 
 public:
     bool respond(const Bottle &command, Bottle &reply)
@@ -382,7 +426,7 @@ public:
             yWarning("[%s] Autoconnect mode set to ON",name.c_str());
         }
 
-        bool stiff=rf.check("stiff");
+        bool stiff=rf.check("stiff",Value(1)).asBool();
         if (stiff)
         {
             yInfo("[%s] Stiff Mode enabled.",name.c_str());
@@ -440,6 +484,13 @@ public:
             driverCartL.view(data["left"].iarm);
             data["left"].iarm->storeContext(&contextL);
 
+            Bottle options;
+            Bottle &straightOpt=options.addList();
+            straightOpt.addString("straightness");
+            straightOpt.addDouble(30.0);
+            data["left"].iarm->tweakSet(options);
+
+
             Vector dof;
             data["left"].iarm->getDOF(dof);
             dof=0.0; dof[3]=dof[4]=dof[5]=dof[6]=1.0;
@@ -493,6 +544,13 @@ public:
             driverCartR.view(data["right"].iarm);
             data["right"].iarm->storeContext(&contextR);
 
+            Bottle options;
+            Bottle &straightOpt=options.addList();
+            straightOpt.addString("straightness");
+            straightOpt.addDouble(30.0);
+            data["right"].iarm->tweakSet(options);
+
+
             Vector dof;
             data["right"].iarm->getDOF(dof);
             dof=0.0; dof[3]=dof[4]=dof[5]=dof[6]=1.0;
@@ -538,6 +596,9 @@ public:
             yDebug("[%s] goToPose (%s) by %s arm",name.c_str(), data[armReach.c_str()].home_x.toString(3,3).c_str(), armReach.c_str());
             changeElbowHeight(data[armReach.c_str()].iarm);
             data[armReach.c_str()].iarm->goToPose(data[armReach.c_str()].home_x,data[armReach.c_str()].home_o);
+//            Vector x,o;
+//            data[armReach.c_str()].iarm->getPose(x,o);
+//            setTaskVelocities(data[armReach.c_str()].iarm,x,data[armReach.c_str()].home_x);
             askedReach = false;
         }
         else if (askedReachPose)
