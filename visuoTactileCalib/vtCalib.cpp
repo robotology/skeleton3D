@@ -1639,10 +1639,10 @@ bool vtCalib::projectIncomingEvents()
                 // Using vtMappingTF
 //                yInfo("[%s] ORIGIN event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
                 double conf = 2.0 - (evt.Threat+1.0)/1.0;
-                yInfo("[%s] threat: %0.3f, conf: %0.3f",name.c_str(), evt.Threat, conf);
 
                 if (use_vtMappingTF && norm(evt.Pos)<=0.7 && conf<=conf_thres)
                 {
+                    yInfo("[%s] threat: %0.3f, conf: %0.3f",name.c_str(), evt.Threat, conf);
                     Vector hR(3,0.0),hL(3,0.0),eb(3,0.0);
                     opc->checkout();
                     partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
