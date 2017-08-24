@@ -95,5 +95,16 @@ service skeleton3D_IDL
   */
   bool disable_part_conf();
 
+  /**
+  * Enables the function to calculate the midpoints in forearms
+  * @return true/false on success/failure.
+  */
+  bool enable_mid_arms();
+
+  /**
+  * Disables the function to calculate the midpoints in forearms
+  * @return true/false on success/failure.
+  */
+  bool disable_mid_arms();
 
 }

@@ -353,6 +353,43 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     }
 }
 
+void    skeleton3D::getPartPose(Agent* a, const string &partName, Vector &pose)
+{
+    if (pose.size()==3)
+    {
+        for (int i=0; i<pose.size(); i++)
+            pose[i]=a->m_body.m_parts[partName.c_str()][i];
+    }
+}
+
+void    skeleton3D::addPartToStream(const Vector &pose, const string &partName, Bottle &streamedObjs)
+{
+    Bottle part;
+    for (int i=0; i<pose.size(); i++)
+        part.addDouble(pose[i]);
+    part.addDouble(part_dimension/2.0);                         // RADIUS
+    if (use_part_conf)
+        part.addDouble(computeValence(partName));
+    else
+        part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    streamedObjs.addList()=part;
+}
+
+void    skeleton3D::addMidArmsToStream(Bottle &streamedObjs)
+{
+    Vector midR(3,0.0), midL(3,0.0), handR(3,0.0), handL(3,0.0), elbowR(3,0.0), elbowL(3,0.0);
+    getPartPose(partner,"handRight",handR);
+    getPartPose(partner,"handLeft",handL);
+    getPartPose(partner,"elbowRight",elbowR);
+    getPartPose(partner,"elbowLeft",elbowL);
+
+    midR = (handR+elbowR)/2.0;
+    midL = (handL+elbowL)/2.0;
+
+    addPartToStream(midR, "elbowRight", streamedObjs);
+    addPartToStream(midL, "elbowLeft",streamedObjs);
+}
+
 bool    skeleton3D::streamPartsToPPS()
 {
     if (partner && partner->m_present==1.0 && connectedPPS)
@@ -365,6 +402,10 @@ bool    skeleton3D::streamPartsToPPS()
         addPartToStream(partner,"elbowLeft",objects);
         addPartToStream(partner,"shoulderRight",objects);
         addPartToStream(partner,"shoulderLeft",objects);
+        addPartToStream(partner,"spine",objects);
+
+        if (use_mid_arms)
+            addMidArmsToStream(objects);
 
         Bottle& output=ppsOutPort.prepare();
         output.clear();
@@ -387,6 +428,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
     use_fake_hand = rf.check("use_fake_hand",Value(0)).asBool();
+
+    use_mid_arms = rf.check("use_mid_arms",Value(0)).asBool();
+
     if (use_fake_hand)
     {
         fakeHandPos.resize(3,0.0);

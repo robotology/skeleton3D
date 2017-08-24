@@ -70,6 +70,8 @@ protected:
     bool                        use_fake_hand;
     yarp::sig::Vector           fakeHandPos;        //!< position of fake hand
 
+    bool                        use_mid_arms;       //!< flag for calculation of midpoints in forearms
+
 //    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
 
 //    vtMappingTF             *vtMapRight;
@@ -106,6 +108,12 @@ protected:
      * @param partName String value of the name of a part
      */
     void    addConf(const double &conf, const string &partName);
+
+    void    getPartPose(Agent* a, const string &partName, Vector &pose);
+
+    void    addPartToStream(const Vector &pose, const string &partName, Bottle &streamedObjs);
+
+    void    addMidArmsToStream(Bottle &streamedObjs);
 
     /**
      * @brief streamPartsToPPS Send body parts to (PPS) visuoTactileWrapper
@@ -242,6 +250,19 @@ public:
         use_part_conf = false;
         return true;
     }
+
+    bool enable_mid_arms()
+    {
+        use_mid_arms = true;
+        return true;
+    }
+
+    bool disable_mid_arms()
+    {
+        use_mid_arms = false;
+        return true;
+    }
+
     std::map<unsigned int, std::string> mapPartsOpenPose {
         {0,  "Nose"},
         {1,  "Neck"},
