@@ -128,6 +128,8 @@ protected:
      */
     double  computeValence(const string &partName);
 
+    void    computeSpine(map<string,kinectWrapper::Joint> &jnts);
+
     /**
      * @brief extrapolateHand Estimate the hand position, known the elbow and wrist position
      * @param jnts A skeleton by set of joints and equivalent joint name

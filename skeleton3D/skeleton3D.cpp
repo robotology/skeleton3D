@@ -160,6 +160,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                     }
                 }
 
+                computeSpine(jnts);
                 extrapolateHand(jnts);
                 if (use_part_filter)
                 {
@@ -252,6 +253,44 @@ double  skeleton3D::computeValence(const string &partName)
     double threat = body_valence + body_valence*(1-conf) - 1.0;
     yDebug("[%s] %s\t body_valence: %3.3f\t conf: %3.3f\t threat: %3.3f",name.c_str(), partName.c_str(), body_valence, conf, threat);
     return threat;
+}
+
+void    skeleton3D::computeSpine(map<string, kinectWrapper::Joint> &jnts)
+{
+    Vector hipR(3,0.0), hipL(3,0.0), head(3,0.0), spine(3,0.0);
+    if (!jnts.empty() && jnts.find("hipRight")!=jnts.end() && jnts.find("hipLeft")!=jnts.end()
+            && jnts.find("head")!=jnts.end())
+    {
+        hipR[0] = jnts.at("hipRight").x;
+        hipR[1] = jnts.at("hipRight").y;
+        hipR[2] = jnts.at("hipRight").z;
+
+        hipL[0] = jnts.at("hipLeft").x;
+        hipL[1] = jnts.at("hipLeft").y;
+        hipL[2] = jnts.at("hipLeft").z;
+
+        head[0] = jnts.at("head").x;
+        head[1] = jnts.at("head").y;
+        head[2] = jnts.at("head").z;
+
+        spine = (head + (hipR+hipL)/2.0)/2.0;
+        kinectWrapper::Joint joint;
+        joint.x = spine[0];
+        joint.y = spine[1];
+        joint.z = spine[2];
+        jnts.insert(std::pair<string,kinectWrapper::Joint>("spine",joint));
+
+        double conf_hipR, conf_hipL, conf_head, conf_spine;
+        conf_hipR = confJoints.at("hipRight");
+        conf_hipL = confJoints.at("hipLeft");
+        conf_head = confJoints.at("head");
+        conf_spine = (conf_head + (conf_hipR + conf_hipL)/2.0)/2.0;
+
+        addConf(conf_spine,"spine");
+
+    }
+    else
+        yDebug("[%s] computeSpine: can't find a body part", name.c_str());
 }
 
 void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
