@@ -418,6 +418,84 @@ bool    skeleton3D::streamPartsToPPS()
         return false;
 }
 
+void    skeleton3D::initShowBodySegGui(const string &segmentName, const string &color)
+{
+    Bottle cmdGui;
+    cmdGui.clear();
+
+    cmdGui.addString("trajectory");
+    cmdGui.addString(segmentName.c_str());    // trajectory identifier
+    cmdGui.addString("");               // trajectory name
+    cmdGui.addInt(512);                 // max samples in circular queue
+    cmdGui.addDouble(1200.0);             // lifetime of samples
+    if (color =="red")             // color
+    {
+        cmdGui.addInt(255);cmdGui.addInt(0);cmdGui.addInt(0); //red
+    }
+    else if (color =="green")
+    {
+        cmdGui.addInt(0);cmdGui.addInt(255);cmdGui.addInt(0); //green
+    }
+    else if (color =="blue")
+    {
+        cmdGui.addInt(0);cmdGui.addInt(0);cmdGui.addInt(255); //blue
+    }
+    else if (color =="purple")
+    {
+        cmdGui.addInt(255);cmdGui.addInt(0);cmdGui.addInt(255); //purple
+    }
+    else if (color =="yellow")
+    {
+        cmdGui.addInt(255);cmdGui.addInt(255);cmdGui.addInt(0); //yellow
+    }
+    cmdGui.addDouble(1.0);             // alpha [0,1]
+    cmdGui.addDouble(5.0);             // line width
+
+    portToGui.write(cmdGui);
+}
+
+void    skeleton3D::updateBodySegGui(const vector<Vector> &segment, const string &segmentName)
+{
+    Bottle cmdGui;
+    if (segment.size()>0)
+    {
+        for (int i=0; i<segment.size(); i++)
+        {
+            cmdGui.clear();
+
+            cmdGui.addString("addpoint");
+            cmdGui.addString(segmentName.c_str());                    // trajectory identifier
+            cmdGui.addDouble(1000.0*segment[i][0]);      // posX [mm]
+            cmdGui.addDouble(1000.0*segment[i][1]);      // posY [mm]
+            cmdGui.addDouble(1000.0*segment[i][2]);      // posZ [mm]
+
+            portToGui.write(cmdGui);
+        }
+    }
+}
+
+bool    skeleton3D::drawBodyGui(Agent *a)
+{
+    if (a && a->m_present==1.0)
+    {
+        initShowBodySegGui("upper","red");
+        Vector partPos(3,0.0);
+        vector<Vector> segment;
+        for (int i=0; i<6; i++)
+        {
+            getPartPose(a,mapPartsGui[i].c_str(),partPos);
+            segment.push_back(partPos);
+        }
+        updateBodySegGui(segment,"upper");
+
+
+        return true;
+    }
+    else
+        return false;
+}
+
+
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("skeleton3D")).asString().c_str();
@@ -517,6 +595,14 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     rpcPort.open("/"+name+"/rpc");
     attach(rpcPort);
+
+    //**** visualizing targets and collision points in iCubGui ***************************
+    string port2iCubGui = "/" + name + "/gui:o";
+    if (!portToGui.open(port2iCubGui.c_str())) {
+       yError("[%s] Unable to open port << port2iCubGui << endl", name.c_str());
+    }
+    std::string portGuiObject = "/iCubGui/objects";     // World frame
+    yarp::os::Network::connect(port2iCubGui.c_str(), portGuiObject.c_str());
 
     // vtMappingTF
 //    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");

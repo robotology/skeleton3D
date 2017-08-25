@@ -43,6 +43,8 @@ protected:
     RpcClient   rpcGet3D;                           //!< rpc client port to send requests to SFM
     OPCClient   *opc;                               //!< OPC client object
 
+    Port        portToGui;
+
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
@@ -152,6 +154,12 @@ protected:
      * @return True if can estimate the point, False otherwise and size of p1 and/or p2 is wrong
      */
     bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
+
+    void    initShowBodySegGui(const string &segmentName, const string &color);
+
+    void    updateBodySegGui(const vector<Vector> &segment, const string &segmentName);
+
+    bool    drawBodyGui(icubclient::Agent *a);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -299,6 +307,25 @@ public:
         {11, "hipLeft"},
         {12, "kneeLeft"},
         {13, "ankleLeft"},
+    };
+
+    std::map<unsigned int, std::string> mapPartsGui {
+        {0,  "handLeft"},
+        {1,  "elbowLeft"},
+        {2,  "shoulderLeft"},
+        {3,  "shoulderCenter"},
+        {4,  "shoulderRight"},
+        {5,  "elbowRight"},
+        {6,  "handRight"},      // wrist --> hand: use extrapolatePoint later to convert truely
+        {7, "ankleLeft"},
+        {8, "kneeLeft"},
+        {9, "hipLeft"},
+        {10,  "hipRight"},
+        {11,  "kneeRight"},
+        {12, "ankleRight"},
+        {13,  "head"},
+
+
     };
 };
 
