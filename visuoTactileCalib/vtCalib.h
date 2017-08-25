@@ -158,6 +158,7 @@ protected:
     string                  root_dir;
     double                  conf_thres;                                      //!< part confident threshold to use vtMappingTF
     vtMappingTF             *vtMapRight, *vtMapLeft;
+    double                  vtMap_thres;                                     //!< distance threshold to apply vtMappingTF
 
     //********************************************
     // From vtRFThread

@@ -888,7 +888,7 @@ bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
 
         double minDist = norm(partKeypoints[0]-touchPoint);
         partPos = partKeypoints[0];
-        for (int8_t i=0; i<partKeypoints.size(); i++)
+        for (int8_t i=1; i<partKeypoints.size(); i++)
         {
             double dist = norm(partKeypoints[i]-touchPoint);
             if (dist<minDist)
@@ -898,7 +898,7 @@ bool    vtCalib::extractClosestPart2Touch(Vector &partPos)
                 yInfo("[%s] extractClosestPart2Touch: closest distance = %3.3f",name.c_str(),dist);
             }
         }
-        if (minDist<=0.25)
+        if (minDist<=vtMap_thres)
             return true;
         else
         {
@@ -953,6 +953,7 @@ bool    vtCalib::configure(ResourceFinder &rf)
     use_vtMappingTF = rf.check("use_vtMappingTF",Value(0)).asBool();
     use_elbow       = rf.check("use_elbow",Value(0)).asBool();
     conf_thres      = rf.check("conf_thres",Value(0.5)).asDouble();
+    vtMap_thres      = rf.check("vtMap_thres",Value(0.5)).asDouble();
     root_dir        = rf.check("root_dir",Value("/home/pnguyen/icub-workspace/skeleton3D/")).asString().c_str();
     yDebug("root_dir: %s", root_dir.c_str());
 
@@ -1637,10 +1638,12 @@ bool vtCalib::projectIncomingEvents()
                     T_a = armR -> getH(3+6, true);
 
                 // Using vtMappingTF
-//                yInfo("[%s] ORIGIN event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
                 double conf = 2.0 - (evt.Threat+1.0)/1.0;
 
-                if (use_vtMappingTF && norm(evt.Pos)<=0.7 && conf<=conf_thres)
+//                yInfo("[%s] threat: %0.3f, conf: %0.3f",name.c_str(), evt.Threat, conf);
+//                yInfo("EE pos: %s", armR->EndEffPosition().toString(3,3).c_str());
+//                yInfo("norm(evt.Pos - EE pos): %f", norm(evt.Pos-armR->EndEffPosition()));
+                if (use_vtMappingTF && norm(evt.Pos - armR->EndEffPosition())<=vtMap_thres && conf<=conf_thres)
                 {
                     yInfo("[%s] threat: %0.3f, conf: %0.3f",name.c_str(), evt.Threat, conf);
                     Vector hR(3,0.0),hL(3,0.0),eb(3,0.0);
@@ -1655,7 +1658,7 @@ bool vtCalib::projectIncomingEvents()
                         {
                             yInfo("[%s] handRight pose: %s",name.c_str(),hR.toString(3,3).c_str());
                             yInfo("[%s] handLeft pose: %s",name.c_str(),hL.toString(3,3).c_str());
-                            yInfo("[%s] ORIGIN event position: %s",name.c_str(),(*it).Pos.toString(3,3).c_str());
+                            yDebug("[%s] ORIGIN event position: %s",name.c_str(),(*it).Pos.toString(3,3).c_str());
 
                             if (use_elbow)
                             {
@@ -1670,7 +1673,7 @@ bool vtCalib::projectIncomingEvents()
                                 vtMapRight->setInput(evt.Pos);
                             vtMapRight->computeMapping();
                             vtMapRight->getOutput(evt.Pos);
-                            yInfo("[%s] MAPPED event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
+                            yDebug("[%s] MAPPED event position: %s",name.c_str(),evt.Pos.toString(3,3).c_str());
                         }
                     }
                 }
@@ -1687,7 +1690,10 @@ bool vtCalib::projectIncomingEvents()
 //                             iCubSkin[i].taxels[j]->getID(),
 //                             iCubSkin[i].taxels[j]->getWRFPosition().toString().c_str(),
 //                             iCubSkin[i].taxels[j]->getPosition().toString().c_str());
-                projEvent = projectIntoTaxelRF(iCubSkin[i].taxels[j]->getFoR(),T_a,evt); //project's into taxel RF and subtracts object radius from z pos in the new frame
+                if ((iCubSkin[i].name == SkinPart_s[SKIN_LEFT_FOREARM]) || (iCubSkin[i].name == SkinPart_s[SKIN_LEFT_HAND]))    //Not apply vtMappingTF for left arm yet
+                    projEvent = projectIntoTaxelRF(iCubSkin[i].taxels[j]->getFoR(),T_a,*it); //project's into taxel RF and subtracts object radius from z pos in the new frame
+                else if ((iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_FOREARM]) || (iCubSkin[i].name == SkinPart_s[SKIN_RIGHT_HAND]))
+                    projEvent = projectIntoTaxelRF(iCubSkin[i].taxels[j]->getFoR(),T_a,evt); //project's into taxel RF and subtracts object radius from z pos in the new frame
 //                printMessage(6,"\tProjected event: %s\n",projEvent.toString().c_str());
                 if(dynamic_cast<TaxelPWE*>(iCubSkin[i].taxels[j])->insideRFCheck(projEvent)) ////events outside of taxel's RF will not be added
                 {
