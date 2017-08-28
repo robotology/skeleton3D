@@ -191,6 +191,20 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         joints.insert(std::pair<string,kinectWrapper::Joint>("handRight",joint));
         addConf(0.9,"handRight");
 
+        Vector posR(fakeHandPos);
+        posR[0] += -0.25;
+        addJointAndConf(joints,posR,"elbowRight");
+        posR[0] +- -0.05;   posR[2] += 0.15;
+        addJointAndConf(joints,posR,"shoulderRight");
+
+        Vector posL(fakeHandPos);
+        posL[0] += -0.25;   posL[1] += 0.45;
+        addJointAndConf(joints,posL,"handLeft");
+                            posL[1] += -0.25;
+        addJointAndConf(joints,posL,"elbowLeft");
+        posL[0] += -0.05;                       posL[2] += 0.15;
+        addJointAndConf(joints,posL,"shoulderLeft");
+
         joint.x = -1.5;
         joint.y = 0.0;
         joint.z = 0.0;
@@ -495,6 +509,31 @@ bool    skeleton3D::drawBodyGui(Agent *a)
         return false;
 }
 
+bool    skeleton3D::assignJointByVec(kinectWrapper::Joint &jnt, const Vector &pos)
+{
+    if (pos.size()==3)
+    {
+        jnt.x = pos[0];
+        jnt.y = pos[1];
+        jnt.z = pos[2];
+        return true;
+    }
+    else
+    {
+        return false;
+        yWarning("[%s] Joint is assigned with wrong size vector",name.c_str());
+    }
+}
+
+void    skeleton3D::addJointAndConf(map<string,kinectWrapper::Joint> &joints,
+                                    const Vector &pos, const string &partName)
+{
+    kinectWrapper::Joint joint;
+    assignJointByVec(joint, pos);
+    joints.insert(std::pair<string,kinectWrapper::Joint>(partName,joint));
+    addConf(0.9,partName);
+}
+
 
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
@@ -729,6 +768,8 @@ bool    skeleton3D::updateModule()
                 partner->m_body.m_parts[jnt->first] = pos;
             }
             opc->commit(partner);
+
+            drawBodyGui(partner);
         }
 
         bodyPartsCv.clear();

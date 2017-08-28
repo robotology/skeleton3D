@@ -161,6 +161,11 @@ protected:
 
     bool    drawBodyGui(icubclient::Agent *a);
 
+    bool    assignJointByVec(kinectWrapper::Joint &jnt, const Vector &pos);
+
+    void    addJointAndConf(map<string,kinectWrapper::Joint> &joints,
+                            const Vector &pos, const string &partName);
+
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
     bool    close();
@@ -317,13 +322,13 @@ public:
         {4,  "shoulderRight"},
         {5,  "elbowRight"},
         {6,  "handRight"},      // wrist --> hand: use extrapolatePoint later to convert truely
-        {7, "ankleLeft"},
-        {8, "kneeLeft"},
-        {9, "hipLeft"},
-        {10,  "hipRight"},
-        {11,  "kneeRight"},
+        {7,  "ankleLeft"},
+        {8,  "kneeLeft"},
+        {9,  "hipLeft"},
+        {10, "hipRight"},
+        {11, "kneeRight"},
         {12, "ankleRight"},
-        {13,  "head"},
+        {13, "head"},
 
 
     };
