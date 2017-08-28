@@ -181,7 +181,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
     else if (use_fake_hand)
     {
-        yDebug("[%s] obtainBodyParts: create a fake hand %s",name.c_str(),
+        yDebug("[%s] obtainBodyParts: create a fake body %s",name.c_str(),
                fakeHandPos.toString(3,3).c_str());
         map<string, kinectWrapper::Joint> joints;
         kinectWrapper::Joint joint;
@@ -194,8 +194,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         Vector posR(fakeHandPos);
         posR[0] += -0.25;
         addJointAndConf(joints,posR,"elbowRight");
-        posR[0] +- -0.05;   posR[2] += 0.15;
+        posR[0] += -0.05;                       posR[2] += 0.15;
         addJointAndConf(joints,posR,"shoulderRight");
+                                                posR[2] += -0.35;
+        addJointAndConf(joints,posR,"hipRight");
+        posR[0] += +0.3;    posR[1] += -0.15;   posR[2] += -0.1;
+        addJointAndConf(joints,posR,"kneeRight");
+                                                posR[2] += -0.35;
+        addJointAndConf(joints,posR,"ankleRight");
 
         Vector posL(fakeHandPos);
         posL[0] += -0.25;   posL[1] += 0.45;
@@ -204,14 +210,20 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         addJointAndConf(joints,posL,"elbowLeft");
         posL[0] += -0.05;                       posL[2] += 0.15;
         addJointAndConf(joints,posL,"shoulderLeft");
+        Vector posC(posL);
+                                                posL[2] += -0.35;
+        addJointAndConf(joints,posL,"hipLeft");
+        posL[0] += +0.3;    posL[1] += +0.15;   posL[2] += -0.1;
+        addJointAndConf(joints,posL,"kneeLeft");
+                                                posL[2] += -0.35;
+        addJointAndConf(joints,posL,"ankleLeft");
 
-        joint.x = -1.5;
-        joint.y = 0.0;
-        joint.z = 0.0;
-        for (int partID=0; partID < mapPartsKinect.size(); partID++)
-            if (mapPartsKinect[partID]!="handRight")
-                joints.insert(std::pair<string,kinectWrapper::Joint>(mapPartsKinect[partID].c_str(),joint));
-        joints.insert(std::pair<string,kinectWrapper::Joint>("spine",joint));
+                            posC[1] += -0.10;
+        addJointAndConf(joints,posC,"shoulderCenter");
+                                                posC[2] += 0.1;
+        addJointAndConf(joints,posC,"head");
+
+        computeSpine(joints);
 
         player.skeleton = joints;
 
@@ -434,7 +446,6 @@ bool    skeleton3D::streamPartsToPPS()
 
 void    skeleton3D::initShowBodySegGui(const string &segmentName, const string &color)
 {
-    Bottle cmdGui;
     cmdGui.clear();
 
     cmdGui.addString("trajectory");
@@ -470,7 +481,6 @@ void    skeleton3D::initShowBodySegGui(const string &segmentName, const string &
 
 void    skeleton3D::updateBodySegGui(const vector<Vector> &segment, const string &segmentName)
 {
-    Bottle cmdGui;
     if (segment.size()>0)
     {
         for (int i=0; i<segment.size(); i++)
@@ -488,20 +498,50 @@ void    skeleton3D::updateBodySegGui(const vector<Vector> &segment, const string
     }
 }
 
+void    skeleton3D::deleteBodySegGui(const string &segmentName)
+{
+    cmdGui.clear();
+    cmdGui.addString("delete");
+    cmdGui.addString(segmentName.c_str());
+    portToGui.write(cmdGui);
+}
+
 bool    skeleton3D::drawBodyGui(Agent *a)
 {
+    deleteBodySegGui("upper");
+    deleteBodySegGui("spine");
+    deleteBodySegGui("lower");
+
     if (a && a->m_present==1.0)
     {
         initShowBodySegGui("upper","red");
-        Vector partPos(3,0.0);
-        vector<Vector> segment;
-        for (int i=0; i<6; i++)
+        initShowBodySegGui("spine","blue");
+        initShowBodySegGui("lower","purple");
+        Vector partPos(3,0.0), hipL(3,0.0), hipR(3,0.0);
+        vector<Vector> segmentUpper, segmentSpine, segmentLower;
+        for (int i=0; i<7; i++)
         {
+            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
             getPartPose(a,mapPartsGui[i].c_str(),partPos);
-            segment.push_back(partPos);
+            segmentUpper.push_back(partPos);
         }
-        updateBodySegGui(segment,"upper");
+        updateBodySegGui(segmentUpper,"upper");
 
+        getPartPose(a,mapPartsGui[13].c_str(),partPos); segmentSpine.push_back(partPos);    // head
+        getPartPose(a,mapPartsGui[3],partPos);          segmentSpine.push_back(partPos);    // shoulderCenter
+
+        getPartPose(a,mapPartsGui[9],hipL);
+        getPartPose(a,mapPartsGui[10],hipR);
+        partPos = (hipL+hipR)/2.0;                      segmentSpine.push_back(partPos);    // hipCenter
+        updateBodySegGui(segmentSpine,"spine");
+
+        for (int i=7; i<13; i++)
+        {
+            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+            getPartPose(a,mapPartsGui[i].c_str(),partPos);
+            segmentLower.push_back(partPos);
+        }
+        updateBodySegGui(segmentLower,"lower");
 
         return true;
     }
@@ -635,7 +675,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     rpcPort.open("/"+name+"/rpc");
     attach(rpcPort);
 
-    //**** visualizing targets and collision points in iCubGui ***************************
+    //**** visualizing human skeleton iCubGui ***************************
     string port2iCubGui = "/" + name + "/gui:o";
     if (!portToGui.open(port2iCubGui.c_str())) {
        yError("[%s] Unable to open port << port2iCubGui << endl", name.c_str());
@@ -643,8 +683,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     std::string portGuiObject = "/iCubGui/objects";     // World frame
     yarp::os::Network::connect(port2iCubGui.c_str(), portGuiObject.c_str());
 
-    // vtMappingTF
-//    vtMapRight = new vtMappingTF(name,"right", "layer3/activation", "input_features");
+    cmdGui.clear();
+    cmdGui.addString("reset");
+    portToGui.write(cmdGui);
 
     return true;
 }
@@ -657,6 +698,11 @@ bool    skeleton3D::interruptModule()
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
+
+    deleteBodySegGui("upper");
+    deleteBodySegGui("spine");
+    deleteBodySegGui("lower");
+    portToGui.interrupt();
 
     yDebug("[%s] Remove partner", name.c_str());
     opc->checkout();                        yDebug("check 1");
@@ -676,6 +722,7 @@ bool    skeleton3D::close()
     rpcGet3D.close();
     bodyPartsInPort.close();
     ppsOutPort.close();
+    portToGui.close();
     opc->close();
     return true;
 }

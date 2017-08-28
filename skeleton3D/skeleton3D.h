@@ -43,7 +43,8 @@ protected:
     RpcClient   rpcGet3D;                           //!< rpc client port to send requests to SFM
     OPCClient   *opc;                               //!< OPC client object
 
-    Port        portToGui;
+    Port                    portToGui;
+    yarp::os::Bottle        cmdGui;
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
@@ -158,6 +159,8 @@ protected:
     void    initShowBodySegGui(const string &segmentName, const string &color);
 
     void    updateBodySegGui(const vector<Vector> &segment, const string &segmentName);
+
+    void    deleteBodySegGui(const string &segmentName);
 
     bool    drawBodyGui(icubclient::Agent *a);
 
