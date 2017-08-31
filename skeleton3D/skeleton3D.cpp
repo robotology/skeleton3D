@@ -295,9 +295,9 @@ void    skeleton3D::computeSpine(map<string, kinectWrapper::Joint> &jnts)
         hipL[1] = jnts.at("hipLeft").y;
         hipL[2] = jnts.at("hipLeft").z;
 
-        head[0] = jnts.at("head").x;
-        head[1] = jnts.at("head").y;
-        head[2] = jnts.at("head").z;
+        head[0] = jnts.at("shoulderCenter").x;
+        head[1] = jnts.at("shoulderCenter").y;
+        head[2] = jnts.at("shoulderCenter").z;
 
         spine = (head + (hipR+hipL)/2.0)/2.0;
         kinectWrapper::Joint joint;
@@ -309,7 +309,7 @@ void    skeleton3D::computeSpine(map<string, kinectWrapper::Joint> &jnts)
         double conf_hipR, conf_hipL, conf_head, conf_spine;
         conf_hipR = confJoints.at("hipRight");
         conf_hipL = confJoints.at("hipLeft");
-        conf_head = confJoints.at("head");
+        conf_head = confJoints.at("shoulderCenter");
         conf_spine = (conf_head + (conf_hipR + conf_hipL)/2.0)/2.0;
 
         addConf(conf_spine,"spine");
@@ -510,13 +510,15 @@ bool    skeleton3D::drawBodyGui(Agent *a)
 {
     deleteBodySegGui("upper");
     deleteBodySegGui("spine");
-    deleteBodySegGui("lower");
+    if (draw_lower)
+        deleteBodySegGui("lower");
 
     if (a && a->m_present==1.0)
     {
         initShowBodySegGui("upper","red");
         initShowBodySegGui("spine","blue");
-        initShowBodySegGui("lower","purple");
+        if (draw_lower)
+            initShowBodySegGui("lower","purple");
         Vector partPos(3,0.0), hipL(3,0.0), hipR(3,0.0);
         vector<Vector> segmentUpper, segmentSpine, segmentLower;
         for (int i=0; i<7; i++)
@@ -535,13 +537,16 @@ bool    skeleton3D::drawBodyGui(Agent *a)
         partPos = (hipL+hipR)/2.0;                      segmentSpine.push_back(partPos);    // hipCenter
         updateBodySegGui(segmentSpine,"spine");
 
-        for (int i=7; i<13; i++)
+        if (draw_lower)
         {
-            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
-            getPartPose(a,mapPartsGui[i].c_str(),partPos);
-            segmentLower.push_back(partPos);
+            for (int i=7; i<13; i++)
+            {
+                yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+                getPartPose(a,mapPartsGui[i].c_str(),partPos);
+                segmentLower.push_back(partPos);
+            }
+            updateBodySegGui(segmentLower,"lower");
         }
-        updateBodySegGui(segmentLower,"lower");
 
         return true;
     }
@@ -587,6 +592,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     use_fake_hand = rf.check("use_fake_hand",Value(0)).asBool();
 
     use_mid_arms = rf.check("use_mid_arms",Value(0)).asBool();
+
+    draw_lower = rf.check("draw_lower",Value(0)).asBool();
 
     if (use_fake_hand)
     {

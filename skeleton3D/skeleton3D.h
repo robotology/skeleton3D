@@ -36,6 +36,7 @@ protected:
     double      body_valence;
     double      part_dimension;
     bool        use_part_conf;
+    bool        draw_lower;
 
     Stamp       ts;
 
