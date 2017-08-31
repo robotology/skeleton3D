@@ -379,13 +379,16 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     }
 }
 
-void    skeleton3D::getPartPose(Agent* a, const string &partName, Vector &pose)
+bool    skeleton3D::getPartPose(Agent* a, const string &partName, Vector &pose)
 {
-    if (pose.size()==3)
+    if (pose.size()==3 && a->m_body.m_parts.find(partName.c_str())!=a->m_body.m_parts.end())
     {
         for (int i=0; i<pose.size(); i++)
             pose[i]=a->m_body.m_parts[partName.c_str()][i];
+        return true;
     }
+    else
+        return false;
 }
 
 void    skeleton3D::addPartToStream(const Vector &pose, const string &partName, Bottle &streamedObjs)
@@ -524,17 +527,18 @@ bool    skeleton3D::drawBodyGui(Agent *a)
         for (int i=0; i<7; i++)
         {
             yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
-            getPartPose(a,mapPartsGui[i].c_str(),partPos);
-            segmentUpper.push_back(partPos);
+            if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
+                segmentUpper.push_back(partPos);
         }
         updateBodySegGui(segmentUpper,"upper");
 
-        getPartPose(a,mapPartsGui[13].c_str(),partPos); segmentSpine.push_back(partPos);    // head
-        getPartPose(a,mapPartsGui[3],partPos);          segmentSpine.push_back(partPos);    // shoulderCenter
+        if (getPartPose(a,mapPartsGui[13],partPos))         segmentSpine.push_back(partPos);    // head
+        if (getPartPose(a,mapPartsGui[3],partPos))          segmentSpine.push_back(partPos);    // shoulderCenter
 
-        getPartPose(a,mapPartsGui[9],hipL);
-        getPartPose(a,mapPartsGui[10],hipR);
-        partPos = (hipL+hipR)/2.0;                      segmentSpine.push_back(partPos);    // hipCenter
+        if (getPartPose(a,mapPartsGui[9],hipL) && getPartPose(a,mapPartsGui[10],hipR))
+        {
+            partPos = (hipL+hipR)/2.0;                      segmentSpine.push_back(partPos);    // hipCenter
+        }
         updateBodySegGui(segmentSpine,"spine");
 
         if (draw_lower)
@@ -542,8 +546,8 @@ bool    skeleton3D::drawBodyGui(Agent *a)
             for (int i=7; i<13; i++)
             {
                 yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
-                getPartPose(a,mapPartsGui[i].c_str(),partPos);
-                segmentLower.push_back(partPos);
+                if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
+                    segmentLower.push_back(partPos);
             }
             updateBodySegGui(segmentLower,"lower");
         }

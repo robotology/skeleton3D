@@ -113,7 +113,7 @@ protected:
      */
     void    addConf(const double &conf, const string &partName);
 
-    void    getPartPose(Agent* a, const string &partName, Vector &pose);
+    bool    getPartPose(Agent* a, const string &partName, Vector &pose);
 
     void    addPartToStream(const Vector &pose, const string &partName, Bottle &streamedObjs);
 
