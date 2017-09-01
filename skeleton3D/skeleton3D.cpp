@@ -369,7 +369,7 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
         if (segL>=0.0001)
         {
             if (segL>=segLMax || segL<=segLMin)
-                segL = 26.5;
+                segL = 0.265;
             result = p1 + dir*(segL+ handDim)/norm(dir);
         }
         else
