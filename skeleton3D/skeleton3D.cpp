@@ -659,7 +659,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     dTimingLastApparition = clock();
 
     segLMax = 0.35;
-    segLMin = 0.15;
+    segLMin = 0.20;
 
     // Median Filter for body part positions
     init_filters = true;
@@ -714,6 +714,14 @@ bool    skeleton3D::interruptModule()
 {
     yDebug("[%s] Interupt module",name.c_str());
 
+    yDebug("[%s] Remove partner", name.c_str());
+    opc->checkout();                        yDebug("check 1");
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);    yDebug("check 2");
+    partner->m_present=0.0;                 yDebug("check 3");
+    opc->commit(partner);                   yDebug("check 4");
+    opc->removeEntity(partner->opc_id());   yDebug("check 5");
+    delete partner;                         yDebug("check 6");
+    opc->interrupt();                       yDebug("check 7");
     rpcPort.interrupt();
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
@@ -723,15 +731,6 @@ bool    skeleton3D::interruptModule()
     deleteBodySegGui("spine");
     deleteBodySegGui("lower");
     portToGui.interrupt();
-
-    yDebug("[%s] Remove partner", name.c_str());
-    opc->checkout();                        yDebug("check 1");
-    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);    yDebug("check 2");
-    partner->m_present=0.0;                 yDebug("check 3");
-    opc->commit(partner);                   yDebug("check 4");
-    opc->removeEntity(partner->opc_id());   yDebug("check 5");
-    delete partner;                         yDebug("check 6");
-    opc->interrupt();                       yDebug("check 7");
     return true;
 }
 
