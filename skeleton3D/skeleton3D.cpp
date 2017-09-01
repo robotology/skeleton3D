@@ -365,11 +365,17 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     {
         Vector dir(3,0.0);
         dir = p2-p1;
-        if (norm(dir)>=0.0001)
-            result = p1 + dir*(norm(dir)+ handDim)/norm(dir);
+        double segL = norm(dir);
+        if (segL>=0.0001)
+        {
+            if (segL>=segLMax || segL<=segLMin)
+                segL = 26.5;
+            result = p1 + dir*(segL+ handDim)/norm(dir);
+        }
         else
             result = p1 + dir*(0.0001+ handDim)/0.0001;
         yDebug("extrapolatePoint: result = %s",result.toString(3,3).c_str());
+        yDebug("forearm = %0.3f, forearm+hand = %0.3f", segL, norm(result-p1));
         return true;
     }
     else
@@ -651,6 +657,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
+
+    segLMax = 0.35;
+    segLMin = 0.15;
 
     // Median Filter for body part positions
     init_filters = true;

@@ -76,6 +76,7 @@ protected:
 
     bool                        use_mid_arms;       //!< flag for calculation of midpoints in forearms
 
+    double                      segLMax, segLMin;   //!< threshold for arm constraint
 //    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
 
 //    vtMappingTF             *vtMapRight;
