@@ -119,8 +119,8 @@
     </module>
 
     <module>
-        <name>dataDumper</name>
-        <parameters>--name /data/visuoTactileRF --rxTime</parameters>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/visuoTactileRF --txTime --rxTime</parameters>
         <node>localhost</node>
         <stdio></stdio>
         <tag>ppsDumper</tag>
