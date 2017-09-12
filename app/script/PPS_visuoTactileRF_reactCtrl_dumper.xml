@@ -35,6 +35,14 @@
         <stdio></stdio>
         <tag>dataDumperPPSeventsForiCubGui</tag>
     </module>
+
+   <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/ppsEvents --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperPPSevents</tag>
+    </module>
     
 
     <module>
@@ -150,6 +158,12 @@
      <connection>
         <from>/ppsAggregEventsForiCubGui/contacts:o</from>
 		<to>/data/ppsAggregEventsForiCubGui</to>
+        <protocol>udp</protocol>
+    </connection>
+
+     <connection>
+        <from>/visuoTactileRF/pps_events_aggreg:o</from>
+		<to>/data/ppsEvents</to>
         <protocol>udp</protocol>
     </connection>
 
