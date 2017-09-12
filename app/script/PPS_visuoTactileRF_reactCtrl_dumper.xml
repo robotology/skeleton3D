@@ -38,7 +38,7 @@
 
    <module>
         <name>yarpdatadumper</name>
-		<parameters>--name /data/ppsEvents --txTime --rxTime</parameters>
+		<parameters>--name /data/ppsEvents</parameters>
         <node>localhost</node>
         <stdio></stdio>
         <tag>dataDumperPPSevents</tag>
@@ -128,12 +128,19 @@
 
     <module>
         <name>yarpdatadumper</name>
-        <parameters>--name /data/visuoTactileRF --txTime --rxTime</parameters>
+        <parameters>--name /data/visuoTactileRF</parameters>
         <node>localhost</node>
         <stdio></stdio>
-        <tag>ppsDumper</tag>
+        <tag>dataDumperVisuoTactileRF</tag>
     </module>
    
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/keypoints</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkeleton3D</tag>
+    </module>
  
  
 
@@ -231,6 +238,11 @@
         <protocol>udp</protocol>
     </connection>
 
+    <connection>
+        <from>/skeleton3D/visuoTactileWrapper/objects:o</from>
+	    <to>/data/keypoints</to>
+        <protocol>udp</protocol>
+    </connection>
    
     
 </application>
