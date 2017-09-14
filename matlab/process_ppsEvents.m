@@ -1,6 +1,6 @@
 %% Import ppsEvent file and pure processing time & re-allocate event on "right" skin part
 path = 'data_1800/';
-filename_keypoints = 'ppsEvents/data.log';
+filename_keypoints = 'ppsEvents/data.log';  % <from>/visuoTactileRF/pps_events_aggreg:o</from>
 filename = strcat(path,filename_keypoints);
 [time_pps,part1,part2,part4,part5] = importfile_ppsEvent(filename);
 time0_pps = time_pps(1);

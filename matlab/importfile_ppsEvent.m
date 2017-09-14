@@ -1,5 +1,7 @@
 function [Timestamp,ppsEvents_onSkinPart_1,ppsEvents_onSkinPart_2,ppsEvents_onSkinPart_3,ppsEvents_onSkinPart_4] = importfile_ppsEvent(filename, startRow, endRow)
 %IMPORTFILE_PPSEVENT Import numeric data from a text file as column vectors.
+%   Timestamp: time when being received the message
+%   ppsEvents_onSkinPart_1(1 - skin_part_id, 2:4 - P(t) on Root, 5:7 - n_c on Root, 8 - activation) 
 %   filename: name of data file
 %   startRow: optional
 %   endRow: optional
@@ -121,10 +123,10 @@ VarName1 = dataArray{:, 1};
 Timestamp = dataArray{:, 2};
 
 i = 3;
-ppsEvents_onSkinPart_1 =   [dataArray{:,i},...                                          % skin_part
-                            dataArray{:,i+7},dataArray{:,i+8},dataArray{:,i+9},...      % P(t) 2:4
-                            dataArray{:,i+10},dataArray{:,i+11},dataArray{:,i+12},...   % n_c 5:7
-                            dataArray{:,i+13}];                                         % threat 8
+ppsEvents_onSkinPart_1 =   [dataArray{:,i},...                                          % skin_part_id  1 
+                            dataArray{:,i+7},dataArray{:,i+8},dataArray{:,i+9},...      % P(t)          2:4
+                            dataArray{:,i+10},dataArray{:,i+11},dataArray{:,i+12},...   % n_c           5:7
+                            dataArray{:,i+13}];                                         % threat        8
                         
 i = 18;
 ppsEvents_onSkinPart_2 =   [dataArray{:,i},...
