@@ -2,13 +2,19 @@ clc;
 clear all;
 close all;
 
-%% Plot flags
-PLOT_KEYPOINT_EVOLUTION = 0
+%% Plot flags & Init
+PLOT_KEYPOINT_EVOLUTION = 0;
+PLOT_DISTANCE_SEPARATE = 0;
 idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
+LineSZ = 2;
+
+tmin = 80.0;
+tmax = 130.0;
+
+path = 'data_1535/';
 
 %% Keypoints
-path = 'data_1535/';
 filename_keypoints = 'keypoints/data.log';
 filename = strcat(path,filename_keypoints);
 [time_kp,head, hR, hL, eR, eL, sR, sL, sp] = importfile_keypoints(filename);
@@ -75,7 +81,7 @@ end
 time_rel_jnt = time_rel_jnts_lA(1:id_max_jnt);
 
 figure; plot3(posEE(:,1),posEE(:,2),posEE(:,3)); 
-title('Evolution of EE over time','FontSize',14); grid on;
+title('Evolution of EE over time','FontSize',FontSZ); grid on;
 xlabel('x(m)','FontSize',FontSZ);
 ylabel('y(m)','FontSize',FontSZ);
 zlabel('z(m)','FontSize',FontSZ);
@@ -177,54 +183,82 @@ end
 % Activation over time
 plot_activation(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'left hand');
 plot_activation(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'left forearm');
-plot_activation(time_rel_pps, part4(:,idx_ppsEv_on_skin_act),'right hand');
-plot_activation(time_rel_pps, part5(:,idx_ppsEv_on_skin_act),'right forearm');
+% plot_activation(time_rel_pps, part4(:,idx_ppsEv_on_skin_act),'right hand');
+% plot_activation(time_rel_pps, part5(:,idx_ppsEv_on_skin_act),'right forearm');
 
 % Distance of control points in an arm (hand, wrist, mid-arm, elbow) over time
-plot_distance(time_rel_reactCtrl, dist_head_EE, 'head','EE');
-plot_distance(time_rel_reactCtrl, dist_hR_EE, 'right hand','EE');
-plot_distance(time_rel_reactCtrl, dist_hL_EE, 'left hand','EE');
+if PLOT_DISTANCE_SEPARATE
+    plot_distance(time_rel_reactCtrl, dist_head_EE, 'head','EE');
+    plot_distance(time_rel_reactCtrl, dist_hR_EE, 'right hand','EE');
+    plot_distance(time_rel_reactCtrl, dist_hL_EE, 'left hand','EE');
 
-% plot_distance(time_rel_reactCtrl, dist_head_EB, 'head','EB');
-% plot_distance(time_rel_reactCtrl, dist_hR_EB, 'right hand','EB');
-% plot_distance(time_rel_reactCtrl, dist_hL_EB, 'left hand','EB');
+    % plot_distance(time_rel_reactCtrl, dist_head_EB, 'head','EB');
+    % plot_distance(time_rel_reactCtrl, dist_hR_EB, 'right hand','EB');
+    % plot_distance(time_rel_reactCtrl, dist_hL_EB, 'left hand','EB');
 
-plot_distance(time_rel_jnt, dist_head_EB, 'head','EB');
-plot_distance(time_rel_jnt, dist_hR_EB, 'right hand','EB');
-plot_distance(time_rel_jnt, dist_hL_EB, 'left hand','EB');
+    plot_distance(time_rel_jnt, dist_head_EB, 'head','EB');
+    plot_distance(time_rel_jnt, dist_hR_EB, 'right hand','EB');
+    plot_distance(time_rel_jnt, dist_hL_EB, 'left hand','EB');
+end
 
 % Distance & activation
 figure;
-    subplot(4,1,1); plot(time_rel_reactCtrl, dist_hL_EE); 
-    ylabel({'DISTANCE (m)'; 'l\_hand(H) & EE(R)'},'FontSize',FontSZ);
-    yticks(0:0.1:0.7); ylim([0 0.7]); grid on
-    title('HUMAN LEFT HAND (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
-    subplot(4,1,2); plot(time_rel_jnt, dist_hL_EB); 
-    ylabel({'DISTANCE (m)'; 'l\_hand(H) & EB(R)'},'FontSize',FontSZ);
-    yticks(0:0.1:0.7); ylim([0 0.7]); grid on
-    subplot(4,1,3); plot(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'*'); 
-    ylabel({'ACTIVATION ON';'l\_hand(R)'},'FontSize',FontSZ);
-    ylim([0.0 1.0]); grid on
-    subplot(4,1,4); plot(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'*'); 
-    ylabel({'ACTIVATION ON';'l\_forearm(R)'},'FontSize',FontSZ);
-    ylim([0.0 1.0]); grid on
-    xlabel('Time(s)','FontSize',FontSZ)
+    dur = find_idx_in_duration(time_rel_reactCtrl, tmin, tmax);
+    subplot(4,1,2); 
+        plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
+        ylabel({'distance (m)'; 'to EE(R)'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
+        legend('left hand(H)', 'right hand(H)', 'head(H)');
+        xlim([tmin tmax]); ylim([0 0.7]); grid on
+        xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
+        yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+        
+    subplot(4,1,1); 
+        plot(time_rel_jnt, dist_hL_EB, time_rel_jnt, dist_hR_EB, time_rel_jnt, dist_head_EB, 'LineWidth',LineSZ);
+        ylabel({'distance (m)'; 'to EB(R)'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
+        legend('left hand(H)', 'right hand(H)', 'head(H)');
+        xlim([tmin tmax]); ylim([0 0.7]); grid on
+        title('HUMAN LEFT HAND (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
+        xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
+        yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+   
+        
+    subplot(4,1,4); 
+        plot(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'*'); ylabel({'activation';'on l\_hand(R)'},'FontSize',FontSZ);              yticks(0:0.2:1);
+        xlim([tmin tmax]); ylim([0.0 1.0]); grid on
+        xlabel('time (s)','FontSize',FontSZ)
+        xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
+        yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+        
+    subplot(4,1,3); 
+        plot(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'*'); ylabel({'activation';'on l\_forearm(R)'},'FontSize',FontSZ);           yticks(0:0.2:1);  
+        xlim([tmin tmax]); ylim([0.0 1.0]); grid on
+        xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
+        yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+    
 
 % Joints' limits
 figure;
 for j=7:chainActiveDOF
     subplot(4,1,j-6); hold on;
-    plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_min_avoid_column),'--c','Marker','v','MarkerSize',2); % current min joint vel limit set by avoidance handler
+    plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_min_avoid_column),'--b','Marker','v','MarkerSize',2); % current min joint vel limit set by avoidance handler
     plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_max_avoid_column),'--m','Marker','^','MarkerSize',2); % current max joint vel limit set by avoidance handler
-    plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_min joint_info(j).vel_limit_min],'-.r'); % min joint vel limit
-    plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_max joint_info(j).vel_limit_max],'-.r'); % max joint vel limit   
     plot(time_rel_reactCtrl,d(:,joint_info(j).vel_column),'-k'); % current joint velocity
-    ylim([(joint_info(j).vel_limit_min - 1) (joint_info(j).vel_limit_max + 1) ]);
-    xlabel('t [s]');
-    ylabel('joint velocity [deg/s]');
-    title(joint_info(j).name);
+    
+    plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_min joint_info(j).vel_limit_min],'-.c'); % min joint vel limit
+    plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_max joint_info(j).vel_limit_max],'-.r'); % max joint vel limit   
+    
+    xlim([tmin tmax]); ylim([(joint_info(j).vel_limit_min - 1) (joint_info(j).vel_limit_max + 1) ]);
+    if j == chainActiveDOF
+        xlabel('time (s)','FontSize',FontSZ);
+    end
+    ylabel('joint vel(deg/s)','FontSize',FontSZ);
+    
+    title(joint_info(j).name,'FontSize',FontSZ);
     hold off;
+    xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
+    yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 end 
+legend('joint vel limit - min', 'joint vel limit - max', 'joint vel');
 
 % Keypoint evolution
 if PLOT_KEYPOINT_EVOLUTION
@@ -240,7 +274,10 @@ if PLOT_KEYPOINT_EVOLUTION
     plot_keypoint(time_rel_kp(keep), sL(keep,:), 'shoulder left');
 end
 
-moment = find(abs(time_rel_kp-20.0)<1.0 & abs(time_rel_kp-20.0)>=0.0);
-figure; plot3(hR(moment,1), hR(moment,2), hR(moment,3), '*--r', 'LineWidth',2); 
-grid on; title('Position of right hand');
+moment = find(time_rel_kp>=19.0 & time_rel_kp>=21.0);
+figure; plot3(hL(moment,1), hL(moment,2), hL(moment,3), '*--r', 'LineWidth',2); 
+grid on; title('Position of left hand');
+xlabel('x(m)', 'FontSize',FontSZ);
+ylabel('y(m)', 'FontSize',FontSZ);
+zlabel('z(m)', 'FontSize',FontSZ);
 
