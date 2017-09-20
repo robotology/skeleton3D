@@ -7,7 +7,7 @@ PLOT_KEYPOINT_EVOLUTION = 0;
 PLOT_DISTANCE_SEPARATE = 0;
 PLOT_ACTIVATION_SEPARATE = 0;
 
-EXPORT_TO_FILES = 0;
+EXPORT_TO_FILES = 1;
 
 idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
@@ -20,8 +20,11 @@ tmax = 130.0;
 % path = 'data_1725/';    % reach a point with changing valence
 % path = 'data_1740/';    % follow a circle with changing valence
 % path = 'data_1120/';    % follow a circle with changing valence stiff on
+
+% New format data
 % path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl
-path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl
+path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130
+% path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-250
 
 %% Keypoints
 filename_keypoints = 'keypoints/data.log';
@@ -248,7 +251,7 @@ fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % ha
         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_hL_l_locus(:,1),'.');
         ylabel({'distance (m)'; 'to EE(R)'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
-%         legend('left hand(H)', 'right hand(H)', 'head(H)', 'location','best');
+        legend('left hand(H)', 'right hand(H)', 'head(H)', 'location','best');
         xlim([tmin tmax]); ylim([0 0.7]); grid on
         
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
@@ -337,7 +340,7 @@ end
 
 % End-effector pose & desired
 
-f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); set(f11,'Color','white','Name','Target, reference, end-effector in time and space');  
+f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f11,'Color','white','Name','Target, reference, end-effector in time and space');  
     subplot(3,1,1);
         hold on;
         title('Reference and EE over time');
