@@ -268,7 +268,13 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     if (use_part_conf)
         part.addDouble(computeValence(partName));
     else
-        part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    {
+        if (partName == "handRight" | partName == "handLeft")
+            part.addDouble(hand_valence);
+        else
+            part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    }
+
     streamedObjs.addList()=part;
 }
 
