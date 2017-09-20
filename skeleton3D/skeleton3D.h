@@ -34,6 +34,7 @@ protected:
     double      period;
     string      name;
     double      body_valence;
+    double      hand_valence;
     double      part_dimension;
     bool        use_part_conf;
     bool        draw_lower;
@@ -186,6 +187,7 @@ public:
         if (_valence<=1.0 && _valence>=-1.0)
         {
             body_valence = _valence;
+            hand_valence = _valence;
             return true;
         }
         else
@@ -195,6 +197,22 @@ public:
     double get_valence()
     {
         return body_valence;
+    }
+
+    bool set_valence_hand(const double _valence)
+    {
+        if (_valence<=1.0 && _valence>=-1.0)
+        {
+            hand_valence = _valence;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_valence_hand()
+    {
+        return hand_valence;
     }
 
     bool set_filter_order(const int16_t _order)

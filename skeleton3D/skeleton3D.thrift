@@ -33,6 +33,19 @@ service skeleton3D_IDL
   double get_valence();
 
   /**
+  * Sets hand valence (threat).
+  * @param _valence thread value for both hands only.
+  * @return true/false on success/failure.
+  */
+  bool set_valence_hand(1:double _valence);
+
+  /**
+  * Gets the hand valence.
+  * @return the current hand_valence value.
+  */
+  double get_valence_hand();
+
+  /**
   * Sets the order of median filters for body parts
   * @param _order thread value for all body parts.
   * @return true/false on success/failure.

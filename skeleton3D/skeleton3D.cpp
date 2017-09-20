@@ -406,7 +406,12 @@ void    skeleton3D::addPartToStream(const Vector &pose, const string &partName, 
     if (use_part_conf)
         part.addDouble(computeValence(partName));
     else
-        part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    {
+        if (partName == "handRight" | partName == "handLeft")
+            part.addDouble(hand_valence);
+        else
+            part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    }
     streamedObjs.addList()=part;
 }
 
@@ -596,6 +601,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
+    hand_valence = body_valence;
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
