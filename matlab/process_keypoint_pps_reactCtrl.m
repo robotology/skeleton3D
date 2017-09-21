@@ -114,6 +114,7 @@ dist_hL=[];
 dist_head_l_locus=[];
 dist_hR_l_locus=[];
 dist_hL_l_locus=[];
+dist_l_locus = [];
 for i=1:length(time_rel_pps)
     idx = max(find(time_rel_kp<=time_rel_pps(i)));
     if (~isempty(idx))
@@ -136,6 +137,8 @@ for i=1:length(time_rel_pps)
         dist_hR_l_locus = [dist_hR_l_locus;1000,1000];
         dist_hL_l_locus = [dist_hL_l_locus;1000,1000];
     end
+    dist_l_locus = [dist_l_locus;   min([dist_head_l_locus(i,1),dist_hR_l_locus(i,1),dist_hL_l_locus(i,1)]),...
+                                    min([dist_head_l_locus(i,2),dist_hR_l_locus(i,2),dist_hL_l_locus(i,2)])];
 end
 idx
 %% Find the closest distance of the whole operation and draw the relation of event & taxel in 3D
