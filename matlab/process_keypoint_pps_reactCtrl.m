@@ -7,14 +7,14 @@ PLOT_KEYPOINT_EVOLUTION = 0;
 PLOT_DISTANCE_SEPARATE = 0;
 PLOT_ACTIVATION_SEPARATE = 0;
 
-EXPORT_TO_FILES = 1;
+EXPORT_TO_FILES = 0;
 
 idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 10.0;
-tmax = 130.0;
+tmin = 40.0;
+tmax = 110.0;
 
 % path = 'data_1535/';    % reach a point
 % path = 'data_1725/';    % reach a point with changing valence
@@ -22,8 +22,8 @@ tmax = 130.0;
 % path = 'data_1120/';    % follow a circle with changing valence stiff on
 
 % New format data
-% path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl
-path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130
+path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
+% path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130
 % path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-250
 
 %% Keypoints
@@ -252,9 +252,9 @@ fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % ha
 %         rectangle('Position',[time_rel_kp_valence_1(1) 0 time_rel_kp_valence_1(2)-time_rel_kp_valence_1(1) 0.7], 'FaceColor','yellow')
 %         plot(time_rel_kp_valence_1(2)*[1, 1], [0, 0.7],'y','LineWidth',3) 
         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
-        plot(time_rel_pps, dist_hL_l_locus(:,1),'.');
+        plot(time_rel_pps, dist_l_locus(:,1),'.');
         ylabel({'distance (m)'; 'to EE(R)'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
-        legend('left hand(H)', 'right hand(H)', 'head(H)', 'location','best');
+%         legend('left hand(H)', 'right hand(H)', 'head(H)', 'location','best');
         xlim([tmin tmax]); ylim([0 0.7]); grid on
         
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
@@ -265,7 +265,7 @@ fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % ha
 %         plot(time_rel_jnt, dist_hL_EB, time_rel_jnt, dist_hR_EB, time_rel_jnt, dist_head_EB, 'LineWidth',LineSZ);
 %         plot([time_rel_kp_valence_1(1),time_rel_kp_valence_1(1),time_rel_kp_valence_1(2),time_rel_kp_valence_1(2)], [0,0.7,0,0.7],'LineWidth',3,'y') 
         plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl, dist_hR_EB, time_rel_reactCtrl, dist_head_EB, 'LineWidth',LineSZ);
-        plot(time_rel_pps, dist_hL_l_locus(:,2),'.');
+        plot(time_rel_pps, dist_l_locus(:,2),'.');
         ylabel({'distance (m)'; 'to EB(R)'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); grid on
         title('HUMAN PARTS (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
