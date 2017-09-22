@@ -351,10 +351,10 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
             plot(time_rel_reactCtrl,d(:,targetEE_x.column),'go','MarkerSize',3);    % generated reference
             plot(time_rel_reactCtrl,d(:,EE_x.column),'k.','MarkerSize',4);          % current
             
-%             plot(time_rel_kp,hL(:,1),'bo--');
+%             plot(time_rel_kp,hL(:,1),'.','MarkerSize',2);
             ylabel('x(m)', 'FontSize',FontSZ);
         hold off;
-        xlim([tmin tmax]); %ylim([min(d(:,target_x.column))-0.1, max(d(:,target_x.column))+0.1])
+        xlim([tmin tmax]); ylim([min(d(:,EE_x.column))-0.1, max(d(:,EE_x.column))+0.1])
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
@@ -364,10 +364,10 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
             plot(time_rel_reactCtrl,d(:,targetEE_y.column),'go','MarkerSize',3);
             plot(time_rel_reactCtrl,d(:,EE_y.column),'k.','MarkerSize',4);
             
-%             plot(time_rel_kp,hL(:,2),'bo--');
+%             plot(time_rel_kp,hL(:,2),'.','MarkerSize',2);
             ylabel('y(m)', 'FontSize',FontSZ);
         hold off;  
-        xlim([tmin tmax]); %ylim([min(d(:,target_y.column))-0.1, max(d(:,target_y.column))+0.1])
+        xlim([tmin tmax]); ylim([min(d(:,EE_y.column))-0.1, max(d(:,EE_y.column))+0.1])
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
@@ -377,11 +377,11 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
             plot(time_rel_reactCtrl,d(:,targetEE_z.column),'go','MarkerSize',3);
             plot(time_rel_reactCtrl,d(:,EE_z.column),'k.','MarkerSize',4);
             
-%             plot(time_rel_kp,hL(:,3),'bo--');
+%             plot(time_rel_kp,hL(:,3),'.','MarkerSize',2);
             ylabel('z(m)', 'FontSize',FontSZ);
             xlabel('time(s)', 'FontSize',FontSZ);
         hold off;
-        xlim([tmin tmax]); %ylim([min(d(:,target_z.column))-0.05, max(d(:,target_z.column))+0.05])
+        xlim([tmin tmax]); ylim([min(d(:,EE_z.column))-0.05, max(d(:,EE_z.column))+0.05])
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
