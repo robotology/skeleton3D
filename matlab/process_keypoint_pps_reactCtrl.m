@@ -7,14 +7,15 @@ PLOT_KEYPOINT_EVOLUTION = 0;
 PLOT_DISTANCE_SEPARATE = 0;
 PLOT_ACTIVATION_SEPARATE = 0;
 
-EXPORT_TO_FILES = 0;
+EXPORT_TO_FILES = 1;
+results_path = './results';
 
 idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 40.0;
-tmax = 110.0;
+tmin = 65.0;
+tmax = 100.0;
 
 % path = 'data_1535/';    % reach a point
 % path = 'data_1725/';    % reach a point with changing valence
@@ -23,8 +24,8 @@ tmax = 110.0;
 
 % New format data
 path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
-% path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130
-% path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-250
+path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130
+% path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 160-240
 
 %% Keypoints
 filename_keypoints = 'keypoints/data.log';
@@ -274,14 +275,18 @@ fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % ha
         hold off
         
     subplot(4,1,4); 
-        plot(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'*'); ylabel({'activation';'on l\_hand(R)'},'FontSize',FontSZ);              yticks(0:0.2:1);
+%         plot(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'*'); 
+        area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','b','FaceColor','c','FaceAlpha',0.5); 
+        ylabel({'activation';'on l\_hand(R)'},'FontSize',FontSZ);              yticks(0:0.2:1);
         xlim([tmin tmax]); ylim([0.0 1.0]); grid on
         xlabel('time (s)','FontSize',FontSZ)
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
         
     subplot(4,1,3); 
-        plot(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'*'); ylabel({'activation';'on l\_forearm(R)'},'FontSize',FontSZ);           yticks(0:0.2:1);  
+%         plot(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'*'); 
+        area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','b','FaceColor','c','FaceAlpha',0.5); 
+        ylabel({'activation';'on l\_forearm(R)'},'FontSize',FontSZ);           yticks(0:0.2:1);  
         xlim([tmin tmax]); ylim([0.0 1.0]); grid on
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
@@ -354,7 +359,8 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
 %             plot(time_rel_kp,hL(:,1),'.','MarkerSize',2);
             ylabel('x(m)', 'FontSize',FontSZ);
         hold off;
-        xlim([tmin tmax]); ylim([min(d(:,EE_x.column))-0.1, max(d(:,EE_x.column))+0.1])
+        xlim([tmin tmax]); 
+%         ylim([min(d(:,EE_x.column))-0.1, max(d(:,EE_x.column))+0.1])
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
@@ -367,7 +373,8 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
 %             plot(time_rel_kp,hL(:,2),'.','MarkerSize',2);
             ylabel('y(m)', 'FontSize',FontSZ);
         hold off;  
-        xlim([tmin tmax]); ylim([min(d(:,EE_y.column))-0.1, max(d(:,EE_y.column))+0.1])
+        xlim([tmin tmax]); 
+%         ylim([min(d(:,EE_y.column))-0.1, max(d(:,EE_y.column))+0.1])
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
@@ -381,7 +388,8 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
             ylabel('z(m)', 'FontSize',FontSZ);
             xlabel('time(s)', 'FontSize',FontSZ);
         hold off;
-        xlim([tmin tmax]); ylim([min(d(:,EE_z.column))-0.05, max(d(:,EE_z.column))+0.05])
+        xlim([tmin tmax]); 
+%         ylim([min(d(:,EE_z.column))-0.05, max(d(:,EE_z.column))+0.05])
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
@@ -412,16 +420,23 @@ disp('wait 10 second...');
 pause(10);
 
 if (EXPORT_TO_FILES)
-    cd('results');
+    has_results = exist(results_path);
+    switch has_results
+        case 0
+            mkdir(results_path);
+            cd(results_path);
+        case 7
+            cd(results_path);
+    end
     mkdir(path);
     cd ..
-    filename_dist_act = strcat('results/',path,'/exp_distance_activation_valence_',...
+    filename_dist_act = strcat(results_path,'/',path,'/exp_distance_activation_valence_',...
                                num2str(hL(dur(1),5)),'_',num2str(tmin),'_',num2str(tmax),'_cut.eps');
     print(fig_dist_act,'-depsc',filename_dist_act);
-    filename_jnt_lim = strcat('results//',path,'/exp_joint_vel_valence_',...
+    filename_jnt_lim = strcat(results_path,'/',path,'/exp_joint_vel_valence_',...
                               num2str(hL(dur(1),5)),'_',num2str(tmin),'_',num2str(tmax),'_cut.eps');
     print(fig_jnt_lim,'-depsc',filename_jnt_lim);
-    filename_target_current = strcat('results//',path,'/exp_target_current_valence_',...
+    filename_target_current = strcat(results_path,'/',path,'/exp_target_current_valence_',...
                               num2str(hL(dur(1),5)),'_',num2str(tmin),'_',num2str(tmax),'_cut.eps');
     print(f11,'-depsc',filename_target_current);
 end
