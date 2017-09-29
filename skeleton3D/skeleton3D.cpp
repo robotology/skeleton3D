@@ -92,7 +92,7 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
                 tmp[1]=reply.get(i+1).asDouble();
                 tmp[2]=reply.get(i+2).asDouble();
 
-                if (norm(tmp)>0.0)
+                if (norm(tmp)>0.0 & tmp[0]>0.0 & tmp[0]<=5.0)
                 {
                     x+=tmp;
                     cnt++;
