@@ -14,8 +14,8 @@ idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 65.0;
-tmax = 100.0;
+tmin = 100.0;
+tmax = 260.0;
 
 % path = 'data_1535/';    % reach a point
 % path = 'data_1725/';    % reach a point with changing valence
@@ -24,8 +24,11 @@ tmax = 100.0;
 
 % New format data
 path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
-path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130
-% path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 160-240
+path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
+path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 160-240
+% path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240
+% path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150
+% path = 'data_1755/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 90-170
 
 %% Keypoints
 filename_keypoints = 'keypoints/data.log';
@@ -398,13 +401,13 @@ if PLOT_KEYPOINT_EVOLUTION
     keep = find(time_rel_kp>11.0 & time_rel_kp<42.0);
     keep = find(time_rel_kp>0.0);
 
-    plot_keypoint(time_rel_kp(keep), head(keep,:), 'head');
-    plot_keypoint(time_rel_kp(keep), hR(keep,:), 'hand right');
-    plot_keypoint(time_rel_kp(keep), hL(keep,:), 'hand left');
-    plot_keypoint(time_rel_kp(keep), eR(keep,:), 'elbow right');
-    plot_keypoint(time_rel_kp(keep), eL(keep,:), 'elbow left');
-    plot_keypoint(time_rel_kp(keep), sR(keep,:), 'shoulder right');
-    plot_keypoint(time_rel_kp(keep), sL(keep,:), 'shoulder left');
+    plot_keypoint(time_rel_kp(keep), head(keep,:), 'head', tmin, tmax);
+    plot_keypoint(time_rel_kp(keep), hR(keep,:), 'hand right', tmin, tmax);
+    plot_keypoint(time_rel_kp(keep), hL(keep,:), 'hand left', tmin, tmax);
+    plot_keypoint(time_rel_kp(keep), eR(keep,:), 'elbow right', tmin, tmax);
+    plot_keypoint(time_rel_kp(keep), eL(keep,:), 'elbow left', tmin, tmax);
+    plot_keypoint(time_rel_kp(keep), sR(keep,:), 'shoulder right', tmin, tmax);
+    plot_keypoint(time_rel_kp(keep), sL(keep,:), 'shoulder left', tmin, tmax);
 end
 
 moment = find(time_rel_kp>=19.0 & time_rel_kp>=21.0);
