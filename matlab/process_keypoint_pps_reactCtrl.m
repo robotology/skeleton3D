@@ -6,6 +6,7 @@ close all;
 PLOT_KEYPOINT_EVOLUTION = 0;
 PLOT_DISTANCE_SEPARATE = 0;
 PLOT_ACTIVATION_SEPARATE = 0;
+PLOT_DIST_EE = 0;
 
 EXPORT_TO_FILES = 1;
 results_path = './results';
@@ -14,8 +15,8 @@ idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 100.0;
-tmax = 260.0;
+tmin = 110.0;
+tmax = 150.0;
 
 % path = 'data_1535/';    % reach a point
 % path = 'data_1725/';    % reach a point with changing valence
@@ -26,8 +27,8 @@ tmax = 260.0;
 path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
 path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
 path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 160-240
-% path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240
-% path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150
+%path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240 21-75
+path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150
 % path = 'data_1755/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 90-170
 
 %% Keypoints
@@ -226,7 +227,7 @@ xlabel('x(m)','FontSize',FontSZ);
 ylabel('y(m)','FontSize',FontSZ);
 zlabel('z(m)','FontSize',FontSZ);
 
-% Activation over time
+%% Activation over time
 if PLOT_ACTIVATION_SEPARATE
     plot_activation(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'left hand');
     plot_activation(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'left forearm');
@@ -234,7 +235,7 @@ if PLOT_ACTIVATION_SEPARATE
     plot_activation(time_rel_pps, part5(:,idx_ppsEv_on_skin_act),'right forearm');
 end
 
-% Distance of control points in an arm (hand, wrist, mid-arm, elbow) over time
+%% Distance of control points in an arm (hand, wrist, mid-arm, elbow) over time
 if PLOT_DISTANCE_SEPARATE
     plot_distance(time_rel_reactCtrl, dist_head_EE, 'head','EE');
     plot_distance(time_rel_reactCtrl, dist_hR_EE, 'right hand','EE');
@@ -249,7 +250,10 @@ if PLOT_DISTANCE_SEPARATE
     plot_distance(time_rel_jnt, dist_hL_EB, 'left hand','EB');
 end
 
-% Distance & activation
+%% Distance & activation
+pps_time = time_rel_pps(1):time_rel_pps(end);
+pps_thres = 0.2*ones(length(pps_time));
+
 fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % half left of the screen
     dur = find_idx_in_duration(time_rel_pps, tmin, tmax);
     subplot(4,1,2); hold on
@@ -323,7 +327,7 @@ fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % ha
 %         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
 
-% Joints' limits
+%% Joints' limits
 fig_jnt_lim = figure('units','normalized','outerposition',[0.5 0 0.5 1]);
 for j=7:chainActiveDOF
     subplot(4,1,j-6); 
@@ -349,7 +353,7 @@ end
 % legend('joint vel limit - min', 'joint vel limit - max', 'joint vel', 'location','best');
 % set(gcf, 'Position', get(0, 'Screensize'));
 
-% End-effector pose & desired
+%% End-effector pose & desired
 
 f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f11,'Color','white','Name','Target, reference, end-effector in time and space');  
     subplot(3,1,1);
@@ -396,7 +400,21 @@ f11 = figure('units','normalized','outerposition',[0 0 0.5 1]); clf(f11); %set(f
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
-% Keypoint evolution
+dist = [];
+for i = 1:length(time_rel_reactCtrl)
+    dist = [dist; norm(d(i,targetEE_x.column:targetEE_z.column)-d(i,EE_x.column:EE_z.column))];
+end
+
+if PLOT_DIST_EE
+    fig_dist_EE = figure('units','normalized','outerposition',[0.5 0 0.5 1]);
+    plot(time_rel_reactCtrl,dist,'go','MarkerSize',3);
+    title('Error between Reference and EE over time');
+    xlim([tmin tmax]); xlabel('time(s)', 'FontSize',FontSZ);
+    xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
+    yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+end
+        
+%% Keypoint evolution
 if PLOT_KEYPOINT_EVOLUTION
     keep = find(time_rel_kp>11.0 & time_rel_kp<42.0);
     keep = find(time_rel_kp>0.0);
@@ -416,6 +434,9 @@ grid on; title('Position of left hand');
 xlabel('x(m)', 'FontSize',FontSZ);
 ylabel('y(m)', 'FontSize',FontSZ);
 zlabel('z(m)', 'FontSize',FontSZ);
+
+%%
+fig_all_in
 
 %% Export
 
@@ -442,4 +463,8 @@ if (EXPORT_TO_FILES)
     filename_target_current = strcat(results_path,'/',path,'/exp_target_current_valence_',...
                               num2str(hL(dur(1),5)),'_',num2str(tmin),'_',num2str(tmax),'_cut.eps');
     print(f11,'-depsc',filename_target_current);
+    
+    filename_all = strcat(results_path,'/',path,'/exp_all_',...
+                          num2str(tmin),'_',num2str(tmax),'_cut.eps');
+    print(fig_all_in_once,'-depsc',filename_all);
 end

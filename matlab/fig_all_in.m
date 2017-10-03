@@ -1,11 +1,9 @@
 plot_2_joint = 1;
 
-no_pps1 = find(part1 == -1000);
-part1(no_pps1)=0;
-no_pps2 = find(part2 == -1000);
-part1(no_pps2)=0;
-
-pps_thres = 0.2*ones(length(time_rel_pps));
+% no_pps1 = find(part1 == -1000);
+% part1(no_pps1)=0;
+% no_pps2 = find(part2 == -1000);
+% part1(no_pps2)=0;
 
 if plot_2_joint
     nb_subplot = 5;
@@ -24,7 +22,7 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
         plot(time_rel_pps, dist_l_locus(:,1),'m.');
         
         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
-        plot(time_rel_pps,pps_thres,'--r');
+        plot(pps_time,pps_thres,'--r');
         
 %         [ax,h1,h2] = plotyy(tmin:tmax,0:0.7,tmin:tmax,0:0.7);
 %         set(ax,'NextPlot','add')
@@ -46,7 +44,7 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
         set(a2, 'color', 'none');
         set(a2, 'XTick', []);
         % Set scala for second Y.
-        set(a2, 'YLim', [0 0.7], 'YTick',0:0.2:0.7); yticks(a2,0:0.2:0.7);
+        set(a2, 'YLim', [0 0.7], 'YTick',0:0.2:0.7); 
         
         hold off
         
@@ -55,6 +53,8 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
         plot(time_rel_pps, dist_l_locus(:,2),'m.');
         
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2); 
+        plot(pps_time,pps_thres,'--r');
+        
         ylabel({'dist. to EB(m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); grid on
 %         title('HUMAN PARTS (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
@@ -101,7 +101,7 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
 %         end
         ylabel('jnt vel(deg/s)','FontSize',FontSZ);
 
-        title(joint_info(j).name,'FontSize',FontSZ);
+%         title(joint_info(j).name,'FontSize',FontSZ);
         hold off;
         set(gca, 'XTickLabel', [])
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
