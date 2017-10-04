@@ -535,8 +535,8 @@ bool    skeleton3D::drawBodyGui(Agent *a)
 
     if (a && a->m_present==1.0)
     {
-        initShowBodySegGui("upper","red");
-        initShowBodySegGui("spine","blue");
+        initShowBodySegGui("upper","blue");
+        initShowBodySegGui("spine","red");
         if (draw_lower)
             initShowBodySegGui("lower","purple");
         Vector partPos(3,0.0), hipL(3,0.0), hipR(3,0.0);
