@@ -1,5 +1,5 @@
 plot_2_joint = 1;
-
+FontSZ = 12;
 % no_pps1 = find(part1 == -1000);
 % part1(no_pps1)=0;
 % no_pps2 = find(part2 == -1000);
@@ -8,16 +8,21 @@ plot_2_joint = 1;
 if plot_2_joint
     nb_subplot = 5;
     nb_jnts_plot = 2;
-    jnts_plot = 8:2:chainActiveDOF;
+%     jnts_plot = 8:2:chainActiveDOF;
+    jnts_plot = chainActiveDOF:-2:8;
+    out_pos = [0 0 15 21.5];
 else
     nb_subplot = 7;
     nb_jonts_plot = 4;
-    jnts_plot = 7:chainActiveDOF;
+%     jnts_plot = 7:chainActiveDOF;
+    jnts_plot = chainActiveDOF:-1:7;
+    out_pos = [0 0 15 30];
 end
 
-fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
+% fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
+fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
 
-    subplot(nb_subplot,1,2); hold on
+    subplot(nb_subplot,1,1); hold on
         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_l_locus(:,1),'m.');
         
@@ -30,7 +35,7 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
 %         plot(ax(1),time_rel_pps, dist_l_locus(:,1),'m.');
 %         area(ax(2),time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
           
-        ylabel({'dist. to EE(m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
+        ylabel({'distance to', 'end-eff. (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); 
         grid on
         
@@ -48,14 +53,14 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
         
         hold off
         
-    subplot(nb_subplot,1,1); hold on
+    subplot(nb_subplot,1,2); hold on
         plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl, dist_head_EB, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_l_locus(:,2),'m.');
         
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2); 
         plot(pps_time,pps_thres,'--r');
         
-        ylabel({'dist. to EB(m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
+        ylabel({'distance to', 'elbow (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); grid on
 %         title('HUMAN PARTS (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
         set(gca, 'XTickLabel', [])
@@ -79,12 +84,17 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
     for j=jnts_plot
         if (plot_2_joint)
             if j==8
-                k = 1;
+                k = 0;
             elseif j==10
-                k = 2;
+                k = 3;
             end
         else
-            k = 0;
+            switch j
+                case {7 , 8}
+                    k = -2;
+                case {9 , 10}
+                    k = 2;
+            end
         end
         subplot(nb_subplot,1,j-6+2-k); 
         hold on;
@@ -99,7 +109,7 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
 %         if j == chainActiveDOF
 %             xlabel('time (s)','FontSize',FontSZ);
 %         end
-        ylabel('jnt vel(deg/s)','FontSize',FontSZ);
+        ylabel({joint_info(j).name,'vel. (deg/s)'},'FontSize',FontSZ);
 
 %         title(joint_info(j).name,'FontSize',FontSZ);
         hold off;
@@ -110,8 +120,8 @@ fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
     subplot(nb_subplot,1,nb_subplot);
         plot(time_rel_reactCtrl,dist,'go','MarkerSize',3);
 %         title('Error between Reference and EE over time');
-        ylabel('Eucl. dist(m)','FontSize',FontSZ);
-        xlim([tmin tmax]); xlabel('time(s)', 'FontSize',FontSZ);
+        ylabel({'end-eff.','error (m)'},'FontSize',FontSZ);
+        xlim([tmin tmax]); xlabel('time (s)', 'FontSize',FontSZ);
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
         grid on;

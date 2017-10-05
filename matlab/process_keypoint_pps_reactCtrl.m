@@ -15,8 +15,8 @@ idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 110.0;
-tmax = 150.0;
+tmin = 170.0;
+tmax = 240.0;
 
 % path = 'data_1535/';    % reach a point
 % path = 'data_1725/';    % reach a point with changing valence
@@ -26,9 +26,9 @@ tmax = 150.0;
 % New format data
 path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
 path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
-path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 160-240
-%path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240 21-75
-path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150
+path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-240
+% path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240 21-75
+% path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150
 % path = 'data_1755/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 90-170
 
 %% Keypoints
