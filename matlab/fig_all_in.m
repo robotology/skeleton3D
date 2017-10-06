@@ -1,5 +1,10 @@
-plot_2_joint = 1;
+plot_2_joint = 2;
+plot_dist_thres = 0;
+plot_dist_mod_thres = 1;
+plot_dist_inc_thres = 0;
 FontSZ = 12;
+
+h_new_sp = 0.02;
 % no_pps1 = find(part1 == -1000);
 % part1(no_pps1)=0;
 % no_pps2 = find(part2 == -1000);
@@ -28,19 +33,21 @@ end
 % fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
 fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
 
-    subplot(nb_subplot,1,1); hold on
+    sp_handle1 = subplot(nb_subplot,1,1); hold on
         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_l_locus(:,1),'m.');
         
         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
 %         plot(pps_time,pps_thres,'--c');
-        plot(pps_time,dist_thres,'--r');
-        
-%         [ax,h1,h2] = plotyy(tmin:tmax,0:0.7,tmin:tmax,0:0.7);
-%         set(ax,'NextPlot','add')
-%         plot(ax(1),time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
-%         plot(ax(1),time_rel_pps, dist_l_locus(:,1),'m.');
-%         area(ax(2),time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
+        if plot_dist_thres
+            plot(pps_time,dist_thres,'--g');
+        end
+        if plot_dist_mod_thres
+            plot(pps_time,dist_mod_thres,'--b');
+        end
+        if plot_dist_inc_thres
+            plot(pps_time,dist_inc_thres,'--','color',[1 0.5 0]);
+        end
           
         ylabel({'distance to', 'end-eff. (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); 
@@ -48,7 +55,11 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         
         set(gca, 'XTickLabel', [])
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
-        
+        if plot_2_joint==2
+            pos1 = get(sp_handle1,'Position');
+            pos1_new = pos1+ [0 h_new_sp 0 h_new_sp];
+            set(sp_handle1,'Position',pos1_new);
+        end
 %         box off
         % Create second Y axes on the right.
         a2 = axes('YAxisLocation', 'Right');
@@ -60,19 +71,32 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         
         hold off
         
-    subplot(nb_subplot,1,2); hold on
+    sp_handle2 = subplot(nb_subplot,1,2); hold on
         plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl, dist_head_EB, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_l_locus(:,2),'m.');
         
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2); 
 %         plot(pps_time,pps_thres,'--c');
-        plot(pps_time,dist_thres,'--r');
+        if plot_dist_thres
+            plot(pps_time,dist_thres,'--g');
+        end
+        if plot_dist_mod_thres
+            plot(pps_time,dist_mod_thres,'--b');
+        end
+        if plot_dist_inc_thres
+            plot(pps_time,dist_inc_thres,'--','color',[1 0.5 0]);
+        end
         
         ylabel({'distance to', 'elbow (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); grid on
 %         title('HUMAN PARTS (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
         set(gca, 'XTickLabel', [])
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+        if plot_2_joint==2
+            pos2 = get(sp_handle2,'Position');
+            pos2_new = pos2+ [0 0.0 0 h_new_sp];
+            set(sp_handle2,'Position',pos2_new);
+        end
         hold off
         
 %     subplot(9,1,4); 

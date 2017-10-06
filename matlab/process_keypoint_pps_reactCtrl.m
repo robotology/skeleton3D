@@ -15,8 +15,8 @@ idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 21.0;
-tmax = 75.0;
+tmin = 110.0;
+tmax = 150.0;
 
 % path = 'data_1535/';    % reach a point
 % path = 'data_1725/';    % reach a point with changing valence
@@ -27,8 +27,8 @@ tmax = 75.0;
 path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
 path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
 path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-240
-path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240 21-75
-% path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150 or 10-45
+%path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 10-110 200-240 21-75 140-200(neutral)
+path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150 or 10-45 10-55
 % path = 'data_1755/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 90-170
 
 %% Keypoints
@@ -255,6 +255,7 @@ pps_time = time_rel_pps(1):time_rel_pps(end);
 pps_thres = 0.2*ones(length(pps_time));
 dist_thres= 0.3*ones(length(pps_time));
 dist_mod_thres = 0.23*ones(length(pps_time));
+dist_inc_thres = 0.35*ones(length(pps_time));
 
 fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % half left of the screen
     dur = find_idx_in_duration(time_rel_pps, tmin, tmax);
