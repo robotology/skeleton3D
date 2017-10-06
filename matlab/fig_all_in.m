@@ -5,18 +5,24 @@ FontSZ = 12;
 % no_pps2 = find(part2 == -1000);
 % part1(no_pps2)=0;
 
-if plot_2_joint
+if plot_2_joint==1      % plot 2 joints
     nb_subplot = 5;
     nb_jnts_plot = 2;
 %     jnts_plot = 8:2:chainActiveDOF;
     jnts_plot = chainActiveDOF:-2:8;
     out_pos = [0 0 15 21.5];
-else
+elseif plot_2_joint==0  % plot 4 joints
     nb_subplot = 7;
-    nb_jonts_plot = 4;
+    nb_jnts_plot = 4;
 %     jnts_plot = 7:chainActiveDOF;
     jnts_plot = chainActiveDOF:-1:7;
     out_pos = [0 0 15 30];
+elseif plot_2_joint==2  % plot 7 joints, including 3 stupid shoulders
+    nb_subplot = 10;
+    nb_jnts_plot = 7;
+    jnts_plot = chainActiveDOF:-1:4;
+    out_pos = [0 0 12 30];
+    FontSZ = 8;
 end
 
 % fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
@@ -27,7 +33,8 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         plot(time_rel_pps, dist_l_locus(:,1),'m.');
         
         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
-        plot(pps_time,pps_thres,'--r');
+%         plot(pps_time,pps_thres,'--c');
+        plot(pps_time,dist_thres,'--r');
         
 %         [ax,h1,h2] = plotyy(tmin:tmax,0:0.7,tmin:tmax,0:0.7);
 %         set(ax,'NextPlot','add')
@@ -58,7 +65,8 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         plot(time_rel_pps, dist_l_locus(:,2),'m.');
         
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2); 
-        plot(pps_time,pps_thres,'--r');
+%         plot(pps_time,pps_thres,'--c');
+        plot(pps_time,dist_thres,'--r');
         
         ylabel({'distance to', 'elbow (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); grid on
@@ -82,17 +90,26 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
 %         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
         
     for j=jnts_plot
-        if (plot_2_joint)
+        if plot_2_joint==1
             if j==8
                 k = 0;
             elseif j==10
                 k = 3;
             end
-        else
+        elseif plot_2_joint==0
             switch j
                 case {7 , 8}
                     k = -2;
                 case {9 , 10}
+                    k = 2;
+            end
+        elseif plot_2_joint==2
+            switch j
+                case {4,5,6}
+                    k = -7;
+                case {7,8}
+                    k = -2;
+                case {9, 10}
                     k = 2;
             end
         end
@@ -102,8 +119,8 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_max_avoid_column),'--m','Marker','^','MarkerSize',2); % current max joint vel limit set by avoidance handler
         plot(time_rel_reactCtrl,d(:,joint_info(j).vel_column),'-k'); % current joint velocity
 
-        plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_min joint_info(j).vel_limit_min],'-.c'); % min joint vel limit
-        plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_max joint_info(j).vel_limit_max],'-.r'); % max joint vel limit   
+%         plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_min joint_info(j).vel_limit_min],'-.c'); % min joint vel limit
+%         plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_max joint_info(j).vel_limit_max],'-.r'); % max joint vel limit   
 
         xlim([tmin tmax]); ylim([(joint_info(j).vel_limit_min - 1) (joint_info(j).vel_limit_max + 1) ]);
 %         if j == chainActiveDOF
