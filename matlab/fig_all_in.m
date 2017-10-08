@@ -1,7 +1,7 @@
 plot_2_joint = 2;
-plot_dist_thres = 0;
-plot_dist_mod_thres = 1;
-plot_dist_inc_thres = 0;
+plot_dist_thres = 0;        % neutral
+plot_dist_mod_thres = 1;    % reduced
+plot_dist_inc_thres = 0;    % increased
 FontSZ = 12;
 
 h_new_sp = 0.02;
@@ -40,13 +40,13 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
 %         plot(pps_time,pps_thres,'--c');
         if plot_dist_thres
-            plot(pps_time,dist_thres,'--g');
+            plot(pps_time,dist_thres,'--g','LineWidth',1);
         end
         if plot_dist_mod_thres
-            plot(pps_time,dist_mod_thres,'--b');
+            plot(pps_time,dist_mod_thres,'--b','LineWidth',1);
         end
         if plot_dist_inc_thres
-            plot(pps_time,dist_inc_thres,'--','color',[1 0.5 0]);
+            plot(pps_time,dist_inc_thres,'--','color',[1 0.5 0],'LineWidth',1);
         end
           
         ylabel({'distance to', 'end-eff. (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
@@ -78,13 +78,13 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2); 
 %         plot(pps_time,pps_thres,'--c');
         if plot_dist_thres
-            plot(pps_time,dist_thres,'--g');
+            plot(pps_time,dist_thres,'--g','LineWidth',1);
         end
         if plot_dist_mod_thres
-            plot(pps_time,dist_mod_thres,'--b');
+            plot(pps_time,dist_mod_thres,'--b','LineWidth',1);
         end
         if plot_dist_inc_thres
-            plot(pps_time,dist_inc_thres,'--','color',[1 0.5 0]);
+            plot(pps_time,dist_inc_thres,'--','color',[1 0.5 0],'LineWidth',1);
         end
         
         ylabel({'distance to', 'elbow (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
