@@ -65,6 +65,13 @@ install:
   - sudo make install
   - cd ../../
 
+  - git clone https://github.com/FloopCZ/tensorflow_cc
+  - cd tensorflow_cc
+  - mkdir build && cd build
+  - cmake -DTENSORFLOW_STATIC=OFF -DTENSORFLOW_SHARED=ON ..
+  - sudo make install
+  - cd ../../
+
   - cd skeleton3D
 
 before_script:
