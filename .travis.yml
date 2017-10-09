@@ -73,6 +73,8 @@ install:
   - tar -xvzf cmake-3.4.1.tar.gz 
   - cd cmake-3.4.1/ 
   - ./configure 
+  - sudo make install
+  - update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 --force
 
 
   - git clone https://github.com/FloopCZ/tensorflow_cc
