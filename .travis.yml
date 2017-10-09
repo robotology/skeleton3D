@@ -65,8 +65,12 @@ install:
   - sudo make install
   - cd ../../
 
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install build-essential curl git cmake unzip autoconf autogen libtool mlocate zlib1g-dev \
+                     python python3-numpy python3-dev python3-pip python3-wheel
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo updatedb
+
   - git clone https://github.com/FloopCZ/tensorflow_cc
-  - cd tensorflow_cc
+  - cd tensorflow_cc/tensorflow_cc
   - mkdir build && cd build
   - cmake -DTENSORFLOW_STATIC=OFF -DTENSORFLOW_SHARED=ON ..
   - sudo make install
