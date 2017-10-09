@@ -38,7 +38,6 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         plot(time_rel_pps, dist_l_locus(:,1),'m.');
         
         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2);
-%         plot(pps_time,pps_thres,'--c');
         if plot_dist_thres
             plot(pps_time,dist_thres,'--g','LineWidth',1);
         end
@@ -60,15 +59,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
             pos1_new = pos1+ [0 h_new_sp 0 h_new_sp];
             set(sp_handle1,'Position',pos1_new);
         end
-%         box off
-        % Create second Y axes on the right.
-        a2 = axes('YAxisLocation', 'Right');
-        % Hide second plot.
-        set(a2, 'color', 'none');
-        set(a2, 'XTick', []);
-        % Set scala for second Y.
-        set(a2, 'YLim', [0 0.7], 'YTick',0:0.2:0.7); 
-        
+       
         hold off
         
     sp_handle2 = subplot(nb_subplot,1,2); hold on
@@ -76,7 +67,6 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         plot(time_rel_pps, dist_l_locus(:,2),'m.');
         
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','c','FaceColor','c','FaceAlpha',0.2); 
-%         plot(pps_time,pps_thres,'--c');
         if plot_dist_thres
             plot(pps_time,dist_thres,'--g','LineWidth',1);
         end
@@ -89,7 +79,6 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         
         ylabel({'distance to', 'elbow (m)'},'FontSize',FontSZ);   yticks(0:0.2:0.7); 
         xlim([tmin tmax]); ylim([0 0.7]); grid on
-%         title('HUMAN PARTS (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
         set(gca, 'XTickLabel', [])
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
         if plot_2_joint==2
@@ -98,20 +87,6 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
             set(sp_handle2,'Position',pos2_new);
         end
         hold off
-        
-%     subplot(9,1,4); 
-%         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor','b','FaceColor','c','FaceAlpha',0.5); 
-%         ylabel({'activation';'on l\_hand(R)'},'FontSize',FontSZ);              yticks(0:0.2:1);
-%         xlim([tmin tmax]); ylim([0.0 1.0]); grid on
-%         set(gca, 'XTickLabel', [])
-%         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
-        
-%     subplot(9,1,3); 
-%         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor','b','FaceColor','c','FaceAlpha',0.5); 
-%         ylabel({'activation';'on l\_forearm(R)'},'FontSize',FontSZ);           yticks(0:0.2:1);  
-%         xlim([tmin tmax]); ylim([0.0 1.0]); grid on
-%         set(gca, 'XTickLabel', [])
-%         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
         
     for j=jnts_plot
         if plot_2_joint==1
@@ -143,16 +118,12 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_max_avoid_column),'--m','Marker','^','MarkerSize',2); % current max joint vel limit set by avoidance handler
         plot(time_rel_reactCtrl,d(:,joint_info(j).vel_column),'-k'); % current joint velocity
 
-%         plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_min joint_info(j).vel_limit_min],'-.c'); % min joint vel limit
-%         plot([time_rel_reactCtrl(1) time_rel_reactCtrl(end)],[joint_info(j).vel_limit_max joint_info(j).vel_limit_max],'-.r'); % max joint vel limit   
-
         xlim([tmin tmax]); ylim([(joint_info(j).vel_limit_min - 1) (joint_info(j).vel_limit_max + 1) ]);
 %         if j == chainActiveDOF
 %             xlabel('time (s)','FontSize',FontSZ);
 %         end
         ylabel({joint_info(j).name,'vel. (deg/s)'},'FontSize',FontSZ);
 
-%         title(joint_info(j).name,'FontSize',FontSZ);
         hold off;
         set(gca, 'XTickLabel', [])
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
@@ -160,7 +131,6 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
     
     subplot(nb_subplot,1,nb_subplot);
         plot(time_rel_reactCtrl,dist,'go','MarkerSize',3);
-%         title('Error between Reference and EE over time');
         ylabel({'end-eff.','error (m)'},'FontSize',FontSZ);
         xlim([tmin tmax]); xlabel('time (s)', 'FontSize',FontSZ);
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);

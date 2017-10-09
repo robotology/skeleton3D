@@ -260,7 +260,6 @@ dist_inc_thres = 0.35*ones(length(pps_time));
 fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % half left of the screen
     dur = find_idx_in_duration(time_rel_pps, tmin, tmax);
     subplot(4,1,2); hold on
-%         rectangle('Position',[time_rel_kp_valence_1(1) 0 time_rel_kp_valence_1(2)-time_rel_kp_valence_1(1) 0.7], 'FaceColor','yellow')
 %         plot(time_rel_kp_valence_1(2)*[1, 1], [0, 0.7],'y','LineWidth',3) 
         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_l_locus(:,1),'.');
@@ -274,7 +273,6 @@ fig_dist_act = figure('units','normalized','outerposition',[0 0 0.5 1]);    % ha
         
     subplot(4,1,1); hold on
 %         plot(time_rel_jnt, dist_hL_EB, time_rel_jnt, dist_hR_EB, time_rel_jnt, dist_head_EB, 'LineWidth',LineSZ);
-%         plot([time_rel_kp_valence_1(1),time_rel_kp_valence_1(1),time_rel_kp_valence_1(2),time_rel_kp_valence_1(2)], [0,0.7,0,0.7],'LineWidth',3,'y') 
         plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl, dist_hR_EB, time_rel_reactCtrl, dist_head_EB, 'LineWidth',LineSZ);
         plot(time_rel_pps, dist_l_locus(:,2),'.');
         ylabel({'distance (m)'; 'to EB(R)'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
