@@ -1,0 +1,248 @@
+<application>
+    <name>PPS dumper: visuoTactileRF + reactCtrl</name>
+
+    <dependencies>
+    </dependencies>
+  
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/reactCtrl --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperReactCtrl</tag>
+    </module>
+
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skinEvAggreg --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinEvAggreg</tag>
+    </module>
+
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/iCubGuiObjects --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperObjectsiCubGui</tag>
+    </module>
+       
+   <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/ppsAggregEventsForiCubGui --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperPPSeventsForiCubGui</tag>
+    </module>
+
+   <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/ppsEvents</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperPPSevents</tag>
+    </module>
+    
+
+    <module>
+        <name>yarpdatadumper</name>
+	<parameters>--name /data/skin_events --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinContact</tag>
+    </module>
+   
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skin_tactile_comp_left_hand --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinLeftHandComp</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skin_tactile_comp_left_forearm --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinLeftForearmComp</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skin_tactile_comp_left_arm --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinLeftArmComp</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skin_tactile_comp_right_hand --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinRightHandComp</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skin_tactile_comp_right_forearm --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinRightForearmComp</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/skin_tactile_comp_right_arm --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkinRightArmComp</tag>
+    </module>
+
+     
+    <module>
+        <name>yarpdatadumper</name>
+		<parameters>--name /data/joints_head --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperHeadJoints</tag>
+    </module> 
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/joints_torso --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperTorsoJoints</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/joints_leftArm --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperLeftArmJoints</tag>
+    </module>
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/joints_rightArm --txTime --rxTime</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperRightArmJoints</tag>
+    </module>
+
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/visuoTactileRF</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperVisuoTactileRF</tag>
+    </module>
+   
+    <module>
+        <name>yarpdatadumper</name>
+        <parameters>--name /data/keypoints</parameters>
+        <node>localhost</node>
+        <stdio></stdio>
+        <tag>dataDumperSkeleton3D</tag>
+    </module>
+ 
+ 
+
+    <connection>
+        <from>/reactController/data:o</from>
+		<to>/data/reactCtrl</to>
+        <protocol>udp</protocol>
+    </connection>
+    
+    <connection>
+    	<from>/skinEventsAggregator/skin_events_aggreg:o</from>
+    	<to>/data/skinEvAggreg</to>
+    	<protocol>udp</protocol>
+    </connection>
+     
+    <connection>
+        <from>/reactController/gui:o</from>
+		<to>/data/iCubGuiObjects</to>
+        <protocol>udp</protocol>
+    </connection>
+
+     <connection>
+        <from>/ppsAggregEventsForiCubGui/contacts:o</from>
+		<to>/data/ppsAggregEventsForiCubGui</to>
+        <protocol>udp</protocol>
+    </connection>
+
+     <connection>
+        <from>/visuoTactileRF/pps_events_aggreg:o</from>
+		<to>/data/ppsEvents</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/skinManager/skin_events:o</from>
+		<to>/data/skin_events</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/skin/left_hand_comp</from>
+		<to>/data/skin_tactile_comp_left_hand</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/skin/left_forearm_comp</from>
+		<to>/data/skin_tactile_comp_left_forearm</to>
+        <protocol>udp</protocol>
+	</connection>
+    <connection>
+        <from>/icub/skin/left_arm_comp</from>
+		<to>/data/skin_tactile_comp_left_arm</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/skin/right_hand_comp</from>
+		<to>/data/skin_tactile_comp_right_hand</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/skin/right_forearm_comp</from>
+		<to>/data/skin_tactile_comp_right_forearm</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/skin/right_arm_comp</from>
+		<to>/data/skin_tactile_comp_right_arm</to>
+        <protocol>udp</protocol>
+    </connection>
+        
+     
+    <connection>
+        <from>/icub/head/state:o</from>
+		<to>/data/joints_head</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/torso/state:o</from>
+        <to>/data/joints_torso</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/left_arm/state:o</from>
+        <to>/data/joints_leftArm</to>
+        <protocol>udp</protocol>
+    </connection>
+    <connection>
+        <from>/icub/right_arm/state:o</from>
+        <to>/data/joints_rightArm</to>
+        <protocol>udp</protocol>
+    </connection>
+   
+    <connection>
+        <from>/visuoTactileRF/dataDumper:o</from>
+	    <to>/data/visuoTactileRF</to>
+        <protocol>udp</protocol>
+    </connection>
+
+    <connection>
+        <from>/skeleton3D/visuoTactileWrapper/objects:o</from>
+	    <to>/data/keypoints</to>
+        <protocol>udp</protocol>
+    </connection>
+   
+    
+</application>

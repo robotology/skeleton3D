@@ -19,6 +19,8 @@
 
 #include "skeleton3D_IDL.h"
 
+//#include "iCub/vtMappingTF/vtMappingTF.h"
+
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -32,14 +34,19 @@ protected:
     double      period;
     string      name;
     double      body_valence;
+    double      hand_valence;
     double      part_dimension;
     bool        use_part_conf;
+    bool        draw_lower;
 
     Stamp       ts;
 
     RpcServer   rpcPort;                            //!< rpc server to receive user request
     RpcClient   rpcGet3D;                           //!< rpc client port to send requests to SFM
     OPCClient   *opc;                               //!< OPC client object
+
+    Port                    portToGui;
+    yarp::os::Bottle        cmdGui;
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
@@ -65,7 +72,15 @@ protected:
     int                         filterOrder;        //!< integer value for order of the median filter of the body parts
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
 
-    bool                        fakeHand;
+    bool                        use_fake_hand;
+    yarp::sig::Vector           fakeHandPos;        //!< position of fake hand
+
+    bool                        use_mid_arms;       //!< flag for calculation of midpoints in forearms
+
+    double                      segLMax, segLMin;   //!< threshold for arm constraint
+//    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
+
+//    vtMappingTF             *vtMapRight;
 
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
@@ -100,6 +115,12 @@ protected:
      */
     void    addConf(const double &conf, const string &partName);
 
+    bool    getPartPose(Agent* a, const string &partName, Vector &pose);
+
+    void    addPartToStream(const Vector &pose, const string &partName, Bottle &streamedObjs);
+
+    void    addMidArmsToStream(Bottle &streamedObjs);
+
     /**
      * @brief streamPartsToPPS Send body parts to (PPS) visuoTactileWrapper
      * @return True if send successfully, False otherwise
@@ -121,6 +142,8 @@ protected:
      */
     double  computeValence(const string &partName);
 
+    void    computeSpine(map<string,kinectWrapper::Joint> &jnts);
+
     /**
      * @brief extrapolateHand Estimate the hand position, known the elbow and wrist position
      * @param jnts A skeleton by set of joints and equivalent joint name
@@ -135,6 +158,19 @@ protected:
      * @return True if can estimate the point, False otherwise and size of p1 and/or p2 is wrong
      */
     bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
+
+    void    initShowBodySegGui(const string &segmentName, const string &color);
+
+    void    updateBodySegGui(const vector<Vector> &segment, const string &segmentName);
+
+    void    deleteBodySegGui(const string &segmentName);
+
+    bool    drawBodyGui(icubclient::Agent *a);
+
+    bool    assignJointByVec(kinectWrapper::Joint &jnt, const Vector &pos);
+
+    void    addJointAndConf(map<string,kinectWrapper::Joint> &joints,
+                            const Vector &pos, const string &partName);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -151,6 +187,7 @@ public:
         if (_valence<=1.0 && _valence>=-1.0)
         {
             body_valence = _valence;
+            hand_valence = _valence;
             return true;
         }
         else
@@ -160,6 +197,22 @@ public:
     double get_valence()
     {
         return body_valence;
+    }
+
+    bool set_valence_hand(const double _valence)
+    {
+        if (_valence<=1.0 && _valence>=-1.0)
+        {
+            hand_valence = _valence;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_valence_hand()
+    {
+        return hand_valence;
     }
 
     bool set_filter_order(const int16_t _order)
@@ -194,15 +247,31 @@ public:
         return dThresholdDisparition;
     }
 
+    bool set_fake_hand_pos(const yarp::sig::Vector& _pos)
+    {
+        if (fakeHandPos.size() == _pos.size())
+        {
+            fakeHandPos = _pos;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    yarp::sig::Vector get_fake_hand_pos()
+    {
+        return fakeHandPos;
+    }
+
     bool enable_fake_hand()
     {
-        fakeHand = true;
+        use_fake_hand = true;
         return true;
     }
 
     bool disable_fake_hand()
     {
-        fakeHand = false;
+        use_fake_hand = false;
         return true;
     }
 
@@ -217,6 +286,19 @@ public:
         use_part_conf = false;
         return true;
     }
+
+    bool enable_mid_arms()
+    {
+        use_mid_arms = true;
+        return true;
+    }
+
+    bool disable_mid_arms()
+    {
+        use_mid_arms = false;
+        return true;
+    }
+
     std::map<unsigned int, std::string> mapPartsOpenPose {
         {0,  "Nose"},
         {1,  "Neck"},
@@ -253,6 +335,25 @@ public:
         {11, "hipLeft"},
         {12, "kneeLeft"},
         {13, "ankleLeft"},
+    };
+
+    std::map<unsigned int, std::string> mapPartsGui {
+        {0,  "handLeft"},
+        {1,  "elbowLeft"},
+        {2,  "shoulderLeft"},
+        {3,  "shoulderCenter"},
+        {4,  "shoulderRight"},
+        {5,  "elbowRight"},
+        {6,  "handRight"},      // wrist --> hand: use extrapolatePoint later to convert truely
+        {7,  "ankleLeft"},
+        {8,  "kneeLeft"},
+        {9,  "hipLeft"},
+        {10, "hipRight"},
+        {11, "kneeRight"},
+        {12, "ankleRight"},
+        {13, "head"},
+
+
     };
 };
 

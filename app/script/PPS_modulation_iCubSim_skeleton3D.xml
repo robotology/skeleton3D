@@ -1,64 +1,76 @@
 <application>
-<name>PPS Modulation icub with Skeleton3D </name>
+<name>PPS Modulation with Skeleton3D icubSim</name>
+
+    <dependencies>
+    <!--<port>/icubSim/right_arm/state:o</port>-->
+    </dependencies>
+
+    <module>
+        <name>iCub_SIM</name>
+        <node>localhost</node>
+        <tag>icubSim</tag>
+    </module>
 
     <module>
         <name>iCubGui</name>
         <parameters>--xpos 1300 --ypos 0 --width 600 --height 930</parameters>
-        <node>icub22</node>
+        <node>localhost</node>
         <tag>iCubGui</tag>
+    </module>
+
+    <module>
+        <name>yarpmotorgui</name>
+        <node>localhost</node>
+        <tag>motorgui</tag>
+    </module>
+
+    <!--Controller modules-->
+    <module>
+        <name>reactController</name>
+        <parameters>--robot icubSim --globalTol 0.005 --referenceGen none</parameters>
+        <node>localhost</node>
+        <tag>controller</tag>
+    </module>
+
+    <module>
+        <name>iKinGazeCtrl</name>   <!--For visuoTactileWrapper-->
+        <parameters>--from configSim.ini</parameters>
+        <node>localhost</node>
+    </module>
+
+    <module>
+        <name>yetAnotherAvoidance</name>
+        <parameters>--robot icubSim --stiff 0</parameters>
+        <node>localhost</node>
+        <tag>avoidance</tag>
     </module>
 
     <!--OPC and related modules-->
     <module>
-       <name>objectsPropertiesCollector</name>
-       <parameters>--name OPC --no-load-db --no-save-db</parameters>
-       <node>icub21</node>
+        <name>objectsPropertiesCollector</name>
+        <parameters>--name OPC --no-load-db --no-save-db</parameters>
+        <node>localhost</node>
     </module>
 
     <module>
         <name>opcPopulater</name>
-        <node>icub21</node>
-    </module>
-
-     <!--SFM modules-->
-    <module>
-        <name>skeleton2D.py</name>
-        <parameters>--des /skeleton2D</parameters>
-        <node>icub-cuda</node>
-    </module>
-    <module>
-        <name>SFM</name>
-        <parameters></parameters>
-        <node>icub-cuda</node>
-    </module>
-
-    <module>
-        <name>yarpview</name>
-        <parameters>--name /SFM/disp --x 960 --y 720 --p 50 --compact</parameters>
-        <node>icub22</node>
+        <node>localhost</node>
     </module>
 
     <!--Skeleton modules-->
     <module>
-        <name>yarpview</name>
-        <parameters>--name /dispSkeleton:i --x 960 --y 370 --p 50 --compact</parameters>
-        <node>icub22</node>
-    </module>
-    <module>
         <name>skeleton3D</name>
-        <parameters>--dThresholdDisparition 10.0 --part_dimension 0.07 --filter_order 9 --use_part_conf 0 --period 0.01 --body_valence 0.0</parameters>
+        <parameters>--dThresholdDisparition 10.0 --part_dimension 0.07 --filter_order 3 --use_fake_hand 1</parameters>
         <dependencies>
             <port timeout="10">/OPC/rpc</port>
-            <port timeout="10">/SFM/rpc</port>
-            <port timeout="10">/skeleton2D/bodyParts:o</port>
         </dependencies>
-        <node>icub21</node>
+        <node>localhost</node>
     </module>
     <!--PPS modules-->
     <module>
         <name>skinEventsAggregator</name>
         <parameters></parameters>
-        <node>icub21</node>
+        <node>localhost</node>
         <stdio></stdio>
         <tag>skinEventsAggreg</tag>
     </module>
@@ -66,29 +78,29 @@
     <module>
         <name>ppsAggregEventsForiCubGui</name>
         <parameters></parameters>
-        <node>icub21</node>
+        <node>localhost</node>
         <stdio></stdio>
         <tag>aggregEvForiCubGui</tag>
     </module>
 
     <module>
         <name>visuoTactileWrapper</name>
-        <parameters>--robot icub --noDoubleTouch</parameters>
-        <node>icub21</node>
+        <parameters>--robot icubSim --noDoubleTouch</parameters>
+        <node>localhost</node>
         <stdio></stdio>
     </module>
 
     <module>
         <name>visuoTactileRF</name>
-        <parameters>--robot icub --taxelsFile taxelsFiles/taxels1D_45cmRF_skinV2_perfect_all.ini --rate 20</parameters>
-        <node>icub21</node>
+        <parameters>--robot icubSim --taxelsFile taxelsFiles/taxels1D_45cmRF_skinV2_perfect_all.ini --rate 20</parameters>
+        <node>localhost</node>
         <stdio></stdio>
     </module>
     
     <module>
         <name>visuoTactileCalib</name>
-        <parameters>--robot icub --taxelsFile taxelsFiles/taxels1D_45cmRF_skinV2_perfect_all.ini --rate 20</parameters>
-        <node>icub21</node>
+        <parameters>--robot icubSim --taxelsFile taxelsFiles/taxels1D_45cmRF_skinV2_perfect_all.ini --rate 20</parameters>
+        <node>localhost</node>
         <stdio></stdio>
     </module>
 
@@ -99,55 +111,47 @@
         <dependencies>
             <port timeout="10">/OPC/rpc</port>
         </dependencies>
-        <node>icub21</node>
+        <node>localhost</node>
     </module>
 
     <!--skinGui modules-->
     <module>
-        <name>skinManager</name>
-        <parameters>--from skinManAll.ini --context skinGui</parameters>
-        <node>icub21</node>
-        <tag>skinMan</tag>
-    </module>
-    <module>
-        <name>skinManagerGui</name>
-        <parameters>--from skinManGui.ini --context skinGui --xpos 1020 --ypos 350</parameters>
-        <node>icub21</node>
-        <tag>skinManGui</tag>
-    </module>
-    <module>
         <name>iCubSkinGui</name>
         <!-- Remember to use the proper configuration files (i.e. "_V2.ini" for V2 robots) -->
-        <parameters>--from left_forearm_V2.ini --useCalibration --xpos 0 --ypos 0 --width 300 --height 300</parameters>
-        <node>icub22</node>
+        <parameters>--from left_forearm_V2.ini --useCalibration --xpos 0 --ypos 0 --width 200 --height 200</parameters>
+        <node>localhost</node>
         <tag>skinGuiLF</tag>
     </module>
     <module>
         <name>iCubSkinGui</name>
         <!-- Remember to use the proper configuration files (i.e. "_V2.ini" for V2 robots) -->
-        <parameters>--from left_hand_V2_1.ini --useCalibration --xpos 320 --ypos 0 --width 300 --height 300</parameters>
-        <node>icub22</node>
+        <parameters>--from left_hand_V2_1.ini --useCalibration --xpos 210 --ypos 0 --width 200 --height 200</parameters>
+        <node>localhost</node>
         <tag>skinGuiLH</tag>
     </module>
     <module>
         <name>iCubSkinGui</name>
         <!-- Remember to use the proper configuration files (i.e. "_V2.ini" for V2 robots) -->
-        <parameters>--from right_forearm_V2.ini --useCalibration --xpos 640 --ypos 0 --width 300 --height 300</parameters>
-        <node>icub22</node>
+        <parameters>--from right_forearm_V2.ini --useCalibration --xpos 420 --ypos 0 --width 200 --height 200</parameters>
+        <node>localhost</node>
         <tag>skinGuiRF</tag>
     </module>
     <module>
         <name>iCubSkinGui</name>
         <!-- Remember to use the proper configuration files (i.e. "_V2.ini" for V2 robots) -->
-        <parameters>--from right_hand_V2_1.ini --useCalibration --xpos 960 --ypos 0 --width 300 --height 300</parameters>
-        <node>icub22</node>
+        <parameters>--from right_hand_V2_1.ini --useCalibration --xpos 630 --ypos 0 --width 200 --height 200</parameters>
+        <node>localhost</node>
         <tag>skinGuiRH</tag>
     </module>
 
-	<ensure>
-		<wait>5.0</wait>
-	</ensure>
 
+    <!--Controller connections-->
+    <connection>
+        <from>/reactController/gui:o</from>
+        <to>/iCubGui/objects</to>
+        <protocol>udp</protocol>
+    </connection>
+    
     <!--PPS connections-->
     <connection>
         <from>/skinEventsAggregator/skin_events_aggreg:o</from>
@@ -166,7 +170,7 @@
         <to>/visuoTactileRF/events:i</to>
         <protocol>tcp</protocol>
     </connection>
-    
+
     <connection>
         <from>/visuoTactileWrapper/events:o</from>
         <to>/visuoTactileCalib/events:i</to>
@@ -202,40 +206,22 @@
        <to>/reactController/pps_events_aggreg:i</to>
        <protocol>udp</protocol>
     </connection>
+    
+    <connection>
+       <from>/visuoTactileRF/pps_events_aggreg:o</from>
+       <to>/yetAnotherAvoidance/data:i</to>
+       <protocol>udp</protocol>
+    </connection>
 
+    <connection>
+       <from>/visuoTactileCalib/pps_events_aggreg:o</from>
+       <to>/yetAnotherAvoidance/data:i</to>
+       <protocol>udp</protocol>
+    </connection>
+    
     <connection>
         <from>/ppsAggregEventsForiCubGui/contacts:o</from>
         <to>/iCubGui/forces</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <!--SFM connections-->
-    <connection>
-        <from>/icub/camcalib/right/out</from>
-        <to>/SFM/right:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    <connection>
-        <from>/icub/camcalib/left/out</from>
-        <to>/SFM/left:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-    <connection>
-        <from>/SFM/disp:o</from>
-        <to>/SFM/disp</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <!--Skeleton connections-->
-    <connection>
-        <from>/skeleton2D/dispSkeleton:o</from>
-        <to>/dispSkeleton:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/skeleton2D/bodyParts:o</from>
-        <to>/skeleton3D/bodyParts:i</to>
         <protocol>udp</protocol>
     </connection>
 
@@ -253,57 +239,36 @@
     </connection>
 
     <connection>
-        <from>/icub/head/state:o</from>
+        <from>/icubSim/head/state:o</from>
         <to>/iCubGui/head:i</to>
         <protocol>udp</protocol>
     </connection>
 
     <connection>
-        <from>/icub/inertial</from>
+        <from>/icubSim/inertial</from>
         <to>/iCubGui/inertial:i</to>
         <protocol>udp</protocol>
     </connection>
 
     <connection>
-        <from>/icub/left_arm/state:o</from>
+        <from>/icubSim/left_arm/state:o</from>
         <to>/iCubGui/left_arm:i</to>
         <protocol>udp</protocol>
     </connection>
 
     <connection>
-        <from>/icub/right_arm/state:o</from>
+        <from>/icubSim/right_arm/state:o</from>
         <to>/iCubGui/right_arm:i</to>
         <protocol>udp</protocol>
     </connection>
 
     <connection>
-        <from>/icub/torso/state:o</from>
+        <from>/icubSim/torso/state:o</from>
         <to>/iCubGui/torso:i</to>
         <protocol>udp</protocol>
     </connection>
 
     <!--skinGui connections-->
-    <connection>
-        <from>/skinManager/skin_events:o</from>
-        <to>/wholeBodyDynamics/skin_contacts:i</to>
-        <protocol>udp</protocol>
-    </connection>
-    <connection>
-        <from>/skinManagerGui/rpc:o</from>
-        <to>/skinManager/rpc</to>
-        <protocol>tcp</protocol>
-    </connection>
-    <connection>
-        <from>/skinManager/monitor:o</from>
-        <to>/skinManagerGui/monitor:i</to>
-        <protocol>udp</protocol>
-    </connection>
-    <connection>
-        <from>/skinManager/info:o</from>
-        <to>/skinManagerGui/info:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
     <connection>
         <from>/skinManager/skin_events:o</from>
         <to>/visuoTactileRF/skin_events:i</to>
@@ -334,7 +299,8 @@
         <protocol>udp</protocol>
     </connection>
     
-        <connection>
+    
+    <connection>
         <from>/visuoTactileCalib/skinGuiForearmL:o</from>
         <to>/skinGui/left_forearm_virtual:i</to>
         <protocol>udp</protocol>
@@ -358,41 +324,7 @@
         <protocol>udp</protocol>
     </connection>
 
-    <connection>
-        <from>/icub/skin/left_hand_comp</from>
-        <to>/skinGui/left_hand:i</to>
-        <protocol>udp</protocol>
-    </connection>
-    
-    <connection>
-        <from>/icub/skin/left_forearm_comp</from>
-        <to>/skinGui/left_forearm:i</to>
-        <protocol>udp</protocol>
-    </connection>  
-    
-    <connection>
-        <from>/icub/skin/left_arm_comp</from>
-        <to>/skinGui/left_arm:i</to>
-        <protocol>udp</protocol>
-    </connection>  
 
-    <connection>
-        <from>/icub/skin/right_hand_comp</from>
-        <to>/skinGui/right_hand:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/icub/skin/right_forearm_comp</from>
-        <to>/skinGui/right_forearm:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/icub/skin/right_arm_comp</from>
-        <to>/skinGui/right_arm:i</to>
-        <protocol>udp</protocol>
-    </connection>
 
 </application>
 

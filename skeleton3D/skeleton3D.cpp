@@ -7,7 +7,6 @@
 #include <set>
 #include "skeleton3D.h"
 
-
 void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered)
 {
     if (init_filters)
@@ -93,7 +92,7 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
                 tmp[1]=reply.get(i+1).asDouble();
                 tmp[2]=reply.get(i+2).asDouble();
 
-                if (norm(tmp)>0.0)
+                if (norm(tmp)>0.0 & tmp[0]>0.0 & tmp[0]<=5.0)
                 {
                     x+=tmp;
                     cnt++;
@@ -140,7 +139,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                             {
 //                                yInfo("part %s",part->toString().c_str());
                                 string partName = part->get(0).asString();
-                                yDebug("[skeleton3D] found part as %s",partName.c_str());
+                                yDebug("[%s] found part as %s",name.c_str(),partName.c_str());
                                 CvPoint partCv;
                                 double partConf = part->get(3).asDouble();
                                 partCv.x = (int)part->get(1).asDouble();
@@ -153,14 +152,15 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                     addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
                                 }
                                 else
-                                    yDebug("[skeleton3D] ignore part with confidence lower than 0.0001%%");
+                                    yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
                             }
                         }
                         else
-                            yDebug("[skeleton3D] obtainBodyParts: don't deal with face parts!");
+                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
                     }
                 }
 
+                computeSpine(jnts);
                 extrapolateHand(jnts);
                 if (use_part_filter)
                 {
@@ -174,21 +174,56 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
             }
             else
             {
-                yDebug("[skeleton3D] obtainBodyParts wrong format");
+                yDebug("[%s] obtainBodyParts wrong format",name.c_str());
                 return false;
             }
         }
     }
-    else if (fakeHand)
+    else if (use_fake_hand)
     {
-        yDebug("[skeleton3D] obtainBodyParts create a fake hand");
+        yDebug("[%s] obtainBodyParts: create a fake body %s",name.c_str(),
+               fakeHandPos.toString(3,3).c_str());
         map<string, kinectWrapper::Joint> joints;
         kinectWrapper::Joint joint;
-        joint.x = -0.3;
-        joint.y = 0.05;
-        joint.z = 0.05;
+        joint.x = fakeHandPos[0];
+        joint.y = fakeHandPos[1];
+        joint.z = fakeHandPos[2];
         joints.insert(std::pair<string,kinectWrapper::Joint>("handRight",joint));
         addConf(0.9,"handRight");
+
+        Vector posR(fakeHandPos);
+        posR[0] += -0.25;
+        addJointAndConf(joints,posR,"elbowRight");
+        posR[0] += -0.05;                       posR[2] += 0.15;
+        addJointAndConf(joints,posR,"shoulderRight");
+                                                posR[2] += -0.35;
+        addJointAndConf(joints,posR,"hipRight");
+        posR[0] += +0.3;    posR[1] += -0.15;   posR[2] += -0.1;
+        addJointAndConf(joints,posR,"kneeRight");
+                                                posR[2] += -0.35;
+        addJointAndConf(joints,posR,"ankleRight");
+
+        Vector posL(fakeHandPos);
+        posL[0] += -0.25;   posL[1] += 0.45;
+        addJointAndConf(joints,posL,"handLeft");
+                            posL[1] += -0.25;
+        addJointAndConf(joints,posL,"elbowLeft");
+        posL[0] += -0.05;                       posL[2] += 0.15;
+        addJointAndConf(joints,posL,"shoulderLeft");
+        Vector posC(posL);
+                                                posL[2] += -0.35;
+        addJointAndConf(joints,posL,"hipLeft");
+        posL[0] += +0.3;    posL[1] += +0.15;   posL[2] += -0.1;
+        addJointAndConf(joints,posL,"kneeLeft");
+                                                posL[2] += -0.35;
+        addJointAndConf(joints,posL,"ankleLeft");
+
+                            posC[1] += -0.10;
+        addJointAndConf(joints,posC,"shoulderCenter");
+                                                posC[2] += 0.1;
+        addJointAndConf(joints,posC,"head");
+
+        computeSpine(joints);
 
         player.skeleton = joints;
 
@@ -196,7 +231,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
     else
     {
-        yDebug("[skeleton3D] obtainBodyParts return empty");
+        yDebug("[%s] obtainBodyParts return empty",name.c_str());
         return false;
     }
 
@@ -229,11 +264,17 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     part.addDouble(a->m_body.m_parts[partName.c_str()][0]); // X
     part.addDouble(a->m_body.m_parts[partName.c_str()][1]); // Y
     part.addDouble(a->m_body.m_parts[partName.c_str()][2]); // Z
-    part.addDouble(part_dimension);                         // RADIUS
+    part.addDouble(part_dimension/2.0);                     // RADIUS
     if (use_part_conf)
         part.addDouble(computeValence(partName));
     else
-        part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    {
+        if (partName == "handRight" | partName == "handLeft")
+            part.addDouble(hand_valence);
+        else
+            part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    }
+
     streamedObjs.addList()=part;
 }
 
@@ -244,6 +285,44 @@ double  skeleton3D::computeValence(const string &partName)
     double threat = body_valence + body_valence*(1-conf) - 1.0;
     yDebug("[%s] %s\t body_valence: %3.3f\t conf: %3.3f\t threat: %3.3f",name.c_str(), partName.c_str(), body_valence, conf, threat);
     return threat;
+}
+
+void    skeleton3D::computeSpine(map<string, kinectWrapper::Joint> &jnts)
+{
+    Vector hipR(3,0.0), hipL(3,0.0), head(3,0.0), spine(3,0.0);
+    if (!jnts.empty() && jnts.find("hipRight")!=jnts.end() && jnts.find("hipLeft")!=jnts.end()
+            && jnts.find("head")!=jnts.end())
+    {
+        hipR[0] = jnts.at("hipRight").x;
+        hipR[1] = jnts.at("hipRight").y;
+        hipR[2] = jnts.at("hipRight").z;
+
+        hipL[0] = jnts.at("hipLeft").x;
+        hipL[1] = jnts.at("hipLeft").y;
+        hipL[2] = jnts.at("hipLeft").z;
+
+        head[0] = jnts.at("shoulderCenter").x;
+        head[1] = jnts.at("shoulderCenter").y;
+        head[2] = jnts.at("shoulderCenter").z;
+
+        spine = (head + (hipR+hipL)/2.0)/2.0;
+        kinectWrapper::Joint joint;
+        joint.x = spine[0];
+        joint.y = spine[1];
+        joint.z = spine[2];
+        jnts.insert(std::pair<string,kinectWrapper::Joint>("spine",joint));
+
+        double conf_hipR, conf_hipL, conf_head, conf_spine;
+        conf_hipR = confJoints.at("hipRight");
+        conf_hipL = confJoints.at("hipLeft");
+        conf_head = confJoints.at("shoulderCenter");
+        conf_spine = (conf_head + (conf_hipR + conf_hipL)/2.0)/2.0;
+
+        addConf(conf_spine,"spine");
+
+    }
+    else
+        yDebug("[%s] computeSpine: can't find a body part", name.c_str());
 }
 
 void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
@@ -292,11 +371,17 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     {
         Vector dir(3,0.0);
         dir = p2-p1;
-        if (norm(dir)>=0.0001)
-            result = p1 + dir*(norm(dir)+ handDim)/norm(dir);
+        double segL = norm(dir);
+        if (segL>=0.0001)
+        {
+            if (segL>=segLMax || segL<=segLMin)
+                segL = 0.265;
+            result = p1 + dir*(segL+ handDim)/norm(dir);
+        }
         else
             result = p1 + dir*(0.0001+ handDim)/0.0001;
         yDebug("extrapolatePoint: result = %s",result.toString(3,3).c_str());
+        yDebug("forearm = %0.3f, forearm+hand = %0.3f", segL, norm(result-p1));
         return true;
     }
     else
@@ -304,6 +389,51 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
         result.resize(3,0.0);
         return false;
     }
+}
+
+bool    skeleton3D::getPartPose(Agent* a, const string &partName, Vector &pose)
+{
+    if (pose.size()==3 && a->m_body.m_parts.find(partName.c_str())!=a->m_body.m_parts.end())
+    {
+        for (int i=0; i<pose.size(); i++)
+            pose[i]=a->m_body.m_parts[partName.c_str()][i];
+        return true;
+    }
+    else
+        return false;
+}
+
+void    skeleton3D::addPartToStream(const Vector &pose, const string &partName, Bottle &streamedObjs)
+{
+    Bottle part;
+    for (int i=0; i<pose.size(); i++)
+        part.addDouble(pose[i]);
+    part.addDouble(part_dimension/2.0);                         // RADIUS
+    if (use_part_conf)
+        part.addDouble(computeValence(partName));
+    else
+    {
+        if (partName == "handRight" | partName == "handLeft")
+            part.addDouble(hand_valence);
+        else
+            part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
+    }
+    streamedObjs.addList()=part;
+}
+
+void    skeleton3D::addMidArmsToStream(Bottle &streamedObjs)
+{
+    Vector midR(3,0.0), midL(3,0.0), handR(3,0.0), handL(3,0.0), elbowR(3,0.0), elbowL(3,0.0);
+    getPartPose(partner,"handRight",handR);
+    getPartPose(partner,"handLeft",handL);
+    getPartPose(partner,"elbowRight",elbowR);
+    getPartPose(partner,"elbowLeft",elbowL);
+
+    midR = (handR+elbowR)/2.0;
+    midL = (handL+elbowL)/2.0;
+
+    addPartToStream(midR, "elbowRight", streamedObjs);
+    addPartToStream(midL, "elbowLeft",streamedObjs);
 }
 
 bool    skeleton3D::streamPartsToPPS()
@@ -318,6 +448,10 @@ bool    skeleton3D::streamPartsToPPS()
         addPartToStream(partner,"elbowLeft",objects);
         addPartToStream(partner,"shoulderRight",objects);
         addPartToStream(partner,"shoulderLeft",objects);
+        addPartToStream(partner,"spine",objects);
+
+        if (use_mid_arms)
+            addMidArmsToStream(objects);
 
         Bottle& output=ppsOutPort.prepare();
         output.clear();
@@ -330,16 +464,166 @@ bool    skeleton3D::streamPartsToPPS()
         return false;
 }
 
+void    skeleton3D::initShowBodySegGui(const string &segmentName, const string &color)
+{
+    cmdGui.clear();
+
+    cmdGui.addString("trajectory");
+    cmdGui.addString(segmentName.c_str());    // trajectory identifier
+    cmdGui.addString("");               // trajectory name
+    cmdGui.addInt(512);                 // max samples in circular queue
+    cmdGui.addDouble(1200.0);             // lifetime of samples
+    if (color =="red")             // color
+    {
+        cmdGui.addInt(255);cmdGui.addInt(0);cmdGui.addInt(0); //red
+    }
+    else if (color =="green")
+    {
+        cmdGui.addInt(0);cmdGui.addInt(255);cmdGui.addInt(0); //green
+    }
+    else if (color =="blue")
+    {
+        cmdGui.addInt(0);cmdGui.addInt(0);cmdGui.addInt(255); //blue
+    }
+    else if (color =="purple")
+    {
+        cmdGui.addInt(255);cmdGui.addInt(0);cmdGui.addInt(255); //purple
+    }
+    else if (color =="yellow")
+    {
+        cmdGui.addInt(255);cmdGui.addInt(255);cmdGui.addInt(0); //yellow
+    }
+    cmdGui.addDouble(1.0);             // alpha [0,1]
+    cmdGui.addDouble(5.0);             // line width
+
+    portToGui.write(cmdGui);
+}
+
+void    skeleton3D::updateBodySegGui(const vector<Vector> &segment, const string &segmentName)
+{
+    if (segment.size()>0)
+    {
+        for (int i=0; i<segment.size(); i++)
+        {
+            cmdGui.clear();
+
+            cmdGui.addString("addpoint");
+            cmdGui.addString(segmentName.c_str());                    // trajectory identifier
+            cmdGui.addDouble(1000.0*segment[i][0]);      // posX [mm]
+            cmdGui.addDouble(1000.0*segment[i][1]);      // posY [mm]
+            cmdGui.addDouble(1000.0*segment[i][2]);      // posZ [mm]
+
+            portToGui.write(cmdGui);
+        }
+    }
+}
+
+void    skeleton3D::deleteBodySegGui(const string &segmentName)
+{
+    cmdGui.clear();
+    cmdGui.addString("delete");
+    cmdGui.addString(segmentName.c_str());
+    portToGui.write(cmdGui);
+}
+
+bool    skeleton3D::drawBodyGui(Agent *a)
+{
+    deleteBodySegGui("upper");
+    deleteBodySegGui("spine");
+    if (draw_lower)
+        deleteBodySegGui("lower");
+
+    if (a && a->m_present==1.0)
+    {
+        initShowBodySegGui("upper","blue");
+        initShowBodySegGui("spine","red");
+        if (draw_lower)
+            initShowBodySegGui("lower","purple");
+        Vector partPos(3,0.0), hipL(3,0.0), hipR(3,0.0);
+        vector<Vector> segmentUpper, segmentSpine, segmentLower;
+        for (int i=0; i<7; i++)
+        {
+            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+            if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
+                segmentUpper.push_back(partPos);
+        }
+        updateBodySegGui(segmentUpper,"upper");
+
+        if (getPartPose(a,mapPartsGui[13],partPos))         segmentSpine.push_back(partPos);    // head
+        if (getPartPose(a,mapPartsGui[3],partPos))          segmentSpine.push_back(partPos);    // shoulderCenter
+
+        if (getPartPose(a,mapPartsGui[9],hipL) && getPartPose(a,mapPartsGui[10],hipR))
+        {
+            partPos = (hipL+hipR)/2.0;                      segmentSpine.push_back(partPos);    // hipCenter
+        }
+        updateBodySegGui(segmentSpine,"spine");
+
+        if (draw_lower)
+        {
+            for (int i=7; i<13; i++)
+            {
+                yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+                if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
+                    segmentLower.push_back(partPos);
+            }
+            updateBodySegGui(segmentLower,"lower");
+        }
+
+        return true;
+    }
+    else
+        return false;
+}
+
+bool    skeleton3D::assignJointByVec(kinectWrapper::Joint &jnt, const Vector &pos)
+{
+    if (pos.size()==3)
+    {
+        jnt.x = pos[0];
+        jnt.y = pos[1];
+        jnt.z = pos[2];
+        return true;
+    }
+    else
+    {
+        return false;
+        yWarning("[%s] Joint is assigned with wrong size vector",name.c_str());
+    }
+}
+
+void    skeleton3D::addJointAndConf(map<string,kinectWrapper::Joint> &joints,
+                                    const Vector &pos, const string &partName)
+{
+    kinectWrapper::Joint joint;
+    assignJointByVec(joint, pos);
+    joints.insert(std::pair<string,kinectWrapper::Joint>(partName,joint));
+    addConf(0.9,partName);
+}
+
+
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("skeleton3D")).asString().c_str();
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
-    part_dimension = rf.check("part_dimension",Value(0.05)).asDouble(); // hard-coded body part dimension
+    hand_valence = body_valence;
+    part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
-    fakeHand = rf.check("fakeHand",Value(0)).asBool();
+    use_fake_hand = rf.check("use_fake_hand",Value(0)).asBool();
+
+    use_mid_arms = rf.check("use_mid_arms",Value(0)).asBool();
+
+    draw_lower = rf.check("draw_lower",Value(0)).asBool();
+
+    if (use_fake_hand)
+    {
+        fakeHandPos.resize(3,0.0);
+        fakeHandPos[0] = -0.3;
+        fakeHandPos[1] = 0.05;
+        fakeHandPos[2] = 0.05;
+    }
 
     if (use_part_conf)
         yInfo("[%s] Use part confidence as valence", name.c_str());
@@ -386,6 +670,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
 
+    segLMax = 0.35;
+    segLMin = 0.20;
+
     // Median Filter for body part positions
     init_filters = true;
     filterSkeleton.clear();
@@ -420,6 +707,18 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     rpcPort.open("/"+name+"/rpc");
     attach(rpcPort);
 
+    //**** visualizing human skeleton iCubGui ***************************
+    string port2iCubGui = "/" + name + "/gui:o";
+    if (!portToGui.open(port2iCubGui.c_str())) {
+       yError("[%s] Unable to open port << port2iCubGui << endl", name.c_str());
+    }
+    std::string portGuiObject = "/iCubGui/objects";     // World frame
+    yarp::os::Network::connect(port2iCubGui.c_str(), portGuiObject.c_str());
+
+    cmdGui.clear();
+    cmdGui.addString("reset");
+    portToGui.write(cmdGui);
+
     return true;
 }
 
@@ -427,22 +726,34 @@ bool    skeleton3D::interruptModule()
 {
     yDebug("[%s] Interupt module",name.c_str());
 
+    yDebug("[%s] Remove partner", name.c_str());
+    opc->checkout();                        yDebug("check 1");
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);    yDebug("check 2");
+    partner->m_present=0.0;                 yDebug("check 3");
+    opc->commit(partner);                   yDebug("check 4");
+    opc->removeEntity(partner->opc_id());   yDebug("check 5");
+    delete partner;                         yDebug("check 6");
+    opc->interrupt();                       yDebug("check 7");
     rpcPort.interrupt();
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
-    opc->interrupt();
+
+    deleteBodySegGui("upper");
+    deleteBodySegGui("spine");
+    deleteBodySegGui("lower");
+    portToGui.interrupt();
     return true;
 }
 
 bool    skeleton3D::close()
 {
     yDebug("[%s] closing module",name.c_str());
-
     rpcPort.close();
     rpcGet3D.close();
     bodyPartsInPort.close();
     ppsOutPort.close();
+    portToGui.close();
     opc->close();
     return true;
 }
@@ -465,6 +776,21 @@ bool    skeleton3D::updateModule()
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
 
+    // test tensorflow-base calibrator (mapping)
+    Vector handPose(3,0.0), elbowPose(3,0.0);
+    handPose[0] = -0.13; handPose[1] = -0.15; handPose[2] = 0.15;
+    elbowPose[0] = -0.3; elbowPose[1] = -0.21; elbowPose[2] = 0.12;
+//    handPose[0] = -0.32063; handPose[1] = 0.050248; handPose[2] = 0.10134;
+//    elbowPose[0] = -0.66542; elbowPose[1] = 0.064199; elbowPose[2] = 0.052125;
+
+//    if (vtMapRight->setInput(handPose, elbowPose))
+//        if (vtMapRight->computeMapping())
+//        {
+//            vtMapRight->getOutput(handPose);
+//            yInfo("handPose after mapping: %s", handPose.toString(3,3).c_str());
+//        }
+
+
     // Get the 3D pose of CvPoint of body parts
     if (bodyPartsCv.size()>=0 && connected3D)
     {
@@ -482,15 +808,20 @@ bool    skeleton3D::updateModule()
     if (tracked)
     {
         bool reallyTracked = false;
-        for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ;
-            jnt != player.skeleton.end() ; jnt++)
+        if (!use_fake_hand)
         {
-            if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
+            for(map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin() ;
+                jnt != player.skeleton.end() ; jnt++)
             {
-                reallyTracked = true;
-                break;
+                if (jnt->second.x != 0 && jnt->second.y != 0 && jnt->second.z != 0)
+                {
+                    reallyTracked = true;
+                    break;
+                }
             }
         }
+        else
+            reallyTracked = true;
         if (reallyTracked)
         {
             dSince = (clock() - dTimingLastApparition) / (double) CLOCKS_PER_SEC;
@@ -515,6 +846,8 @@ bool    skeleton3D::updateModule()
                 partner->m_body.m_parts[jnt->first] = pos;
             }
             opc->commit(partner);
+
+            drawBodyGui(partner);
         }
 
         bodyPartsCv.clear();

@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     }
 
     ResourceFinder rf;
-    rf.setDefaultContext("skeleton3D");
+    rf.setDefaultContext("human-pose3D");
     rf.setDefaultConfigFile("skeleton3D.ini");
     rf.configure(argc,argv);
 
