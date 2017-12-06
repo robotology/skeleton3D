@@ -12,19 +12,19 @@ include(YarpIDL)
 file(GLOB source *.cpp)
 file(GLOB header *.h)
 
-set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.h#)
-                        ${main_project_path}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
+set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.h)
+#                        ${main_project_path}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
 
 set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.cpp
-                        ${main_project_path}/lib/src/vtMappingTF.cpp
+#                        ${main_project_path}/lib/src/vtMappingTF.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${YARP_INCLUDE_DIRS}
                     ${ICUB_INCLUDE_DIRS}
                     ${kinectWrapper_INCLUDE_DIRS})
-include_directories(${main_project_path}/lib/include
-                    ${main_project_path}/lib/include/iCub/vtMappingTF)
+include_directories(${main_project_path}/lib/include)
+#                    ${main_project_path}/lib/include/iCub/vtMappingTF)
 
 source_group("Source Files" FILES ${source})
 source_group("Header Files" FILES ${header})
@@ -39,7 +39,7 @@ add_definitions(-D_USE_MATH_DEFINES)
 
 add_executable(skeleton3D ${source} ${header} ${source_files} ${include_files} ${IDL_GEN_FILES} ${idl_files}) #${lib_files})# ${source_files} ${include_files} )
 
-target_link_libraries(skeleton3D ${YARP_LIBRARIES} ${icubclient_LIBRARIES} ${OpenCV_LIBRARIES} ctrlLib TensorflowCC::Shared)
+target_link_libraries(skeleton3D ${YARP_LIBRARIES} ${icubclient_LIBRARIES} ${OpenCV_LIBRARIES} ctrlLib)# TensorflowCC::Shared)
 
 install(TARGETS skeleton3D DESTINATION bin)
 

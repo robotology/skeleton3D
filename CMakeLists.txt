@@ -20,8 +20,8 @@ find_package(ICUBcontrib REQUIRED)
 find_package(icubclient)
 find_package(kinectWrapper)
 find_package(OpenCV REQUIRED)
-find_package(periPersonalSpace)
-find_package(TensorflowCC COMPONENTS Shared)
+# find_package(periPersonalSpace)
+# find_package(TensorflowCC COMPONENTS Shared)
 
 list(APPEND CMAKE_MODULE_PATH ${YARP_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH ${ICUB_MODULE_PATH})
@@ -42,21 +42,11 @@ set(main_project_path ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(app)
 add_subdirectory(yetAnotherAvoidance)
-add_subdirectory(visuoTactileCalib)
+#add_subdirectory(visuoTactileCalib)
 add_subdirectory(skeleton3D)
-#add_subdirectory(lib)
 
-#include(YarpIDL)
-
-#set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/include/skeleton3D.h)
-#			${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
-
-#set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/src/skeleton3D.cpp
-#			${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp
-#		 	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-
-set (lib_files          ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h
-                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp)
+#set (lib_files          ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h
+#                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp)
 
 
 #set(idl_files    skeleton3D.thrift)
