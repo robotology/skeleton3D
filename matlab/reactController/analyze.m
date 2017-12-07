@@ -92,7 +92,8 @@ if((d_params(1) == 10) && (d_orig(1,4) == 10) ) % 10 DOF situation - 3 torso, 7 
         
     joint_info(1).name = '1st torso - pitch'; joint_info(2).name = '2nd torso - roll'; joint_info(3).name = '3rd torso - yaw'; 
     joint_info(4).name = '1st shoulder'; joint_info(5).name = '2nd shoulder'; joint_info(6).name = '3rd shoulder'; 
-    joint_info(7).name = '1st elbow'; joint_info(8).name = '2nd elbow';  joint_info(9).name = '1st wrist'; joint_info(10).name = '2nd wrist'; 
+%     joint_info(7).name = '1st elbow'; joint_info(8).name = '2nd elbow';  joint_info(9).name = '1st wrist'; joint_info(10).name = '2nd wrist'; 
+    joint_info(7).name = 'elbow'; joint_info(8).name = 'elbow';  joint_info(9).name = 'wrist'; joint_info(10).name = 'wrist'; 
 
     
     for i=1:chainActiveDOF
