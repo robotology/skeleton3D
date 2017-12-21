@@ -1,7 +1,8 @@
-plot_2_joint = 1;
-plot_dist_thres = 1;        % neutral
-plot_dist_mod_thres = 0;    % reduced
-plot_dist_inc_thres = 0;    % increased
+% plot_2_joint = 1;
+% plot_dist_thres = 1;        % neutral
+% plot_dist_mod_thres = 0;    % reduced
+% plot_dist_inc_thres = 0;    % increased
+% PLOT_JOINT=0 
 FontSZ = 12;
 
 h_new_sp = 0.02;
@@ -10,24 +11,29 @@ h_new_sp = 0.02;
 % no_pps2 = find(part2 == -1000);
 % part1(no_pps2)=0;
 
-if plot_2_joint==1      % plot 2 joints
-    nb_subplot = 5;
-    nb_jnts_plot = 2;
-%     jnts_plot = 8:2:chainActiveDOF;
-    jnts_plot = chainActiveDOF:-2:8;
-    out_pos = [0 0 15 25];
-elseif plot_2_joint==0  % plot 4 joints
-    nb_subplot = 7;
-    nb_jnts_plot = 4;
-%     jnts_plot = 7:chainActiveDOF;
-    jnts_plot = chainActiveDOF:-1:7;
-    out_pos = [0 0 15 31];
-elseif plot_2_joint==2  % plot 7 joints, including 3 stupid shoulders
-    nb_subplot = 10;
-    nb_jnts_plot = 7;
-    jnts_plot = chainActiveDOF:-1:4;
-    out_pos = [0 0 12 31];
-    FontSZ = 8;
+if PLOT_JOINT==1
+    if plot_2_joint==1      % plot 2 joints
+        nb_subplot = 5;
+        nb_jnts_plot = 2;
+    %     jnts_plot = 8:2:chainActiveDOF;
+        jnts_plot = chainActiveDOF:-2:8;
+        out_pos = [0 0 15 25];
+    elseif plot_2_joint==0  % plot 4 joints
+        nb_subplot = 7;
+        nb_jnts_plot = 4;
+    %     jnts_plot = 7:chainActiveDOF;
+        jnts_plot = chainActiveDOF:-1:7;
+        out_pos = [0 0 15 31];
+    elseif plot_2_joint==2  % plot 7 joints, including 3 stupid shoulders
+        nb_subplot = 10;
+        nb_jnts_plot = 7;
+        jnts_plot = chainActiveDOF:-1:4;
+        out_pos = [0 0 12 31];
+        FontSZ = 8;
+    end
+else
+    nb_subplot = 3;
+    out_pos = [0 0 15 15];
 end
 
 %% Color
@@ -108,8 +114,10 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         end
         hold off
         ax = gca;
+        ax0 = ax;
         ax = set_tight_border(ax);
-        
+    
+    if PLOT_JOINT==1    
     for j=jnts_plot
         if plot_2_joint==1
             if j==8
@@ -148,7 +156,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
 %         plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_min_avoid_column),'--b','Marker','v','MarkerSize',2); % current min joint vel limit set by avoidance handler
 %         plot(time_rel_reactCtrl,d(:,joint_info(j).vel_limit_max_avoid_column),'--m','Marker','^','MarkerSize',2); % current max joint vel limit set by avoidance handler
 %         ciplot(d(:,joint_info(j).vel_limit_min_avoid_column),d(:,joint_info(j).vel_limit_max_avoid_column),d(:,joint_info(j).vel_limit_max_avoid_column),'c');
-        plot(time_rel_reactCtrl,d(:,joint_info(j).vel_column),'-k','LineWidth',1); % current joint velocity
+        plot(time_rel_reactCtrl,d(:,joint_info(j).vel_column),'-','color',handColor,'LineWidth',0.5); % current joint velocity
         
 
         xlim([tmin tmax]); ylim([(joint_info(j).vel_limit_min - 1) (joint_info(j).vel_limit_max + 1) ]);
@@ -156,7 +164,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
 %             xlabel('time (s)','FontSize',FontSZ);
 %         end
 %         ylabel({joint_info(j).name,'vel. (deg/s)'},'FontSize',FontSZ);
-        titleJoint = strcat('joint',{' '},num2str(j-3),{'-'},joint_info(j).name,'-velocity (deg/s)'); 
+        titleJoint = strcat(joint_info(j).name,{' '},'velocity (joint nr.',{' '},num2str(j-3),{') '},'(deg/s)'); 
         title(titleJoint,'FontSize',FontSZ);
 
         hold off;
@@ -166,13 +174,14 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         ax0 = ax;
         ax = set_tight_border(ax);
     end 
+    end
     
     subplot(nb_subplot,1,nb_subplot);
         plot(time_rel_reactCtrl,dist,'LineWidth',LineSZ,'color',eeColor);
 %         ylabel({'end-eff.','error (m)'},'FontSize',FontSZ);
         title({'end-effector error (m)'},'FontSize',FontSZ);
         xlim([tmin tmax]); xlabel('time (s)', 'FontSize',FontSZ);
-        ylim([0 0.03]); %0.03 0.08 0.12
+        ylim([0 ylimEE]); %0.03 0.08 0.12
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         xt_new = xt-tmin;
         xticklabels({string(xt_new)})
@@ -187,4 +196,8 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         bottom = outerpos(2);% + k*ti(2);
         ax_width = outerpos(3) - 1.5*k*ti(1);
         ax_height = outerpos(4) - ti(2) - ti(4);
+        if PLOT_JOINT==0
+            bottom = outerpos(2) + 4.5*ti(2);
+            ax_height = outerpos(4) - ti(2) - 2.5*ti(4);
+        end
         ax.Position = [left bottom ax_width ax_height];

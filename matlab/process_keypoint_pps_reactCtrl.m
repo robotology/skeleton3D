@@ -1,6 +1,6 @@
-clc;
-clear all;
-close all;
+% clc;
+% clear all;
+% close all;
 
 %% Plot flags & Init
 PLOT_KEYPOINT_EVOLUTION = 0;
@@ -16,21 +16,21 @@ idx_ppsEv_on_skin_act = 8;
 FontSZ = 16;
 LineSZ = 2;
 
-tmin = 142.0;
-tmax = 155.0;
-
-% path = 'data_1535/';    % reach a point
-% path = 'data_1725/';    % reach a point with changing valence
-% path = 'data_1740/';    % follow a circle with changing valence
-% path = 'data_1120/';    % follow a circle with changing valence stiff on
-
-% New format data
-% path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
-% path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
-path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-240 Fig 9 190-225
-path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 140-200(neutral) Fig 8 140-160
-% path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150 or 10-45 10-55 Fig 10 110-130
-% path = 'data_1755/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 90-170
+% tmin = 142.0;
+% tmax = 155.0;
+% 
+% % path = 'data_1535/';    % reach a point
+% % path = 'data_1725/';    % reach a point with changing valence
+% % path = 'data_1740/';    % follow a circle with changing valence
+% % path = 'data_1120/';    % follow a circle with changing valence stiff on
+% 
+% % New format data
+% % path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
+% % path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
+% path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-240 Fig 9 190-225
+% path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 140-200(neutral) Fig 8 140-160
+% % path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150 or 10-45 10-55 Fig 10 110-130
+% % path = 'data_1755/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 90-170
 
 %% Keypoints
 filename_keypoints = 'keypoints/data.log';
