@@ -19,11 +19,6 @@ LineSZ = 2;
 % tmin = 142.0;
 % tmax = 155.0;
 % 
-% % path = 'data_1535/';    % reach a point
-% % path = 'data_1725/';    % reach a point with changing valence
-% % path = 'data_1740/';    % follow a circle with changing valence
-% % path = 'data_1120/';    % follow a circle with changing valence stiff on
-% 
 % % New format data
 % % path = 'data_1425/';    % reach a point with changing valence stiff on elbow from reactCtrl     40-110
 % % path = 'data_1430/';    % follow a circle with changing valence stiff on elbow from reactCtrl 10-130    65-100
@@ -200,23 +195,6 @@ for i=1:length(time_rel_reactCtrl)
         dist_hL_EB = [dist_hL_EB;1000];
     end
 end
-% for i=1:length(time_rel_jnt)
-%     idx = max(find(time_rel_kp<=time_rel_jnt(i)));
-%     if (~isempty(idx))
-%         dist_head_EB_cur = find_dist_kpEv_C(idx,head,i,posEB);
-%         dist_head_EB = [dist_head_EB;dist_head_EB_cur];
-%         
-%         dist_hR_EB_cur = find_dist_kpEv_C(idx,hR,i,posEB);
-%         dist_hR_EB = [dist_hR_EB;dist_hR_EB_cur];
-% 
-%         dist_hL_EB_cur = find_dist_kpEv_C(idx,hL,i,posEB);
-%         dist_hL_EB = [dist_hL_EB;dist_hL_EB_cur];
-%     else
-%         dist_head_EB = [dist_head_EB;1000];
-%         dist_hR_EB = [dist_hR_EB;1000];
-%         dist_hL_EB = [dist_hL_EB;1000];
-%     end
-% end
 
 %% Plot
 
@@ -303,34 +281,7 @@ if PLOT_SEPARATE_ALL
             xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
             yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
 
-    % set(gcf, 'Position', get(0, 'Screensize'));
-
-
-    % Distance to locus & activation
-    % fig_dist_act_locus = figure('units','normalized','outerposition',[0 0 1 1]);
-    %     dur = find_idx_in_duration(time_rel_reactCtrl, tmin, tmax);
-    %         
-    %     subplot(3,1,1); 
-    %         plot(time_rel_pps, dist_hL, time_rel_pps, dist_hR, time_rel_pps, dist_head, 'LineWidth',LineSZ);
-    %         ylabel({'distance (m)'; 'to locus'},'FontSize',FontSZ);   yticks(0:0.1:0.7); 
-    %         xlim([tmin tmax]); ylim([0 0.7]); grid on
-    %         title('HUMAN PARTS (H) VS. ROBOT LEFT ARM (R)','FontSize',FontSZ);
-    %         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
-    %         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
-    %    
-    %         
-    %     subplot(3,1,3); 
-    %         plot(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'*'); ylabel({'activation';'on l\_hand(R)'},'FontSize',FontSZ);              yticks(0:0.2:1);
-    %         xlim([tmin tmax]); ylim([0.0 1.0]); grid on
-    %         xlabel('time (s)','FontSize',FontSZ)
-    %         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
-    %         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
-    %         
-    %     subplot(3,1,2); 
-    %         plot(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'*'); ylabel({'activation';'on l\_forearm(R)'},'FontSize',FontSZ);           yticks(0:0.2:1);  
-    %         xlim([tmin tmax]); ylim([0.0 1.0]); grid on
-    %         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
-    %         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
+    
 
 
     %% Joints' limits
