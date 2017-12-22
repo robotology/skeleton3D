@@ -5,7 +5,7 @@ clear all;
 %% Plot Figure 8
 tmin = 142.0;
 tmax = 155.0;
-path = 'data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 140-200(neutral) Fig 8 140-160
+path = 'datasets/data_1650/';    % reach a point with changing valence stiff on elbow from reactCtrl 26/09/2017 140-200(neutral) Fig 8 140-160
 
 plot_2_joint = 1;
 plot_dist_thres = 1;        % neutral
@@ -22,7 +22,7 @@ close all;
 clear all;
 tmin = 190.0;
 tmax = 225.0;
-path = 'data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-240 Fig 9 190-225
+path = 'datasets/data_1625/';    % reach a point with different valences for hand and head stiff on elbow from reactCtrl 170-240 Fig 9 190-225
 
 plot_2_joint = 0;
 plot_dist_thres = 0;        % neutral
@@ -39,7 +39,7 @@ close all;
 clear all;
 tmin = 110.0;
 tmax = 130.0;
-path = 'data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150 or 10-45 10-55 Fig 10 110-130
+path = 'datasets/data_1655/';    % follow a circle with changing valence stiff on elbow from reactCtrl 26/09/2017 110-150 or 10-45 10-55 Fig 10 110-130
 
 plot_2_joint = 0;
 plot_dist_thres = 0;        % neutral
