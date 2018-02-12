@@ -604,6 +604,8 @@ void    skeleton3D::addJointAndConf(map<string,kinectWrapper::Joint> &joints,
 bool    skeleton3D::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("skeleton3D")).asString().c_str();
+    std::string SFMrpc = rf.check("depth_rpc",Value("/SFM/rpc")).asString().c_str();
+    yDebug("SFMrpc is %s", SFMrpc.c_str());
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
@@ -640,7 +642,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // Connect to /SFM/rpc to obtain 3D estimation
     rpcGet3D.open(("/"+name+"/get3d:rpc").c_str());
-    std::string SFMrpc = "/SFM/rpc";
+//    std::string SFMrpc = "/SFM/rpc";
     connected3D = yarp::os::Network::connect(rpcGet3D.getName().c_str(),SFMrpc);
     if (!connected3D)
         yError("[%s] Unable to connect to SFM rpc port", name.c_str());
