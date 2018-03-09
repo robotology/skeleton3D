@@ -45,6 +45,7 @@ void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,ki
                 jntFilted.z = posFilted[2];
                 jointsFiltered.insert(std::pair<string,kinectWrapper::Joint>(partName.c_str(),jntFilted));
                 yDebug("[%s] filt: apply median filter for %s",name.c_str(), partName.c_str());
+                yDebug("[%s] filt: pose of %s is %s",name.c_str(), partName.c_str(), posFilted.toString(3,3).c_str());
             }
             else
             {
@@ -70,11 +71,11 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
         // command format: Rect tlx tly w h step
         Bottle cmd,reply;
         cmd.addString("Rect");
-        cmd.addInt(point.x-3);
-        cmd.addInt(point.y-3);
-        cmd.addInt(7);
-        cmd.addInt(7);
-        cmd.addInt(2);
+        cmd.addInt(point.x-1);
+        cmd.addInt(point.y-1);
+        cmd.addInt(3);
+        cmd.addInt(3);
+        cmd.addInt(1);
 
         mutexResourcesSFM.lock();
         rpcGet3D.write(cmd,reply);
@@ -92,7 +93,8 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
                 tmp[1]=reply.get(i+1).asDouble();
                 tmp[2]=reply.get(i+2).asDouble();
 
-                if (norm(tmp)>0.0 & tmp[0]>0.0 & tmp[0]<=5.0)
+//                if (norm(tmp)>0.0 & tmp[0]>0.0 & tmp[0]<=5.0)
+                if (norm(tmp)>0.0)
                 {
                     x+=tmp;
                     cnt++;
@@ -145,14 +147,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 partCv.x = (int)part->get(1).asDouble();
                                 partCv.y = (int)part->get(2).asDouble();
 
-                                if (partConf>=0.0001)
+                                if (partConf>=0.0001)// && partName =="Lshoulder")
                                 {
                                     partsCV.push_back(partCv);
                                     addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
                                     addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
                                 }
-                                else
-                                    yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
+//                                else
+//                                    yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
                             }
                         }
                         else
@@ -160,8 +162,8 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                     }
                 }
 
-                computeSpine(jnts);
-                extrapolateHand(jnts);
+//                computeSpine(jnts);
+//                extrapolateHand(jnts);
                 if (use_part_filter)
                 {
                     filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
@@ -231,7 +233,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
     else
     {
-        yDebug("[%s] obtainBodyParts return empty",name.c_str());
+//        yDebug("[%s] obtainBodyParts return empty",name.c_str());
         return false;
     }
 
@@ -543,7 +545,7 @@ bool    skeleton3D::drawBodyGui(Agent *a)
         vector<Vector> segmentUpper, segmentSpine, segmentLower;
         for (int i=0; i<7; i++)
         {
-            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+//            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
             if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
                 segmentUpper.push_back(partPos);
         }
@@ -865,10 +867,10 @@ bool    skeleton3D::updateModule()
         }
     }
 
-    if(streamPartsToPPS())
-        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
-    else
-        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
+//    if(streamPartsToPPS())
+//        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
+//    else
+//        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
     return true;
 }
