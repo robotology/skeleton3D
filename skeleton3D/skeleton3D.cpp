@@ -162,6 +162,18 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
                 computeSpine(jnts);
                 extrapolateHand(jnts);
+
+                // TODO: check if a new joint==0.0 in jnts, use the old value from player.skeleton
+                if (jnts.size()>=8)
+                    for (map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin(); jnt != player.skeleton.end(); jnt++)
+                    {
+                        if (jnts.find(jnt->first)==jnts.end())    // No specific joint in jnts (get3DPosition return empty)
+                        {
+                            kinectWrapper::Joint joint = jnt->second;
+                            jnts.insert(std::pair<string,kinectWrapper::Joint>(jnt->first,joint));
+                        }
+                    }
+
                 if (use_part_filter)
                 {
                     filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
@@ -777,21 +789,6 @@ bool    skeleton3D::updateModule()
     // Obtain body part from a Tensorflow-based module
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
-
-    // test tensorflow-base calibrator (mapping)
-    Vector handPose(3,0.0), elbowPose(3,0.0);
-    handPose[0] = -0.13; handPose[1] = -0.15; handPose[2] = 0.15;
-    elbowPose[0] = -0.3; elbowPose[1] = -0.21; elbowPose[2] = 0.12;
-//    handPose[0] = -0.32063; handPose[1] = 0.050248; handPose[2] = 0.10134;
-//    elbowPose[0] = -0.66542; elbowPose[1] = 0.064199; elbowPose[2] = 0.052125;
-
-//    if (vtMapRight->setInput(handPose, elbowPose))
-//        if (vtMapRight->computeMapping())
-//        {
-//            vtMapRight->getOutput(handPose);
-//            yInfo("handPose after mapping: %s", handPose.toString(3,3).c_str());
-//        }
-
 
     // Get the 3D pose of CvPoint of body parts
     if (bodyPartsCv.size()>=0 && connected3D)
