@@ -12,11 +12,13 @@ include(YarpIDL)
 file(GLOB source *.cpp)
 file(GLOB header *.h)
 
-set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.h)
+set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/udp_client_server.h)
 #                        ${main_project_path}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
 
 set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.cpp
 #                        ${main_project_path}/lib/src/vtMappingTF.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/udp_client_server.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
