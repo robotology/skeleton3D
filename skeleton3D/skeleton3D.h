@@ -5,6 +5,8 @@
 #include <deque>
 #include <map>
 #include <ctime>
+#include <stdio.h>
+#include <unistd.h>
 
 #include <yarp/os/all.h>
 #include <yarp/sig/all.h>
@@ -14,6 +16,12 @@
 
 #include <icubclient/all.h>
 #include "kinectWrapper/kinectWrapper.h"
+#include "udp_client_server.h"
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 #include <opencv2/opencv.hpp>
 
@@ -78,6 +86,11 @@ protected:
     bool                        use_mid_arms;       //!< flag for calculation of midpoints in forearms
 
     double                      segLMax, segLMin;   //!< threshold for arm constraint
+
+    udp_client_server::udp_client       udp_sender;
+    int                                 sock;
+    sockaddr_in                         serveraddr;
+
 //    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
 
 //    vtMappingTF             *vtMapRight;
@@ -171,6 +184,25 @@ protected:
 
     void    addJointAndConf(map<string,kinectWrapper::Joint> &joints,
                             const Vector &pos, const string &partName);
+
+    double  angleAtJoint(const Vector &v1, const Vector &v2);
+    Vector  vectorBetweenJnts(const Vector &jnt1, const Vector &jnt2);
+    Vector  computeAllBodyAngles();
+
+    /**
+     * @brief computeBodyAngle compute the angle (deg) between 2 sucessive body links
+     * @param partName1 name of joint 1, where angle need calculated
+     * @param partName2 name of joint 2
+     * @param partName3 name of joint 3
+     * @return angle at joint 1 between 2 links, i.e link12 (joint1-joint2) and link13 (joint1-joint3)
+     */
+    double  computeBodyAngle(const string &partName1,
+                             const string &partName2,
+                             const string &partName3);
+    double  computeFootAngle(const string &partName1,
+                             const string &partName2);
+
+    Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -352,7 +384,22 @@ public:
         {11, "kneeRight"},
         {12, "ankleRight"},
         {13, "head"},
+    };
 
+    std::map<unsigned int, std::string> mapPartsUdp {
+        {0,  "hipLeft"},
+        {1,  "kneeLeft"},
+        {2,  "ankleLeft"},
+        {3,  "hipRight"},
+        {4,  "kneeRight"},
+        {5,  "ankleRight"},
+        {6,  "shoulderLeft"},
+        {7,  "elbowLeft"},
+        {8,  "handLeft"},
+        {9,  "shoulderRight"},
+        {10, "elbowRight"},
+        {11, "handRight"},      // wrist --> hand: use extrapolatePoint later to convert truely
+        {12, "head"},
 
     };
 };

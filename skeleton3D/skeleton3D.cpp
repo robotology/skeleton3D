@@ -706,7 +706,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
         Time::delay(1.0);
     }
     opc->checkout();
-
+    //TODO check this
     list<shared_ptr<Entity>> entityList = opc->EntitiesCacheCopy();
     for(auto e : entityList) {
         if(e->entity_type() == ICUBCLIENT_OPC_ENTITY_AGENT && e->name() != "icub") {
@@ -734,6 +734,37 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     cmdGui.clear();
     cmdGui.addString("reset");
     portToGui.write(cmdGui);
+
+    // UDP port to communicate with ADVR module
+    std::string addr_udp=rf.check("address_udp",Value("192.168.0.62")).asString().c_str();
+    int port_udp=rf.check("port_udp",Value(44000)).asInt();
+//    udp_sender.init_client(addr_udp, port_udp);
+
+
+    // socket()
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock==-1)
+        yError("Cannot open socket");
+    else
+        yInfo("Opened the socket");
+
+//    sockaddr_in serveraddr;
+    bzero(&serveraddr, sizeof(serveraddr)); //Initialize to '0'
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_port = htons(port_udp); // Port
+    serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
+
+//    serveraddr.sin_port = htons(44000); // Port
+//    serveraddr.sin_addr.s_addr = inet_addr("192.168.0.62"); // Linux PC
+//    r = bind(sock, serveraddr->ai_addr, f_addrinfo->ai_addrlen);
+//    if(r != 0)
+//    {
+//        freeaddrinfo(f_addrinfo);
+//        close(f_socket);
+//        throw udp_client_server_runtime_error(("could not bind UDP socket with: \"" + addr + ":" + decimal_port + "\"").c_str());
+//    }
+//    serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
+    // serveraddr.sin_addr.s_addr = inet_addr("10.255.41.176"); // Linux PC
 
     return true;
 }
@@ -771,6 +802,10 @@ bool    skeleton3D::close()
     ppsOutPort.close();
     portToGui.close();
     opc->close();
+
+//    udp_sender.~udp_client();
+
+
     return true;
 }
 
@@ -793,16 +828,16 @@ bool    skeleton3D::updateModule()
     tracked = obtainBodyParts(bodyPartsCv);
 
     // Get the 3D pose of CvPoint of body parts
-    if (bodyPartsCv.size()>=0 && connected3D)
-    {
-        for (int8_t i=0; i<bodyPartsCv.size(); i++)
-        {
-            Vector pos(3,0.0);
-            get3DPosition(bodyPartsCv[i], pos);
-            yInfo("[%s] 3D pose of CvPoint [%d, %d] from SFM is: %s",
-                  name.c_str(), bodyPartsCv[i].x, bodyPartsCv[i].y, pos.toString(3,3).c_str());
-        }
-    }
+//    if (bodyPartsCv.size()>=0 && connected3D)
+//    {
+//        for (int8_t i=0; i<bodyPartsCv.size(); i++)
+//        {
+//            Vector pos(3,0.0);
+//            get3DPosition(bodyPartsCv[i], pos);
+//            yInfo("[%s] 3D pose of CvPoint [%d, %d] from SFM is: %s",
+//                  name.c_str(), bodyPartsCv[i].x, bodyPartsCv[i].y, pos.toString(3,3).c_str());
+//        }
+//    }
 
     // Update OPC or conduct actions
     // check if this skeletton is really tracked
@@ -865,6 +900,48 @@ bool    skeleton3D::updateModule()
     }
 
     // TODO: send pose to UDP server
+//    char buffer[500];
+
+    Vector allJoints;
+    for (int i=0; i<mapPartsUdp.size(); i++)
+    {
+        Vector pos(3,0.0);
+        if (player.skeleton.find(mapPartsUdp[i].c_str())!=player.skeleton.end())
+        {
+            pos = joint2Vector(player.skeleton.at(mapPartsUdp[i].c_str()));
+        }
+        for (int i=0; i<pos.size(); i++)
+            allJoints.push_back(pos[i]);
+    }
+//    sprintf(buffer, "%s", allJoints.toString(3,3).c_str());
+
+    Vector allAngles = computeAllBodyAngles();
+//    sprintf(buffer, "%s %s", buffer, allAngles.toString(3,3).c_str());
+//    yDebug("pose package: %s", buffer);
+//    yDebug("udp addr: %s", udp_sender.get_addr().c_str());
+//    yDebug("udp port: %d", udp_sender.get_port());
+//    yDebug("udp sock: %d", udp_sender.get_socket());
+//    int check_udp_sent = udp_sender.send(buffer, strlen(buffer));
+//    if (check_udp_sent<0)
+//        yError("problem in sending UDP!!!");
+//    else
+//        yDebug("pose package (size %d) sent: %s", check_udp_sent,buffer);
+
+    Vector sendUDP(44,0.0);
+    sendUDP.setSubvector(0,allJoints);
+    sendUDP.setSubvector(39,allAngles);
+    float SendData[44];
+
+
+    for (int8_t i=0; i<sendUDP.size(); i++)
+        SendData[i] = (float)sendUDP[i];
+
+    int retval = sendto(sock,SendData,sizeof(SendData),0,(sockaddr*)&serveraddr,sizeof(serveraddr));
+
+    if (retval<0)
+        yError("problem in sending UDP!!!");
+    else
+        yDebug("pose package (size %d) sent: %lf %lf %lf %lf %lf", retval,SendData[39], SendData[40], SendData[41], SendData[42], SendData[43]);
 
 //    if(streamPartsToPPS())
 //        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
@@ -872,4 +949,107 @@ bool    skeleton3D::updateModule()
 //        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
     return true;
+}
+
+double  skeleton3D::angleAtJoint(const Vector &v1, const Vector &v2)
+{
+    return acos(dot(v1,v2)/(norm(v1)*norm(v2)))*180.0/M_PI;
+}
+
+Vector  skeleton3D::vectorBetweenJnts(const Vector &jnt1, const Vector &jnt2)
+{
+    return jnt2-jnt1;
+}
+
+Vector  skeleton3D::joint2Vector(const kinectWrapper::Joint &joint)
+{
+    Vector jnt(3,0.0);
+    jnt[0] = joint.x;
+    jnt[1] = joint.y;
+    jnt[2] = joint.z;
+
+    return jnt;
+}
+
+Vector  skeleton3D::computeAllBodyAngles()
+{
+//    Vector jnt1(3,0.0), jnt2(3,0.0), jnt3(3,0.0);
+//    if (player.skeleton.find("hipLeft")!=player.skeleton.end())
+//        jnt1 = joint2Vector(player.skeleton.at("hipLeft"));
+//    if (player.skeleton.find("kneeLeft")!=player.skeleton.end())
+//        jnt2 = joint2Vector(player.skeleton.at("kneeLeft"));
+//    if (player.skeleton.find("shoulderLeft")!=player.skeleton.end())
+//        jnt3 = joint2Vector(player.skeleton.at("shoulderLeft"));
+//    Vector link12 = vectorBetweenJnts(jnt1, jnt2);
+//    Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+//    double angle = angleAtJoint(link12,link13);
+    Vector allAngles(5,0.0);
+    yInfo("compute angle 1");
+    allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderLeft");
+    yInfo("compute angle 2");
+    allAngles[1] = computeBodyAngle("kneeLeft", "ankleLeft", "hipLeft");
+    yInfo("compute angle 4");
+    allAngles[3] = computeBodyAngle("shoulderLeft","hipLeft", "elbowLeft");
+    yInfo("compute angle 5");
+    allAngles[4] = computeBodyAngle("elbowLeft" ,"handLeft" ,"shoulderLeft");
+
+    allAngles[2] = computeFootAngle("ankleLeft", "kneeLeft");
+
+    yInfo("angles: %s", allAngles.toString(3,3).c_str());
+    return allAngles;
+}
+
+double  skeleton3D::computeBodyAngle(const string &partName1, const string &partName2, const string &partName3)
+{
+    Vector jnt1(3,0.0), jnt2(3,0.0), jnt3(3,0.0);
+    if (player.skeleton.find(partName1.c_str())!=player.skeleton.end())
+        yInfo("found %s", partName1.c_str());
+    if (player.skeleton.find(partName2.c_str())!=player.skeleton.end())
+        yInfo("found %s", partName2.c_str());
+    if (player.skeleton.find(partName3.c_str())!=player.skeleton.end())
+        yInfo("found %s", partName3.c_str());
+    if (player.skeleton.find(partName1.c_str())!=player.skeleton.end() &&
+            player.skeleton.find(partName2.c_str())!=player.skeleton.end() &&
+            player.skeleton.find(partName3.c_str())!=player.skeleton.end())
+    {
+        yInfo("computeBodyAngle: found %s %s %s", partName1.c_str(), partName2.c_str(), partName3.c_str());
+        jnt1 = joint2Vector(player.skeleton.at(partName1.c_str()));
+        jnt2 = joint2Vector(player.skeleton.at(partName2.c_str()));
+        jnt3 = joint2Vector(player.skeleton.at(partName3.c_str()));
+        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
+        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+
+        //TODO check this
+        link12[1]=0;    link13[1]=0;
+
+        return angleAtJoint(link12,link13);
+    }
+    else
+        return 0.0;
+
+}
+
+double  skeleton3D::computeFootAngle(const string &partName1, const string &partName2)
+{
+    Vector jnt1(3,0.0), jnt2(3,0.0), jnt3(3,0.0);
+    if (player.skeleton.find(partName1.c_str())!=player.skeleton.end() &&
+            player.skeleton.find(partName2.c_str())!=player.skeleton.end())
+    {
+        jnt1 = joint2Vector(player.skeleton.at(partName1.c_str()));
+        jnt2 = joint2Vector(player.skeleton.at(partName2.c_str()));
+        jnt3 = jnt1;
+        jnt3[0] -=0.1;
+        yInfo("joints: %s, %s, %s", jnt1.toString(3,3).c_str(),
+              jnt2.toString(3,3).c_str(), jnt3.toString(3,3).c_str());
+        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
+        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+
+        //TODO check this
+        link12[1]=0;    link13[1]=0;
+
+        return angleAtJoint(link12,link13);
+    }
+    else
+        return 0.0;
+
 }
