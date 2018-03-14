@@ -738,33 +738,17 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     // UDP port to communicate with ADVR module
     std::string addr_udp=rf.check("address_udp",Value("192.168.0.62")).asString().c_str();
     int port_udp=rf.check("port_udp",Value(44000)).asInt();
-//    udp_sender.init_client(addr_udp, port_udp);
 
-
-    // socket()
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock==-1)
         yError("Cannot open socket");
     else
         yInfo("Opened the socket");
 
-//    sockaddr_in serveraddr;
     bzero(&serveraddr, sizeof(serveraddr)); //Initialize to '0'
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(port_udp); // Port
     serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
-
-//    serveraddr.sin_port = htons(44000); // Port
-//    serveraddr.sin_addr.s_addr = inet_addr("192.168.0.62"); // Linux PC
-//    r = bind(sock, serveraddr->ai_addr, f_addrinfo->ai_addrlen);
-//    if(r != 0)
-//    {
-//        freeaddrinfo(f_addrinfo);
-//        close(f_socket);
-//        throw udp_client_server_runtime_error(("could not bind UDP socket with: \"" + addr + ":" + decimal_port + "\"").c_str());
-//    }
-//    serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
-    // serveraddr.sin_addr.s_addr = inet_addr("10.255.41.176"); // Linux PC
 
     return true;
 }
@@ -916,16 +900,6 @@ bool    skeleton3D::updateModule()
 //    sprintf(buffer, "%s", allJoints.toString(3,3).c_str());
 
     Vector allAngles = computeAllBodyAngles();
-//    sprintf(buffer, "%s %s", buffer, allAngles.toString(3,3).c_str());
-//    yDebug("pose package: %s", buffer);
-//    yDebug("udp addr: %s", udp_sender.get_addr().c_str());
-//    yDebug("udp port: %d", udp_sender.get_port());
-//    yDebug("udp sock: %d", udp_sender.get_socket());
-//    int check_udp_sent = udp_sender.send(buffer, strlen(buffer));
-//    if (check_udp_sent<0)
-//        yError("problem in sending UDP!!!");
-//    else
-//        yDebug("pose package (size %d) sent: %s", check_udp_sent,buffer);
 
     Vector sendUDP(44,0.0);
     sendUDP.setSubvector(0,allJoints);
@@ -973,16 +947,6 @@ Vector  skeleton3D::joint2Vector(const kinectWrapper::Joint &joint)
 
 Vector  skeleton3D::computeAllBodyAngles()
 {
-//    Vector jnt1(3,0.0), jnt2(3,0.0), jnt3(3,0.0);
-//    if (player.skeleton.find("hipLeft")!=player.skeleton.end())
-//        jnt1 = joint2Vector(player.skeleton.at("hipLeft"));
-//    if (player.skeleton.find("kneeLeft")!=player.skeleton.end())
-//        jnt2 = joint2Vector(player.skeleton.at("kneeLeft"));
-//    if (player.skeleton.find("shoulderLeft")!=player.skeleton.end())
-//        jnt3 = joint2Vector(player.skeleton.at("shoulderLeft"));
-//    Vector link12 = vectorBetweenJnts(jnt1, jnt2);
-//    Vector link13 = vectorBetweenJnts(jnt1, jnt3);
-//    double angle = angleAtJoint(link12,link13);
     Vector allAngles(5,0.0);
     yInfo("compute angle 1");
     allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderLeft");
