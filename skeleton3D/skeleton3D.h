@@ -59,6 +59,7 @@ protected:
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
+    BufferedPort<Bottle>    handBlobPort;
 
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
@@ -87,14 +88,12 @@ protected:
 
     double                      segLMax, segLMin;   //!< threshold for arm constraint
 
-    udp_client_server::udp_client       udp_sender;
-    int                                 sock;
-    sockaddr_in                         serveraddr;
+    int                                 sock, sockTool;
+    sockaddr_in                         serveraddr, serveraddrTool;
 
-//    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
-
-//    vtMappingTF             *vtMapRight;
-
+    double                              radius;     //!< hand blob radius
+    string                              hand_with_tool;
+    CvPoint                             handCV;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
@@ -203,6 +202,8 @@ protected:
                              const string &partName2);
 
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
+
+    bool    cropHandBlob(const string &hand, Vector &blob);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
