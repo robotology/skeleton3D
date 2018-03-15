@@ -51,6 +51,7 @@ protected:
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
+    BufferedPort<Bottle>    handBlobPort;
 
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
@@ -78,10 +79,9 @@ protected:
     bool                        use_mid_arms;       //!< flag for calculation of midpoints in forearms
 
     double                      segLMax, segLMin;   //!< threshold for arm constraint
-//    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
-
-//    vtMappingTF             *vtMapRight;
-
+    double                              radius;     //!< hand blob radius
+    string                              hand_with_tool;
+    CvPoint                             handCV;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
@@ -172,6 +172,9 @@ protected:
     void    addJointAndConf(map<string,kinectWrapper::Joint> &joints,
                             const Vector &pos, const string &partName);
 
+    Vector  joint2Vector(const kinectWrapper::Joint &joint);
+
+    bool    cropHandBlob(const string &hand, Vector &blob);
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
     bool    close();

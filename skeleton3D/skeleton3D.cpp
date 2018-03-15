@@ -145,7 +145,13 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 partCv.x = (int)part->get(1).asDouble();
                                 partCv.y = (int)part->get(2).asDouble();
 
-                                if (partConf>=0.0001)
+                                //TODO make this better
+                                if (hand_with_tool=="right" && partName =="Rwrist")
+                                    handCV = partCv;
+                                else if (hand_with_tool=="left" && partName =="Lwrist")
+                                    handCV = partCv;
+
+                                if (partConf>=0.0001)// && partName =="Lshoulder")
                                 {
                                     partsCV.push_back(partCv);
                                     addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
@@ -257,6 +263,9 @@ void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
     if (get3DPosition(point,pos))
     {
         kinectWrapper::Joint joint;
+        joint.u = (int)point.x;
+        joint.v = (int)point.y;
+        yInfo("joint 2D: %d, %d",joint.u, joint.v);
         joint.x = pos[0];
         joint.y = pos[1];
         joint.z = pos[2];
@@ -620,6 +629,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     yDebug("SFMrpc is %s", SFMrpc.c_str());
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
+    radius=rf.check("radius",Value(10.0)).asDouble();
+    hand_with_tool=rf.check("hand_with_tool",Value("right")).asString().c_str();
+
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     hand_valence = body_valence;
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
@@ -678,6 +690,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     else
         yInfo("[%s] Connected to %s port", name.c_str(), visuoTactileWrapper_inport.c_str());
 
+
+    handBlobPort.open(("/"+name+"/handBlobs:o").c_str());
 
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
@@ -752,6 +766,7 @@ bool    skeleton3D::interruptModule()
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
+    handBlobPort.interrupt();
 
     deleteBodySegGui("upper");
     deleteBodySegGui("spine");
@@ -768,6 +783,7 @@ bool    skeleton3D::close()
     bodyPartsInPort.close();
     ppsOutPort.close();
     portToGui.close();
+    handBlobPort.close();
     opc->close();
     return true;
 }
@@ -861,11 +877,75 @@ bool    skeleton3D::updateModule()
             opc->commit(partner);
         }
     }
-
     if(streamPartsToPPS())
         yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
     else
         yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
+    // Tool recoginition
+    Vector blob(4,0.0);
+    bool hasToolBlob=false;
+    if (hand_with_tool=="right")
+    {
+        hasToolBlob = cropHandBlob("handRight", blob);
+    }
+    else if (hand_with_tool=="left")
+    {
+        hasToolBlob = cropHandBlob("handLeft", blob);
+    }
+
+    if (hasToolBlob)
+    {
+        // send to recognition pipeline: blob is in Vector of double
+        yDebug("tool recognition");
+        Bottle blobBottle;
+        for (int8_t i=0; i<blob.size(); i++)
+            blobBottle.addDouble(blob[i]);
+
+        Bottle& output = handBlobPort.prepare();
+        output.clear();
+        output.addList()=blobBottle;
+        handBlobPort.write();
+
+        // read from /onTheFlyRecognition/human:io
+
+
+
+    }
+
     return true;
+}
+
+Vector  skeleton3D::joint2Vector(const kinectWrapper::Joint &joint)
+{
+    Vector jnt(3,0.0);
+    jnt[0] = joint.x;
+    jnt[1] = joint.y;
+    jnt[2] = joint.z;
+
+    return jnt;
+}
+
+bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
+{
+    if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
+    {
+        Vector pose2d(2,0.0);
+        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
+//        pose2d[0] = (double)jnt.u;
+//        pose2d[1] = (double)jnt.v;
+        pose2d[0] = handCV.x;
+        pose2d[1] = handCV.y;
+        yDebug("cropHandBlob %s: pose u, v %d, %d", hand.c_str(), jnt.u, jnt.v);
+        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
+        blob[0] = pose2d[0] - radius;   //top-left.x
+        blob[1] = pose2d[1] - radius;   //top-left.y
+        blob[2] = pose2d[0] + radius;   //bottom-right.x
+        blob[3] = pose2d[1] + radius;   //bottom-right.y
+        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
+        return true;
+    }
+    else
+        return false;
+
 }
