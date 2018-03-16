@@ -51,10 +51,12 @@ protected:
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
-    BufferedPort<Bottle>    handBlobPort;
+    BufferedPort<Bottle>    handBlobPort;           //!< buffered port of output to send blob with @see hand_with_tool
+    RpcClient               rpcAskTool;             //!< rpc client port to send requests to /onTheFlyRecognition/human:io
 
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
+    Mutex                   mutexResourcesTool;
 
     bool                    connected3D;
     bool                    connectedPPS;
@@ -175,6 +177,8 @@ protected:
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
     bool    cropHandBlob(const string &hand, Vector &blob);
+    bool    askToolLabel(string &label);
+
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
     bool    close();

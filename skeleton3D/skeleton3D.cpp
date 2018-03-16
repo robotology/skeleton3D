@@ -692,6 +692,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
 
     handBlobPort.open(("/"+name+"/handBlobs:o").c_str());
+    rpcAskTool.open(("/"+name+"/askTool:rpc").c_str());
 
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
@@ -755,18 +756,19 @@ bool    skeleton3D::interruptModule()
     yDebug("[%s] Interupt module",name.c_str());
 
     yDebug("[%s] Remove partner", name.c_str());
-    opc->checkout();                        yDebug("check 1");
-    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);    yDebug("check 2");
-    partner->m_present=0.0;                 yDebug("check 3");
-    opc->commit(partner);                   yDebug("check 4");
-    opc->removeEntity(partner->opc_id());   yDebug("check 5");
-    delete partner;                         yDebug("check 6");
-    opc->interrupt();                       yDebug("check 7");
+    opc->checkout();
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
+    partner->m_present=0.0;
+    opc->commit(partner);
+    opc->removeEntity(partner->opc_id());
+    delete partner;
+    opc->interrupt();
     rpcPort.interrupt();
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
-    handBlobPort.interrupt();
+    handBlobPort.interrupt();               yDebug("check 12");
+    rpcAskTool.interrupt();                 yDebug("check 13");
 
     deleteBodySegGui("upper");
     deleteBodySegGui("spine");
@@ -784,6 +786,7 @@ bool    skeleton3D::close()
     ppsOutPort.close();
     portToGui.close();
     handBlobPort.close();
+    rpcAskTool.close();
     opc->close();
     return true;
 }
@@ -908,7 +911,12 @@ bool    skeleton3D::updateModule()
         handBlobPort.write();
 
         // read from /onTheFlyRecognition/human:io
+        yDebug("communication with onTheFly");
+        string toolLabel;
+//        if (askToolLabel(toolLabel))
+//        {
 
+//        }
 
 
     }
@@ -948,4 +956,37 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
     else
         return false;
 
+}
+
+bool    skeleton3D::askToolLabel(string &label)
+{
+    yDebug("askToolLabel");
+    if (rpcAskTool.getOutputCount()>0)
+    {
+        Bottle cmd,reply;
+        cmd.addString("what");
+        yDebug("check 1");
+//        cmd.addInt(0);
+
+//        mutexResourcesTool.lock();
+        rpcAskTool.write(cmd,reply);
+
+//        mutexResourcesTool.unlock();
+
+        int sz=reply.size();
+        yDebug("check sz reply: %d",sz);
+        if (sz>0)
+        {
+            label = reply.get(0).asString();
+            yInfo("[%s] Tool is %s", name.c_str(), label.c_str());
+            return true;
+        }
+        else
+        {
+            yError("[%s] No tool recognize",name.c_str());
+            return false;
+        }
+    }
+    else
+        return false;
 }
