@@ -49,6 +49,7 @@ protected:
     yarp::os::Bottle        cmdGui;
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
+    BufferedPort<Bottle>    toolClassInPort;        //!< buffered port of input of received class of tool from onTheFlyRecoginition
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
     BufferedPort<Bottle>    handBlobPort;           //!< buffered port of output to send blob with @see hand_with_tool
