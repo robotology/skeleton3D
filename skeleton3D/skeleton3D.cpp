@@ -695,6 +695,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     handBlobPort.open(("/"+name+"/handBlobs:o").c_str());
     rpcAskTool.open(("/"+name+"/askTool:rpc").c_str());
+    toolClassInPort.open(("/"+name+"/toolClass:i").c_str());
 
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
@@ -989,7 +990,15 @@ bool    skeleton3D::updateModule()
 
         // read from /onTheFlyRecognition/human:io
         yDebug("communication with onTheFly");
-        string toolLabel;
+        string toolLabel="";
+
+        Bottle *toolClassIn = toolClassInPort.read(false);
+        if (toolClassIn!=NULL)
+        {
+            toolLabel = toolClassIn->get(0).asString();
+            yDebug("Recognize tool label is: %s",toolLabel.c_str());
+        }
+
 //        if (askToolLabel(toolLabel))
 //        {
 
@@ -1070,7 +1079,8 @@ bool    skeleton3D::askToolLabel(string &label)
     if (rpcAskTool.getOutputCount()>0)
     {
         Bottle cmd,reply;
-        cmd.addString("what");
+//        cmd.addString("what");
+        cmd.addVocab(Vocab::encode("what"));
         yDebug("check 1");
 //        cmd.addInt(0);
 
