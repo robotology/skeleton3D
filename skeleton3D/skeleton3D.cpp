@@ -60,6 +60,21 @@ void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,ki
     }
 }
 
+void    skeleton3D::filtAngles(const Vector &angles, Vector &filteredAngles)
+{
+    if (init_filters_angle)
+    {
+        filterAngles = new MedianFilter(filterOrder, angles);
+        init_filters_angle = false;
+        filteredAngles = filterAngles->output();
+    }
+    else
+    {
+        filteredAngles = filterAngles->filt(angles);
+        yDebug("[%s] filtAngles: apply median filter for angle",name.c_str());
+    }
+}
+
 // Inspired from iol2opc
 bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
 {
@@ -267,7 +282,7 @@ void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
         kinectWrapper::Joint joint;
         joint.u = (int)point.x;
         joint.v = (int)point.y;
-        yInfo("joint 2D: %d, %d",joint.u, joint.v);
+//        yInfo("joint 2D: %d, %d",joint.u, joint.v);
         joint.x = pos[0];
         joint.y = pos[1];
         joint.z = pos[2];
@@ -665,6 +680,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
         yInfo("[%s] Don't use median filters for body parts", name.c_str());
 
     filterOrder = rf.check("filter_order", Value(1)).asInt();
+    filterOrderAngles = rf.check("filter_order_angle", Value(7)).asInt();
+    yInfo("[%s] order of angle %d",name.c_str(), filterOrderAngles);
 
     // Connect to /SFM/rpc to obtain 3D estimation
     rpcGet3D.open(("/"+name+"/get3d:rpc").c_str());
@@ -708,6 +725,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     // Median Filter for body part positions
     init_filters = true;
     filterSkeleton.clear();
+
+    init_filters_angle = true;
+//    filterAngles->
 
 
     // Open the OPC Client
@@ -819,6 +839,7 @@ bool    skeleton3D::close()
     handBlobPort.close();
     rpcAskTool.close();
     opc->close();
+    delete filterAngles;
 
 //    udp_sender.~udp_client();
 
@@ -916,115 +937,124 @@ bool    skeleton3D::updateModule()
         }
     }
 
-    // TODO: send pose to UDP server
-//    char buffer[500];
 
-    Vector allJoints;
-    for (int i=0; i<mapPartsUdp.size(); i++)
+
+
+    if (tracked)
     {
-        Vector pos(3,0.0);
-        if (player.skeleton.find(mapPartsUdp[i].c_str())!=player.skeleton.end())
+        // send pose to UDP server
+        //    char buffer[500];
+        Vector allJoints;
+        for (int i=0; i<mapPartsUdp.size(); i++)
         {
-            pos = joint2Vector(player.skeleton.at(mapPartsUdp[i].c_str()));
+            Vector pos(3,0.0);
+            if (player.skeleton.find(mapPartsUdp[i].c_str())!=player.skeleton.end())
+            {
+                pos = joint2Vector(player.skeleton.at(mapPartsUdp[i].c_str()));
+            }
+            for (int i=0; i<pos.size(); i++)
+                allJoints.push_back(pos[i]);
         }
-        for (int i=0; i<pos.size(); i++)
-            allJoints.push_back(pos[i]);
-    }
-//    sprintf(buffer, "%s", allJoints.toString(3,3).c_str());
+    //    sprintf(buffer, "%s", allJoints.toString(3,3).c_str());
 
-    Vector allAngles = computeAllBodyAngles();
+        Vector allAngles = computeAllBodyAngles();
+        Vector allAngles_filtered(allAngles.size(),0.0);
+        filtAngles(allAngles,allAngles_filtered);
+        yDebug("filtered angles: %s", allAngles_filtered.toString(3,3).c_str());
 
-    Vector sendUDP(49,0.0);
-    sendUDP.setSubvector(0,allJoints);
-    sendUDP.setSubvector(39,allAngles);
-    float SendData[49];
+        Vector sendUDP(49,0.0);
+        sendUDP.setSubvector(0,allJoints);
+        sendUDP.setSubvector(39,allAngles_filtered);
+        float SendData[49];
 
 
-    for (int8_t i=0; i<sendUDP.size(); i++)
-        SendData[i] = (float)sendUDP[i];
+        for (int8_t i=0; i<sendUDP.size(); i++)
+            SendData[i] = (float)sendUDP[i];
 
-    int retval = sendto(sock,SendData,sizeof(SendData),0,(sockaddr*)&serveraddr,sizeof(serveraddr));
+        int retval = sendto(sock,SendData,sizeof(SendData),0,(sockaddr*)&serveraddr,sizeof(serveraddr));
 
-    if (retval<0)
-        yError("problem in sending UDP!!!");
-    else
-        yDebug("pose package (size %d) sent: %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", retval,
-               SendData[39], SendData[40], SendData[41], SendData[42], SendData[43],
-               SendData[44], SendData[45], SendData[46], SendData[47], SendData[48]);
+        if (retval<0)
+            yError("problem in sending UDP!!!");
+        else
+            yDebug("pose package (size %d) sent: %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", retval,
+                   SendData[39], SendData[40], SendData[41], SendData[42], SendData[43],
+                   SendData[44], SendData[45], SendData[46], SendData[47], SendData[48]);
 
-//    if(streamPartsToPPS())
-//        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
-//    else
-//        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
+    //    if(streamPartsToPPS())
+    //        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
+    //    else
+    //        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
-    // Tool recoginition
-    Vector blob(4,0.0);
-    bool hasToolBlob=false;
-    if (hand_with_tool=="right")
-    {
-        if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
+        // Tool recoginition
+        Vector blob(4,0.0);
+        bool hasToolBlob=false;
+        if (hand_with_tool=="right")
         {
-            hasToolBlob = cropHandBlob("handRight", blob);
+            if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
+            {
+                hasToolBlob = cropHandBlob("handRight", blob);
+            }
         }
-    }
-    else if (hand_with_tool=="left")
-    {
-        if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
+        else if (hand_with_tool=="left")
         {
-            hasToolBlob = cropHandBlob("handLeft", blob);
-        }
-    }
-
-    if (hasToolBlob)
-    {
-        // send to recognition pipeline: blob is in Vector of double
-        yDebug("tool recognition");
-        Bottle blobBottle;
-        for (int8_t i=0; i<blob.size(); i++)
-            blobBottle.addDouble(blob[i]);
-
-        Bottle& output = handBlobPort.prepare();
-        output.clear();
-        output.addList()=blobBottle;
-        handBlobPort.write();
-
-        // read from /onTheFlyRecognition/human:io
-        yDebug("communication with onTheFly");
-        string toolLabel="";
-
-        Bottle *toolClassIn = toolClassInPort.read(false);
-        if (toolClassIn!=NULL)
-        {
-            toolLabel = toolClassIn->get(0).asString();
-            yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
+            {
+                hasToolBlob = cropHandBlob("handLeft", blob);
+            }
         }
 
-//        if (askToolLabel(toolLabel))
-//        {
+        if (hasToolBlob)
+        {
+            // send to recognition pipeline: blob is in Vector of double
+            yDebug("tool recognition");
+            Bottle blobBottle;
+            for (int8_t i=0; i<blob.size(); i++)
+                blobBottle.addDouble(blob[i]);
 
-//        }
+            Bottle& output = handBlobPort.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort.write();
+
+            // read from /onTheFlyRecognition/human:io
+    //        yDebug("communication with onTheFly");
+            string toolLabel="";
+
+            Bottle *toolClassIn = toolClassInPort.read(false);
+            if (toolClassIn!=NULL)
+            {
+                toolLabel = toolClassIn->get(0).asString();
+                yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            }
+
+            if (dSince>dThresholdDisparition)
+                if (askToolLabel(toolLabel))
+                {
+
+                }
 
 
+        }
+    //    else
+    //        yWarning("no hand with tool!");
+
+        // sendUDP to KUKA
+    //    int tool_code[1];
+    //    tool_code[1] = 1;
+
+    //    float tool_code[3];
+    //    tool_code[0] = rand();
+    //    tool_code[1] = 0.0;
+    //    tool_code[2] = 0.5;
+
+
+    //    int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
+
+    //    if (retval_tool<0)
+    //        yError("problem in sending UDP to KUKA!!!");
+    //    else
+    //        yDebug("tool package (size %d) sent: %lf ", retval_tool, tool_code[0]);
     }
-//    else
-//        yWarning("no hand with tool!");
-
-    // sendUDP to KUKA
-//    int tool_code[1];
-//    tool_code[1] = 1;
-
-//    float tool_code[3];
-//    tool_code[0] = rand();
-//    tool_code[1] = 0.0;
-//    tool_code[2] = 0.5;
-
-
-//    int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
-
-//    if (retval_tool<0)
-//        yError("problem in sending UDP to KUKA!!!");
-//    else
-//        yDebug("tool package (size %d) sent: %lf ", retval_tool, tool_code[0]);
 
     return true;
 }
@@ -1059,8 +1089,7 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
 //        pose2d[1] = (double)jnt.v;
         pose2d[0] = handCV.x;
         pose2d[1] = handCV.y;
-        yDebug("cropHandBlob %s: pose u, v %d, %d", hand.c_str(), jnt.u, jnt.v);
-        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
+//        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
         blob[0] = pose2d[0] - radius;   //top-left.x
         blob[1] = pose2d[1] - radius;   //top-left.y
         blob[2] = pose2d[0] + radius;   //bottom-right.x
@@ -1084,10 +1113,9 @@ bool    skeleton3D::askToolLabel(string &label)
         yDebug("check 1");
 //        cmd.addInt(0);
 
-//        mutexResourcesTool.lock();
+        mutexResourcesTool.lock();
         rpcAskTool.write(cmd,reply);
-
-//        mutexResourcesTool.unlock();
+        mutexResourcesTool.unlock();
 
         int sz=reply.size();
         yDebug("check sz reply: %d",sz);

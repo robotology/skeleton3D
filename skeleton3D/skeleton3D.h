@@ -81,8 +81,11 @@ protected:
 
     bool                        use_part_filter;    //!< boolean value to define the usage of median filter for body parts
     bool                        init_filters;       //!< boolean value to define if the median filter for body parts have been initialized
+    bool                        init_filters_angle; //!< boolean value to define if the median filter for body angles have been initialized
     int                         filterOrder;        //!< integer value for order of the median filter of the body parts
     map<string,MedianFilter>    filterSkeleton;     //!< median filter for position of a skeleton
+    MedianFilter                *filterAngles;      //!< median filter for angle of the skeleton
+    int                         filterOrderAngles;  //!< integer value for order of the median filter of the body angles
 
     bool                        use_fake_hand;
     yarp::sig::Vector           fakeHandPos;        //!< position of fake hand
@@ -99,6 +102,8 @@ protected:
     CvPoint                             handCV;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
+
+    void    filtAngles(const Vector &angles, Vector &filteredAngles);
 
     /**
      * @brief get3DPosition Get the 3D point coordinate in Root frame through SFM
