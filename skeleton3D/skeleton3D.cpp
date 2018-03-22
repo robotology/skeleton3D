@@ -168,7 +168,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 else if (hand_with_tool=="left" && partName =="Lwrist")
                                     handCV = partCv;
 
-                                if (partConf>=0.0001)// && partName =="Lshoulder")
+                                if (partConf>=partConfThres)// && partName =="Lshoulder")
                                 {
                                     partsCV.push_back(partCv);
                                     addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
@@ -183,10 +183,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                     }
                 }
 
-//                computeSpine(jnts);
-                extrapolateHand(jnts);
-
-                // TODO: check if a new joint==0.0 in jnts, use the old value from player.skeleton
+                // Check if a new joint==0.0 in jnts, use the old value from player.skeleton
                 if (jnts.size()>=8)
                     for (map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin(); jnt != player.skeleton.end(); jnt++)
                     {
@@ -196,6 +193,9 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                             jnts.insert(std::pair<string,kinectWrapper::Joint>(jnt->first,joint));
                         }
                     }
+
+//                computeSpine(jnts);
+                extrapolateHand(jnts);
 
                 if (use_part_filter)
                 {
@@ -429,6 +429,62 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     }
 }
 
+bool    skeleton3D::constraintLink(const Vector &p1, const Vector &p2, Vector &result,
+                                   const double &segLMin, const double &segLMax, const double &segLNormal)
+{
+    if (p1.size()==3 && p2.size()==3)
+    {
+        Vector dir(3,0.0);
+        dir = p2-p1;
+        double segL = norm(dir);
+        if (segL>=0.0001)
+        {
+            if (segL>=segLMax || segL<=segLMin)
+                segL = 0.265;
+            result = p1 + dir*(segL)/norm(dir);
+        }
+        else
+            result = p1 + dir*(0.0001)/0.0001;
+        yDebug("constraintLink: result = %s",result.toString(3,3).c_str());
+        return true;
+    }
+    else
+    {
+        result.resize(3,0.0);
+        return false;
+    }
+}
+
+void    skeleton3D::constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts)
+{
+    if (!jnts.empty())
+    {
+        constraintOneBodyLink(jnts, "shoulderCenter", "shoulderLeft", 0.15, 0.3, 0.25);
+        constraintOneBodyLink(jnts, "shoulderLeft", "elbowLeft", 0.2, 0.35, 0.3);
+    }
+    else
+        yDebug("[%s] constraintBodyParts: no any body part", name.c_str());
+}
+
+void    skeleton3D::constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnts,
+                                          const string &partName1, const string &partName2,
+                                          const double &segLMin, const double &segLMax, const double &segLNormal)
+{
+    if (jnts.find(partName1.c_str())!=jnts.end() && jnts.find(partName2.c_str())!=jnts.end())
+    {
+        Vector p1(3,0.0), p2(3,0.0), p2_new(3,0.0);
+        p1 = joint2Vector(jnts.at(partName1.c_str()));
+        p2 = joint2Vector(jnts.at(partName2.c_str()));
+        if (constraintLink(p1, p2, p2_new, segLMin, segLMax, segLNormal))
+        {
+//            jnts.at(partName2.c_str()).x = p2_new[0];
+            assignJointByVec(jnts.at(partName2.c_str()), p2_new);
+
+        }
+
+    }
+}
+
 bool    skeleton3D::getPartPose(Agent* a, const string &partName, Vector &pose)
 {
     if (pose.size()==3 && a->m_body.m_parts.find(partName.c_str())!=a->m_body.m_parts.end())
@@ -600,7 +656,7 @@ bool    skeleton3D::drawBodyGui(Agent *a)
         {
             for (int i=7; i<13; i++)
             {
-                yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+//                yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
                 if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
                     segmentLower.push_back(partPos);
             }
@@ -654,6 +710,8 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
+    partConfThres = rf.check("part_conf",Value(0.1)).asDouble();
+    yInfo("[%s] partConfThres = %f",name.c_str(), partConfThres);
     use_fake_hand = rf.check("use_fake_hand",Value(0)).asBool();
 
     use_mid_arms = rf.check("use_mid_arms",Value(0)).asBool();
@@ -727,8 +785,6 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     filterSkeleton.clear();
 
     init_filters_angle = true;
-//    filterAngles->
-
 
     // Open the OPC Client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
@@ -771,7 +827,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     cmdGui.addString("reset");
     portToGui.write(cmdGui);
 
-    // UDP port to communicate with ADVR module
+    // UDP port to communicate with Ergonometric module
     std::string addr_udp=rf.check("address_udp",Value("192.168.0.62")).asString().c_str();
     int port_udp=rf.check("port_udp",Value(44000)).asInt();
 
@@ -786,18 +842,22 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     serveraddr.sin_port = htons(port_udp); // Port
     serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
 
-//    sockTool = socket(AF_INET, SOCK_DGRAM, 0);
-//    if (sockTool==-1)
-//        yError("Cannot open socket for tool");
-//    else
-//        yInfo("Opened the socket for tool");
+    // UDP port to communicate with KUKA module
+    std::string addr_udp_kuka=rf.check("address_udp",Value("192.168.0.96")).asString().c_str();
+    int port_udp_kuka=rf.check("port_udp",Value(60000)).asInt();
 
-//    bzero(&serveraddrTool, sizeof(serveraddrTool)); //Initialize to '0'
-//    serveraddrTool.sin_family = AF_INET;
-//    serveraddrTool.sin_port = htons(60000); // Port
-//    serveraddrTool.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
+    sockTool = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockTool==-1)
+        yError("Cannot open socket for tool");
+    else
+        yInfo("Opened the socket for tool");
 
-
+    bzero(&serveraddrTool, sizeof(serveraddrTool)); //Initialize to '0'
+    serveraddrTool.sin_family = AF_INET;
+    serveraddrTool.sin_port = htons(port_udp_kuka); // Port
+    serveraddrTool.sin_addr.s_addr = inet_addr(addr_udp_kuka.c_str()); // Linux PC
+    tool_code[0] = 0.0;
+    tool_code[1] = 0.0;
 
     return true;
 }
@@ -937,13 +997,9 @@ bool    skeleton3D::updateModule()
         }
     }
 
-
-
-
     if (tracked)
     {
         // send pose to UDP server
-        //    char buffer[500];
         Vector allJoints;
         for (int i=0; i<mapPartsUdp.size(); i++)
         {
@@ -955,7 +1011,6 @@ bool    skeleton3D::updateModule()
             for (int i=0; i<pos.size(); i++)
                 allJoints.push_back(pos[i]);
         }
-    //    sprintf(buffer, "%s", allJoints.toString(3,3).c_str());
 
         Vector allAngles = computeAllBodyAngles();
         Vector allAngles_filtered(allAngles.size(),0.0);
@@ -1017,7 +1072,6 @@ bool    skeleton3D::updateModule()
             handBlobPort.write();
 
             // read from /onTheFlyRecognition/human:io
-    //        yDebug("communication with onTheFly");
             string toolLabel="";
 
             Bottle *toolClassIn = toolClassInPort.read(false);
@@ -1026,34 +1080,42 @@ bool    skeleton3D::updateModule()
                 toolLabel = toolClassIn->get(0).asString();
                 yDebug("Recognize tool label is: %s",toolLabel.c_str());
             }
+            if (toolLabel=="drill") // drill is 1
+            {
+                tool_code[0] = 1.0;
+            }
+            else if(toolLabel=="polisher") //polisher is 2
+            {
+                tool_code[0] = 2.0;
+            }
 
-            if (dSince>dThresholdDisparition)
-                if (askToolLabel(toolLabel))
-                {
+//            if (dSince>dThresholdDisparition)
+//                if (askToolLabel(toolLabel))
+//                {
 
-                }
-
-
+//                }
         }
     //    else
     //        yWarning("no hand with tool!");
 
+
+        // y-coordinate of the head
+        if (player.skeleton.find("head")!=player.skeleton.end())
+        {
+            Vector posHead(3,0.0);
+            posHead = joint2Vector(player.skeleton.at("head"));
+            yDebug("head position %s", posHead.toString(3,3).c_str());
+            tool_code[1] = posHead[1];
+
+        }
+
         // sendUDP to KUKA
-    //    int tool_code[1];
-    //    tool_code[1] = 1;
+        int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
 
-    //    float tool_code[3];
-    //    tool_code[0] = rand();
-    //    tool_code[1] = 0.0;
-    //    tool_code[2] = 0.5;
-
-
-    //    int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
-
-    //    if (retval_tool<0)
-    //        yError("problem in sending UDP to KUKA!!!");
-    //    else
-    //        yDebug("tool package (size %d) sent: %lf ", retval_tool, tool_code[0]);
+        if (retval_tool<0)
+            yError("problem in sending UDP to KUKA!!!");
+        else
+            yDebug("tool package (size %d) sent: %lf %lf", retval_tool, tool_code[0],tool_code[1]);
     }
 
     return true;
@@ -1142,24 +1204,24 @@ Vector  skeleton3D::computeAllBodyAngles()
     allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderLeft");
     yInfo("compute angle 2");
     allAngles[1] = computeBodyAngle("kneeLeft", "ankleLeft", "hipLeft");
-    yInfo("compute angle 4");
-    allAngles[3] = computeBodyAngle("shoulderLeft","hipLeft", "elbowLeft");
-    yInfo("compute angle 5");
-    allAngles[4] = computeBodyAngle("elbowLeft" ,"handLeft" ,"shoulderLeft");
+    yInfo("compute angle 7");
+    allAngles[6] = computeBodyAngle("shoulderLeft","hipLeft", "elbowLeft");
+    yInfo("compute angle 8");
+    allAngles[7] = computeBodyAngle("elbowLeft" ,"handLeft" ,"shoulderLeft");
 
     allAngles[2] = computeFootAngle("ankleLeft", "kneeLeft");
 
     // Right part of the body
-    yInfo("compute angle 6");
-    allAngles[5] = computeBodyAngle("hipRight", "kneeRight", "shoulderRight");
-    yInfo("compute angle 7");
-    allAngles[6] = computeBodyAngle("kneeRight", "ankleRight", "hipRight");
+    yInfo("compute angle 4");
+    allAngles[3] = computeBodyAngle("hipRight", "kneeRight", "shoulderRight");
+    yInfo("compute angle 5");
+    allAngles[4] = computeBodyAngle("kneeRight", "ankleRight", "hipRight");
     yInfo("compute angle 9");
     allAngles[8] = computeBodyAngle("shoulderRight","hipRight", "elbowRight");
     yInfo("compute angle 10");
     allAngles[9] = computeBodyAngle("elbowRight" ,"handRight" ,"shoulderRight");
 
-    allAngles[7] = computeFootAngle("ankleRight", "kneeRight");
+    allAngles[5] = computeFootAngle("ankleRight", "kneeRight");
 
     yInfo("angles: %s", allAngles.toString(3,3).c_str());
     return allAngles;

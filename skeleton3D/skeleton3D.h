@@ -74,6 +74,7 @@ protected:
     icubclient::Agent*      partner;                //!< human as an agent object
     kinectWrapper::Player   player;
     map<string,double>      confJoints;             //!< confidence of identified skeleton
+    double                  partConfThres;          //!< threshold value of identified confidence
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
@@ -100,6 +101,7 @@ protected:
     double                              radius;     //!< hand blob radius
     string                              hand_with_tool;
     CvPoint                             handCV;
+    float                               tool_code[2];
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
@@ -178,6 +180,15 @@ protected:
      * @return True if can estimate the point, False otherwise and size of p1 and/or p2 is wrong
      */
     bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
+
+    bool    constraintLink(const Vector &p1, const Vector &p2, Vector &result,
+                           const double &segLMin, const double &segLMax, const double &segLNormal);
+
+    void    constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts);
+
+    void    constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnts,
+                                  const string &partName1, const string &partName2,
+                                  const double &segLMin, const double &segLMax, const double &segLNormal);
 
     void    initShowBodySegGui(const string &segmentName, const string &color);
 
