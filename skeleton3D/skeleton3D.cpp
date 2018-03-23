@@ -196,6 +196,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
 //                computeSpine(jnts);
                 extrapolateHand(jnts);
+//                constraintBodyLinks(jnts);
 
                 if (use_part_filter)
                 {
@@ -997,8 +998,8 @@ bool    skeleton3D::updateModule()
         }
     }
 
-    if (tracked)
-    {
+//    if (tracked)
+//    {
         // send pose to UDP server
         Vector allJoints;
         for (int i=0; i<mapPartsUdp.size(); i++)
@@ -1020,6 +1021,7 @@ bool    skeleton3D::updateModule()
         Vector sendUDP(49,0.0);
         sendUDP.setSubvector(0,allJoints);
         sendUDP.setSubvector(39,allAngles_filtered);
+//        sendUDP.setSubvector(39,allAngles);
         float SendData[49];
 
 
@@ -1116,14 +1118,14 @@ bool    skeleton3D::updateModule()
             yError("problem in sending UDP to KUKA!!!");
         else
             yDebug("tool package (size %d) sent: %lf %lf", retval_tool, tool_code[0],tool_code[1]);
-    }
+//    }
 
     return true;
 }
 
 double  skeleton3D::angleAtJoint(const Vector &v1, const Vector &v2)
 {
-    return acos(dot(v1,v2)/(norm(v1)*norm(v2)))*180.0/M_PI;
+    return (acos(dot(v1,v2)/(norm(v1)*norm(v2))))*180.0/M_PI;
 }
 
 Vector  skeleton3D::vectorBetweenJnts(const Vector &jnt1, const Vector &jnt2)
@@ -1244,8 +1246,11 @@ double  skeleton3D::computeBodyAngle(const string &partName1, const string &part
         jnt1 = joint2Vector(player.skeleton.at(partName1.c_str()));
         jnt2 = joint2Vector(player.skeleton.at(partName2.c_str()));
         jnt3 = joint2Vector(player.skeleton.at(partName3.c_str()));
-        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
-        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+//        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
+//        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+
+        Vector link12 = jnt2-jnt1;
+        Vector link13 = jnt3-jnt1;
 
         //TODO check this
 //        link12[1]=0;    link13[1]=0;
@@ -1265,12 +1270,16 @@ double  skeleton3D::computeFootAngle(const string &partName1, const string &part
     {
         jnt1 = joint2Vector(player.skeleton.at(partName1.c_str()));
         jnt2 = joint2Vector(player.skeleton.at(partName2.c_str()));
-        jnt3 = jnt1;
-        jnt3[0] -=0.1;
+//        jnt3 = jnt1;
+//        jnt3[0] -=0.1;
+        jnt3  = jnt2;
+        jnt3[2] = jnt1[2];
         yInfo("joints: %s, %s, %s", jnt1.toString(3,3).c_str(),
               jnt2.toString(3,3).c_str(), jnt3.toString(3,3).c_str());
-        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
-        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+//        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
+//        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+        Vector link12 = jnt2-jnt1;
+        Vector link13 = jnt3-jnt1;
 
         //TODO check this
 //        link12[1]=0;    link13[1]=0;
