@@ -44,7 +44,8 @@ void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,ki
                 jntFilted.y = posFilted[1];
                 jntFilted.z = posFilted[2];
                 jointsFiltered.insert(std::pair<string,kinectWrapper::Joint>(partName.c_str(),jntFilted));
-                yDebug("[%s] filt: apply median filter for %s",name.c_str(), partName.c_str());
+//                yDebug("[%s] filt: apply median filter for %s",name.c_str(), partName.c_str());
+//                yDebug("[%s] filt: pose of %s is %s",name.c_str(), partName.c_str(), posFilted.toString(3,3).c_str());
             }
             else
             {
@@ -145,11 +146,19 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 partCv.x = (int)part->get(1).asDouble();
                                 partCv.y = (int)part->get(2).asDouble();
 
-                                //TODO make this better
-                                if (hand_with_tool=="right" && partName =="Rwrist")
-                                    handCV = partCv;
-                                else if (hand_with_tool=="left" && partName =="Lwrist")
-                                    handCV = partCv;
+                                //TODO make this better use for training tool
+                                if (tool_training)
+                                {
+                                    if (hand_with_tool=="right" && (partName =="RWrist" || partName =="Rwrist"))
+                                        handCV = partCv;
+                                    else if (hand_with_tool=="left" && (partName =="LWrist" || partName =="Lwrist"))
+                                        handCV = partCv;
+                                }
+
+                                if (partName =="RWrist" || partName =="Rwrist")
+                                    handCV_right = partCv;
+                                else if (partName =="LWrist" || partName =="Lwrist")
+                                    handCV_left = partCv;
 
                                 if (partConf>=0.0001)// && partName =="Lshoulder")
                                 {
@@ -629,7 +638,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     yDebug("SFMrpc is %s", SFMrpc.c_str());
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
-    radius=rf.check("radius",Value(10.0)).asDouble();
+    radius=rf.check("radius",Value(5.0)).asDouble();
     hand_with_tool=rf.check("hand_with_tool",Value("right")).asString().c_str();
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
@@ -699,6 +708,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
+    tool_lastClock = clock();
 
     segLMax = 0.35;
     segLMin = 0.20;
@@ -714,6 +724,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     string opcName=rf.check("opc",Value("OPC")).asString().c_str();
     opc = new OPCClient(name);
     dSince = 0.0;
+    tool_timer = 0.0;
     while (!opc->connect(opcName))
     {
         yInfo()<<"Waiting connection to OPC...";
@@ -749,6 +760,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     cmdGui.addString("reset");
     portToGui.write(cmdGui);
 
+    toolLabelR="";      toolLabelL="";
+    hasToolR = false;   hasToolL = false;
+    tool_training = false;
     return true;
 }
 
@@ -911,21 +925,76 @@ bool    skeleton3D::updateModule()
         output.addList()=blobBottle;
         handBlobPort.write();
 
-        // read from /onTheFlyRecognition/human:io
-        yDebug("communication with onTheFly");
-        string toolLabel="";
 
-        Bottle *toolClassIn = toolClassInPort.read(false);
-        if (toolClassIn!=NULL)
+
+    //    if(streamPartsToPPS())
+    //        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
+    //    else
+    //        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
+
+
+        //Tool recognition
+        if (!tool_training)
         {
-            toolLabel = toolClassIn->get(0).asString();
-            yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            tool_timer = (clock() - tool_lastClock) / (double) CLOCKS_PER_SEC;
+
+
+    //        string toolLabelR="", toolLabelL="";
+    //        bool hasToolR = false, hasToolL = false;
+//            yInfo("tool timer is %f", tool_timer);
+//            yInfo("handCV_right is %d, %d", handCV_right.x, handCV_right.y);
+//            yInfo("handCV_left is %d, %d", handCV_left.x, handCV_left.y);
+
+            if (tool_timer>=1.0)
+            {
+                hasToolR = toolRecognition("handRight", toolLabelR);
+                yInfo("tool right is %s", toolLabelR.c_str());
+                Time::delay(0.3);
+                hasToolL = toolRecognition("handLeft", toolLabelL);
+                yInfo("tool left is %s", toolLabelL.c_str());
+                // reset the timing.
+                tool_lastClock = clock();
+            }
+            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
+        else
+        {
+        // Tool training
+            Vector blob(4,0.0);
+            bool hasToolBlob=false;
+            if (hand_with_tool=="right")
+            {
+                hasToolBlob = cropHandBlob("handRight", blob);
+            }
+            else if (hand_with_tool=="left")
+            {
+                hasToolBlob = cropHandBlob("handLeft", blob);
+            }
 
-//        if (askToolLabel(toolLabel))
-//        {
+            if (hasToolBlob)
+            {
+                // send to recognition pipeline: blob is in Vector of double
+                yDebug("tool recognition");
+                Bottle blobBottle;
+                for (int8_t i=0; i<blob.size(); i++)
+                    blobBottle.addDouble(blob[i]);
 
-//        }
+                Bottle& output = handBlobPort.prepare();
+                output.clear();
+                output.addList()=blobBottle;
+                handBlobPort.write();
+
+                // read from /onTheFlyRecognition/human:io
+                string toolLabel="";
+
+                Bottle *toolClassIn = toolClassInPort.read(false);
+                if (toolClassIn!=NULL)
+                {
+                    toolLabel = toolClassIn->get(0).asString();
+                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                }
+            }
+        }
 
 
     }
@@ -948,13 +1017,25 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
     if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
     {
         Vector pose2d(2,0.0);
-        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
+//        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
 //        pose2d[0] = (double)jnt.u;
 //        pose2d[1] = (double)jnt.v;
-        pose2d[0] = handCV.x;
-        pose2d[1] = handCV.y;
-        yDebug("cropHandBlob %s: pose u, v %d, %d", hand.c_str(), jnt.u, jnt.v);
-        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
+        // use for training tool
+//        pose2d[0] = handCV.x;
+//        pose2d[1] = handCV.y;
+
+        if (hand == "handRight")
+        {
+            pose2d[0] = handCV_right.x;
+            pose2d[1] = handCV_right.y;
+        }
+        else if (hand == "handLeft")
+        {
+            pose2d[0] = handCV_left.x;
+            pose2d[1] = handCV_left.y;
+        }
+
+//        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
         blob[0] = pose2d[0] - radius;   //top-left.x
         blob[1] = pose2d[1] - radius;   //top-left.y
         blob[2] = pose2d[0] + radius;   //bottom-right.x
@@ -980,7 +1061,6 @@ bool    skeleton3D::askToolLabel(string &label)
 
 //        mutexResourcesTool.lock();
         rpcAskTool.write(cmd,reply);
-
 //        mutexResourcesTool.unlock();
 
         int sz=reply.size();
@@ -996,6 +1076,65 @@ bool    skeleton3D::askToolLabel(string &label)
             yError("[%s] No tool recognize",name.c_str());
             return false;
         }
+    }
+    else
+        return false;
+}
+
+bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
+{
+    Vector blob(4,0.0);
+    bool hasToolBlob=false;
+    hasToolBlob = cropHandBlob(hand.c_str(), blob);
+
+    if (hasToolBlob)
+    {
+        // send to recognition pipeline: blob is in Vector of double
+        yDebug("tool recognition");
+        Bottle blobBottle;
+        for (int8_t i=0; i<blob.size(); i++)
+            blobBottle.addDouble(blob[i]);
+
+        Bottle& output = handBlobPort.prepare();
+        output.clear();
+        output.addList()=blobBottle;
+        handBlobPort.write();
+
+        // read from /onTheFlyRecognition/human:io
+//        string toolLabel="";
+//        if (askToolLabel(toolLabel))
+//        {
+//            if (toolLabel=="drill") // drill is 1
+//            {
+//                tool_code[0] = 101.0;
+//            }
+//            else if(toolLabel=="polisher") //polisher is 2
+//            {
+//                tool_code[0] = 102.0;
+//            }
+//            return true;
+//        }
+//        else
+//            return false;
+//        yDebug("Recognize tool label is: %s",toolLabel.c_str());
+
+        Bottle *toolClassIn = toolClassInPort.read(false);
+        if (toolClassIn!=NULL)
+        {
+            toolLabel = toolClassIn->get(0).asString();
+            yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            if (toolLabel=="drill") // drill is 1
+            {
+                tool_code[0] = 101.0;
+            }
+            else if(toolLabel=="polisher") //polisher is 2
+            {
+                tool_code[0] = 102.0;
+            }
+            return true;
+        }
+        else
+            return false;
     }
     else
         return false;

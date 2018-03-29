@@ -84,7 +84,13 @@ protected:
     double                      segLMax, segLMin;   //!< threshold for arm constraint
     double                              radius;     //!< hand blob radius
     string                              hand_with_tool;
-    CvPoint                             handCV;
+    CvPoint                             handCV, handCV_right, handCV_left;
+    float                               tool_code[3];
+    double                              tool_timer;
+    unsigned long                       tool_lastClock;
+    string                              toolLabelR, toolLabelL;
+    bool                                hasToolR, hasToolL;
+    bool                                tool_training;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
@@ -179,6 +185,8 @@ protected:
 
     bool    cropHandBlob(const string &hand, Vector &blob);
     bool    askToolLabel(string &label);
+
+    bool    toolRecognition(const string &hand, string &toolLabel);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -304,6 +312,20 @@ public:
     bool disable_mid_arms()
     {
         use_mid_arms = false;
+        return true;
+    }
+
+    bool enable_tool_training(const string &hand)
+    {
+        tool_training = true;
+        hand_with_tool = hand;
+        yInfo("hand_with_tool is %s",hand_with_tool.c_str());
+        return true;
+    }
+
+    bool disable_tool_training()
+    {
+        tool_training = false;
         return true;
     }
 
