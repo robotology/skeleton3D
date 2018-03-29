@@ -120,4 +120,16 @@ service skeleton3D_IDL
   */
   bool disable_mid_arms();
 
+  /**
+  * Enables the function to train the tool
+  * @return true/false on success/failure.
+  */
+  bool enable_tool_training(1:string hand);
+
+  /**
+  * Disables the function to train the tool
+  * @return true/false on success/failure.
+  */
+  bool disable_tool_training();
+
 }
