@@ -71,7 +71,7 @@ void    skeleton3D::filtAngles(const Vector &angles, Vector &filteredAngles)
     else
     {
         filteredAngles = filterAngles->filt(angles);
-        yDebug("[%s] filtAngles: apply median filter for angle",name.c_str());
+//        yDebug("[%s] filtAngles: apply median filter for angle",name.c_str());
     }
 }
 
@@ -88,8 +88,8 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
         cmd.addString("Rect");
         cmd.addInt(point.x-1);
         cmd.addInt(point.y-1);
-        cmd.addInt(3);
-        cmd.addInt(3);
+        cmd.addInt(2);
+        cmd.addInt(2);
         cmd.addInt(1);
 
         mutexResourcesSFM.lock();
@@ -867,9 +867,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     serveraddrTool.sin_family = AF_INET;
     serveraddrTool.sin_port = htons(port_udp_kuka); // Port
     serveraddrTool.sin_addr.s_addr = inet_addr(addr_udp_kuka.c_str()); // Linux PC
-    tool_code[0] = 0.0;
+    tool_code[0] = 100.0;
     tool_code[1] = 0.0;
-    tool_code[2] = 0.0;
+    tool_code[2] = 200.0;
 
     toolLabelR="";      toolLabelL="";
     hasToolR = false;   hasToolL = false;
@@ -1031,7 +1031,7 @@ bool    skeleton3D::updateModule()
         Vector allAngles = computeAllBodyAngles();
         Vector allAngles_filtered(allAngles.size(),0.0);
         filtAngles(allAngles,allAngles_filtered);
-        yDebug("filtered angles: %s", allAngles_filtered.toString(3,3).c_str());
+//        yDebug("filtered angles: %s", allAngles_filtered.toString(3,3).c_str());
 
         Vector sendUDP(49,0.0);
         sendUDP.setSubvector(0,allJoints);
@@ -1042,14 +1042,6 @@ bool    skeleton3D::updateModule()
 
         for (int8_t i=0; i<sendUDP.size(); i++)
             SendData[i] = (float)sendUDP[i];
-
-
-
-    //    if(streamPartsToPPS())
-    //        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
-    //    else
-    //        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
-
 
         //Tool recognition
         if (!tool_training)
@@ -1063,19 +1055,20 @@ bool    skeleton3D::updateModule()
 //            yInfo("handCV_right is %d, %d", handCV_right.x, handCV_right.y);
 //            yInfo("handCV_left is %d, %d", handCV_left.x, handCV_left.y);
 
-            if (tool_timer>=1.0)
+            if (tool_timer>=0.1)
             {
+                toolLabelL = ""; toolLabelR = "";
                 if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
                 {
                     hasToolR = toolRecognition("handRight", toolLabelR);
                 }
-                yInfo("tool right is %s", toolLabelR.c_str());
-                Time::delay(0.3);
-                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
-                {
-                    hasToolL = toolRecognition("handLeft", toolLabelL);
-                }
-                yInfo("tool left is %s", toolLabelL.c_str());
+//                yInfo("tool right is %s", toolLabelR.c_str());
+//                Time::delay(0.5);
+//                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
+//                {
+//                    hasToolL = toolRecognition("handLeft", toolLabelL);
+//                }
+//                yInfo("tool left is %s", toolLabelL.c_str());
                 // reset the timing.
                 tool_lastClock = clock();
             }
@@ -1086,6 +1079,8 @@ bool    skeleton3D::updateModule()
         // Tool training
             Vector blob(4,0.0);
             bool hasToolBlob=false;
+//            hasToolL = false;   hasToolR = false;
+//            toolLabelL = "";    toolLabelR = "";
             if (hand_with_tool=="right")
             {
                 if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
@@ -1116,35 +1111,45 @@ bool    skeleton3D::updateModule()
 
                 // read from /onTheFlyRecognition/human:io
                 string toolLabel="";
-
+                toolLabelL = "";    toolLabelR = "";
                 Bottle *toolClassIn = toolClassInPort.read(false);
                 if (toolClassIn!=NULL)
                 {
                     toolLabel = toolClassIn->get(0).asString();
-                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+//                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                }yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                if (hand_with_tool=="right")
+                {
+                    toolLabelR = toolLabel;
+                    if (toolLabel =="drill" || toolLabel == "polisher")
+                    {
+                        hasToolR = true;
+                        hasToolL = false;
+                    }
                 }
-//                if (toolLabel=="drill") // drill is 1
-//                {
-//                    tool_code[0] = 1.0;
-//                }
-//                else if(toolLabel=="polisher") //polisher is 2
-//                {
-//                    tool_code[0] = 2.0;
-//                }
+                else if (hand_with_tool=="left")
+                {
+                    toolLabelL = toolLabel;
+                    if (toolLabel =="drill" || toolLabel == "polisher")
+                    {
+                        hasToolL = true;
+                        hasToolR = false;
+                    }
+                }
 
-    //            if (tool_timer>0.1)
-    //                if (askToolLabel(toolLabel))
-    //                {
-    //                    if (toolLabel=="drill") // drill is 1
-    //                    {
-    //                        tool_code[0] = 1.0;
-    //                    }
-    //                    else if(toolLabel=="polisher") //polisher is 2
-    //                    {
-    //                        tool_code[0] = 2.0;
-    //                    }
-    //                }
+                if (toolLabel=="drill") // drill is 1
+                {
+                    tool_code[0] = 102.0;
+                }
+                else if(toolLabel=="polisher") //polisher is 2
+                {
+                    tool_code[0] = 101.0;
+                }
+                else
+                    tool_code[0] = 100.0;
+
             }
+            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
     //    else
     //        yWarning("no hand with tool!");
@@ -1155,14 +1160,17 @@ bool    skeleton3D::updateModule()
         {
             Vector posHead(3,0.0);
             posHead = joint2Vector(player.skeleton.at("head"));
-            yDebug("head position %s", posHead.toString(3,3).c_str());
+//            yDebug("head position %s", posHead.toString(3,3).c_str());
             tool_code[1] = posHead[1];
 
         }
 
         // tool in which hand
         if (!hasToolL && !hasToolR)
+        {
             tool_code[2] = 200.0;
+            yWarning("Empty hand!");
+        }
 
         else if (hasToolL && !hasToolR)
         {
@@ -1187,10 +1195,12 @@ bool    skeleton3D::updateModule()
 
         if (retval<0)
             yError("problem in sending UDP!!!");
-        else
-            yDebug("pose package (size %d) sent: %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", retval,
-                   SendData[39], SendData[40], SendData[41], SendData[42], SendData[43],
-                   SendData[44], SendData[45], SendData[46], SendData[47], SendData[48]);
+//        else
+//            yDebug("pose package (size %d) sent: %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf", retval,
+//                   SendData[39], SendData[40], SendData[41], SendData[42], SendData[43],
+//                   SendData[44], SendData[45], SendData[46], SendData[47], SendData[48]);
+//            yDebug("hip angles (size %d) sent: %lf %lf ", retval,
+//                   SendData[39], SendData[42]);
 
         // sendUDP to KUKA
         int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
@@ -1311,6 +1321,10 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
         output.clear();
         output.addList()=blobBottle;
         handBlobPort.write();
+        // send twice
+//        output.clear();
+//        output.addList()=blobBottle;
+//        handBlobPort.write();
 
         // read from /onTheFlyRecognition/human:io
 //        string toolLabel="";
@@ -1318,11 +1332,11 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
 //        {
 //            if (toolLabel=="drill") // drill is 1
 //            {
-//                tool_code[0] = 101.0;
+//                tool_code[0] = 102.0;
 //            }
 //            else if(toolLabel=="polisher") //polisher is 2
 //            {
-//                tool_code[0] = 102.0;
+//                tool_code[0] = 101.0;
 //            }
 //            return true;
 //        }
@@ -1330,18 +1344,24 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
 //            return false;
 //        yDebug("Recognize tool label is: %s",toolLabel.c_str());
 
+//        Time::delay(0.1);
         Bottle *toolClassIn = toolClassInPort.read(false);
         if (toolClassIn!=NULL)
         {
             toolLabel = toolClassIn->get(0).asString();
-            yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
             if (toolLabel=="drill") // drill is 1
             {
-                tool_code[0] = 101.0;
+                tool_code[0] = 102.0;
             }
             else if(toolLabel=="polisher") //polisher is 2
             {
-                tool_code[0] = 102.0;
+                tool_code[0] = 101.0;
+            }
+            else
+            {
+                tool_code[0] = 100.0;
+                return false;
             }
             return true;
         }
@@ -1356,7 +1376,7 @@ Vector  skeleton3D::computeAllBodyAngles()
 {
     Vector allAngles(10,0.0);
 //    yInfo("compute angle 1");
-    allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderLeft");
+    allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderCenter");
 //    yInfo("compute angle 2");
     allAngles[1] = computeBodyAngle("kneeLeft", "ankleLeft", "hipLeft");
 //    yInfo("compute angle 7");
@@ -1368,7 +1388,7 @@ Vector  skeleton3D::computeAllBodyAngles()
 
     // Right part of the body
 //    yInfo("compute angle 4");
-    allAngles[3] = computeBodyAngle("hipRight", "kneeRight", "shoulderRight");
+    allAngles[3] = computeBodyAngle("hipRight", "kneeRight", "shoulderCenter");
 //    yInfo("compute angle 5");
     allAngles[4] = computeBodyAngle("kneeRight", "ankleRight", "hipRight");
 //    yInfo("compute angle 9");
@@ -1378,7 +1398,7 @@ Vector  skeleton3D::computeAllBodyAngles()
 
     allAngles[5] = computeFootAngle("ankleRight", "kneeRight");
 
-    yInfo("angles: %s", allAngles.toString(3,3).c_str());
+//    yInfo("angles: %s", allAngles.toString(3,3).c_str());
     return allAngles;
 }
 
@@ -1408,7 +1428,19 @@ double  skeleton3D::computeBodyAngle(const string &partName1, const string &part
         //TODO check this
 //        link12[1]=0;    link13[1]=0;
 
-        return angleAtJoint(link12,link13);
+        if (partName1=="shoulderRight" || partName1=="shoulderLeft" ||
+                partName1=="hipRight" || partName1=="hipLeft")
+        {
+            double angle = angleAtJoint(link12,link13);
+            if (partName1=="hipRight" || partName1=="hipLeft")
+                angle =min(180.0,angle+10.0);   //offset
+            if (jnt3[0]<jnt2[0])
+                return angle;
+            else
+                return -angle;
+        }
+        else
+            return angleAtJoint(link12,link13);
     }
     else
         return 0.0;
@@ -1427,8 +1459,8 @@ double  skeleton3D::computeFootAngle(const string &partName1, const string &part
 //        jnt3[0] -=0.1;
         jnt3  = jnt2;
         jnt3[2] = jnt1[2];
-        yInfo("joints: %s, %s, %s", jnt1.toString(3,3).c_str(),
-              jnt2.toString(3,3).c_str(), jnt3.toString(3,3).c_str());
+//        yInfo("joints: %s, %s, %s", jnt1.toString(3,3).c_str(),
+//              jnt2.toString(3,3).c_str(), jnt3.toString(3,3).c_str());
 //        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
 //        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
         Vector link12 = jnt2-jnt1;
