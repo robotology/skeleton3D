@@ -50,9 +50,11 @@ protected:
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
     BufferedPort<Bottle>    toolClassInPort;        //!< buffered port of input of received class of tool from onTheFlyRecoginition
+    BufferedPort<Bottle>    toolClassInPort_left;   //!< buffered port of input of received class of tool from onTheFlyRecoginition
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
     BufferedPort<Bottle>    handBlobPort;           //!< buffered port of output to send blob with @see hand_with_tool
+    BufferedPort<Bottle>    handBlobPort_left;      //!< buffered port of output to send blob with @see hand_with_tool
     RpcClient               rpcAskTool;             //!< rpc client port to send requests to /onTheFlyRecognition/human:io
 
     Mutex                   mutexResourcesSkeleton;
@@ -88,9 +90,14 @@ protected:
     float                               tool_code[3];
     double                              tool_timer;
     unsigned long                       tool_lastClock;
-    string                              toolLabelR, toolLabelL;
+    string                              toolLabelR;
+    string                              toolLabelL;
     bool                                hasToolR, hasToolL;
     bool                                tool_training;
+
+    unsigned int                        counterToolL, counterToolR;
+    unsigned int                        counterHand, counterDrill, counterPolisher;
+    float                               sendData49;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
