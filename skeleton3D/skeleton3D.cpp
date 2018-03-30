@@ -925,14 +925,6 @@ bool    skeleton3D::updateModule()
         output.addList()=blobBottle;
         handBlobPort.write();
 
-
-
-    //    if(streamPartsToPPS())
-    //        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
-    //    else
-    //        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
-
-
         //Tool recognition
         if (!tool_training)
         {
@@ -945,7 +937,7 @@ bool    skeleton3D::updateModule()
 //            yInfo("handCV_right is %d, %d", handCV_right.x, handCV_right.y);
 //            yInfo("handCV_left is %d, %d", handCV_left.x, handCV_left.y);
 
-            if (tool_timer>=1.0)
+            if (tool_timer>=0.1)
             {
                 hasToolR = toolRecognition("handRight", toolLabelR);
                 yInfo("tool right is %s", toolLabelR.c_str());
@@ -962,6 +954,8 @@ bool    skeleton3D::updateModule()
         // Tool training
             Vector blob(4,0.0);
             bool hasToolBlob=false;
+//            hasToolL = false;   hasToolR = false;
+//            toolLabelL = "";    toolLabelR = "";
             if (hand_with_tool=="right")
             {
                 hasToolBlob = cropHandBlob("handRight", blob);
@@ -986,17 +980,34 @@ bool    skeleton3D::updateModule()
 
                 // read from /onTheFlyRecognition/human:io
                 string toolLabel="";
-
+                toolLabelL = "";    toolLabelR = "";
                 Bottle *toolClassIn = toolClassInPort.read(false);
                 if (toolClassIn!=NULL)
                 {
                     toolLabel = toolClassIn->get(0).asString();
-                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+//                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                }yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                if (hand_with_tool=="right")
+                {
+                    toolLabelR = toolLabel;
+                    if (toolLabel =="drill" || toolLabel == "polisher")
+                    {
+                        hasToolR = true;
+                        hasToolL = false;
+                    }
+                }
+                else if (hand_with_tool=="left")
+                {
+                    toolLabelL = toolLabel;
+                    if (toolLabel =="drill" || toolLabel == "polisher")
+                    {
+                        hasToolL = true;
+                        hasToolR = false;
+                    }
                 }
             }
+            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
-
-
     }
 
     return true;
@@ -1099,6 +1110,10 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
         output.clear();
         output.addList()=blobBottle;
         handBlobPort.write();
+        // send twice
+//        output.clear();
+//        output.addList()=blobBottle;
+//        handBlobPort.write();
 
         // read from /onTheFlyRecognition/human:io
 //        string toolLabel="";
@@ -1106,11 +1121,11 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
 //        {
 //            if (toolLabel=="drill") // drill is 1
 //            {
-//                tool_code[0] = 101.0;
+//                tool_code[0] = 102.0;
 //            }
 //            else if(toolLabel=="polisher") //polisher is 2
 //            {
-//                tool_code[0] = 102.0;
+//                tool_code[0] = 101.0;
 //            }
 //            return true;
 //        }
@@ -1118,18 +1133,24 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
 //            return false;
 //        yDebug("Recognize tool label is: %s",toolLabel.c_str());
 
+//        Time::delay(0.1);
         Bottle *toolClassIn = toolClassInPort.read(false);
         if (toolClassIn!=NULL)
         {
             toolLabel = toolClassIn->get(0).asString();
-            yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
             if (toolLabel=="drill") // drill is 1
             {
-                tool_code[0] = 101.0;
+                tool_code[0] = 102.0;
             }
             else if(toolLabel=="polisher") //polisher is 2
             {
-                tool_code[0] = 102.0;
+                tool_code[0] = 101.0;
+            }
+            else
+            {
+                tool_code[0] = 100.0;
+                return false;
             }
             return true;
         }
