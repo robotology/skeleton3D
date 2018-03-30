@@ -781,6 +781,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     rpcAskTool.open(("/"+name+"/askTool:rpc").c_str());
     toolClassInPort.open(("/"+name+"/toolClass:i").c_str());
 
+    handBlobPort_left.open(("/"+name+"/handBlobs_left:o").c_str());
+    toolClassInPort_left.open(("/"+name+"/toolClass_left:i").c_str());
+
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
     // initialise timing in case of misrecognition
@@ -873,6 +876,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     toolLabelR="";      toolLabelL="";
     hasToolR = false;   hasToolL = false;
+
+    counterToolL = 0; counterToolR = 0;
+    counterHand = 0, counterDrill = 0; counterPolisher = 0;
     tool_training = false;
 
     return true;
@@ -894,7 +900,10 @@ bool    skeleton3D::interruptModule()
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
-    handBlobPort.interrupt();               yDebug("check 12");
+    handBlobPort.interrupt();
+    toolClassInPort.interrupt();
+    toolClassInPort_left.interrupt();
+    handBlobPort_left.interrupt();          yDebug("check 12");
     rpcAskTool.interrupt();                 yDebug("check 13");
 
     deleteBodySegGui("upper");
@@ -913,6 +922,9 @@ bool    skeleton3D::close()
     ppsOutPort.close();
     portToGui.close();
     handBlobPort.close();
+    toolClassInPort.close();
+    toolClassInPort_left.close();
+    handBlobPort_left.close();
     rpcAskTool.close();
     opc->close();
     delete filterAngles;
@@ -1073,31 +1085,52 @@ bool    skeleton3D::updateModule()
 //                tool_lastClock = clock();
 //            }
 
-            if (tool_timer>=0.2)
-            {
-                if (hand_with_tool=="right")
-                    hand_with_tool = "left";
-                else if (hand_with_tool=="left")
-                    hand_with_tool = "right";
-                tool_lastClock = clock();
-            }
+//            if (tool_timer>=0.2)
+//            {
+//                if (hand_with_tool=="right")
+//                    hand_with_tool = "left";
+//                else if (hand_with_tool=="left")
+//                    hand_with_tool = "right";
+//                tool_lastClock = clock();
+//            }
 
-            if (hand_with_tool=="right")
-            {
+//            if (hand_with_tool=="right")
+//            {
                 if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
                 {
                     hasToolR = toolRecognition("handRight", toolLabelR);
-                    hasToolL = false;
+//                    if (hasToolR)
+//                        hasToolL = false;
                 }
-            }
-            else if (hand_with_tool=="left")
-            {
+//            }
+//            else if (hand_with_tool=="left")
+//            {
                 if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
                 {
                     hasToolL = toolRecognition("handLeft", toolLabelL);
-                    hasToolR = false;
+//                    if (hasToolL)
+//                        hasToolR = false;
                 }
-            }
+//            }
+
+                if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
+                {
+//                    tool_code[0] = 102.0;
+                    counterDrill++;
+                }
+                else if(toolLabelR=="polisher" || toolLabelR=="polisher") //polisher is 1
+                {
+//                    tool_code[0] = 101.0;
+                    counterPolisher++;
+                }
+                else if(toolLabelR=="hand" || toolLabelR=="hand") //hand is 0
+                {
+                    counterHand++;
+                }
+                else
+                {
+//                    tool_code[0] = 100.0;
+                }
             yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
         else
@@ -1195,26 +1228,55 @@ bool    skeleton3D::updateModule()
         if (!hasToolL && !hasToolR)
         {
             tool_code[2] = 200.0;
-            yWarning("Empty hand!");
+//            yWarning("Empty hand!");
         }
 
         else if (hasToolL && !hasToolR)
         {
             tool_code[2] = 201.0;
-            SendData[49] = 1.0;
+            counterToolL++; // reduce identification fluctuation
+//            SendData[49] = 1.0;
         }
         else if (!hasToolL && hasToolR)
         {
             tool_code[2] = 202.0;
-            SendData[49] = 0.0;
+            counterToolR++; // reduce identification fluctuation
+//            SendData[49] = 0.0;
         }
 
         if (toolLabelL == "drill" || toolLabelL == "polisher" || toolLabelR == "drill" || toolLabelR == "polisher")
+        {
             SendData[50] = 1.0;
-        else if (toolLabelL == "" && toolLabelL == "" && toolLabelR == "" && toolLabelR == "")
+        }
+        else //if (toolLabelL == "" && toolLabelL == "" && toolLabelR == "" && toolLabelR == "")
             SendData[50] = 0.0;
 
+        if (tool_timer>=0.2)
+        {
+            if (counterToolL>counterToolR)
+                SendData[49] = 1.0;
+            else
+                SendData[49] = 0.0;
 
+            unsigned int counterTool = max(max(counterDrill, counterHand), max(counterDrill,counterPolisher));
+            yInfo("counter value: all %u, drill %u, hand %u, polisher %u", counterTool, counterDrill, counterHand, counterPolisher);
+            if (counterTool == counterDrill)
+                tool_code[0] = 102.0;
+            else if (counterTool == counterPolisher)
+                tool_code[0] = 101.0;
+            else if (counterTool == counterHand)
+                tool_code[0] = 100.0;
+
+            sendData49 = SendData[49];
+            tool_lastClock = clock();
+            counterToolL = 0;
+            counterToolR = 0;
+            counterHand = 0;
+            counterDrill = 0;
+            counterPolisher = 0;
+        }
+        else
+            SendData[49] = sendData49;
 
         // sendUDP to Egornometric
         int retval = sendto(sock,SendData,sizeof(SendData),0,(sockaddr*)&serveraddr,sizeof(serveraddr));
@@ -1227,14 +1289,17 @@ bool    skeleton3D::updateModule()
 //                   SendData[44], SendData[45], SendData[46], SendData[47], SendData[48]);
 //            yDebug("hip angles (size %d) sent: %lf %lf ", retval,
 //                   SendData[39], SendData[42]);
+        else
+                    yDebug("tool content to Ergo (size %d) sent: %lf %lf ", retval,
+                           SendData[49], SendData[50]);
 
         // sendUDP to KUKA
         int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
 
         if (retval_tool<0)
             yError("problem in sending UDP to KUKA!!!");
-        else
-            yDebug("tool package (size %d) sent: %lf %lf %lf", retval_tool, tool_code[0],tool_code[1], tool_code[2]);
+//        else
+//            yDebug("tool package (size %d) sent: %lf %lf %lf", retval_tool, tool_code[0],tool_code[1], tool_code[2]);
 //    }
 
     return true;
@@ -1288,7 +1353,7 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
         blob[1] = pose2d[1] - radius;   //top-left.y
         blob[2] = pose2d[0] + radius;   //bottom-right.x
         blob[3] = pose2d[1] + radius;   //bottom-right.y
-        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
+//        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
         return true;
     }
     else
@@ -1338,58 +1403,74 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
     if (hasToolBlob)
     {
         // send to recognition pipeline: blob is in Vector of double
-        yDebug("tool recognition");
+//        yDebug("tool recognition");
         Bottle blobBottle;
         for (int8_t i=0; i<blob.size(); i++)
             blobBottle.addDouble(blob[i]);
 
-        Bottle& output = handBlobPort.prepare();
-        output.clear();
-        output.addList()=blobBottle;
-        handBlobPort.write();
-        // send twice
-//        output.clear();
-//        output.addList()=blobBottle;
-//        handBlobPort.write();
-
-        // read from /onTheFlyRecognition/human:io
-//        string toolLabel="";
-//        if (askToolLabel(toolLabel))
-//        {
-//            if (toolLabel=="drill") // drill is 1
-//            {
-//                tool_code[0] = 102.0;
-//            }
-//            else if(toolLabel=="polisher") //polisher is 2
-//            {
-//                tool_code[0] = 101.0;
-//            }
-//            return true;
-//        }
-//        else
-//            return false;
-//        yDebug("Recognize tool label is: %s",toolLabel.c_str());
-
-//        Time::delay(0.1);
-        Bottle *toolClassIn = toolClassInPort.read(false);
-        if (toolClassIn!=NULL)
+        if (hand=="handRight")
         {
-            toolLabel = toolClassIn->get(0).asString();
-            yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
-            if (toolLabel=="drill") // drill is 1
+            Bottle& output = handBlobPort.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort.write();
+            // send twice
+    //        output.clear();
+    //        output.addList()=blobBottle;
+    //        handBlobPort.write();
+
+    //        Time::delay(0.1);
+            Bottle *toolClassIn = toolClassInPort.read(false);
+            if (toolClassIn!=NULL)
             {
-                tool_code[0] = 102.0;
-            }
-            else if(toolLabel=="polisher") //polisher is 2
-            {
-                tool_code[0] = 101.0;
+                toolLabel = toolClassIn->get(0).asString();
+                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
+//                if (toolLabel=="drill") // drill is 1
+//                {
+//                    tool_code[0] = 102.0;
+//                }
+//                else if(toolLabel=="polisher") //polisher is 2
+//                {
+//                    tool_code[0] = 101.0;
+//                }
+//                else
+//                {
+//                    tool_code[0] = 100.0;
+//                    return false;
+//                }
+                return true;
             }
             else
-            {
-                tool_code[0] = 100.0;
                 return false;
+        }
+        else if (hand=="handLeft")
+        {
+            Bottle& output = handBlobPort_left.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort_left.write();
+            Bottle *toolClassIn = toolClassInPort_left.read(false);
+            if (toolClassIn!=NULL)
+            {
+                toolLabel = toolClassIn->get(0).asString();
+                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
+//                if (toolLabel=="drill") // drill is 1
+//                {
+//                    tool_code[0] = 102.0;
+//                }
+//                else if(toolLabel=="polisher") //polisher is 2
+//                {
+//                    tool_code[0] = 101.0;
+//                }
+//                else
+//                {
+//                    tool_code[0] = 100.0;
+//                    return false;
+//                }
+                return true;
             }
-            return true;
+            else
+                return false;
         }
         else
             return false;
