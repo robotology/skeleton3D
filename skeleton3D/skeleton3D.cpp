@@ -1055,28 +1055,54 @@ bool    skeleton3D::updateModule()
 //            yInfo("handCV_right is %d, %d", handCV_right.x, handCV_right.y);
 //            yInfo("handCV_left is %d, %d", handCV_left.x, handCV_left.y);
 
-            if (tool_timer>=0.1)
+//            if (tool_timer>=0.1)
+//            {
+//                toolLabelL = ""; toolLabelR = "";
+//                if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
+//                {
+//                    hasToolR = toolRecognition("handRight", toolLabelR);
+//                }
+////                yInfo("tool right is %s", toolLabelR.c_str());
+////                Time::delay(0.5);
+////                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
+////                {
+////                    hasToolL = toolRecognition("handLeft", toolLabelL);
+////                }
+////                yInfo("tool left is %s", toolLabelL.c_str());
+//                // reset the timing.
+//                tool_lastClock = clock();
+//            }
+
+            if (tool_timer>=0.2)
             {
-                toolLabelL = ""; toolLabelR = "";
+                if (hand_with_tool=="right")
+                    hand_with_tool = "left";
+                else if (hand_with_tool=="left")
+                    hand_with_tool = "right";
+                tool_lastClock = clock();
+            }
+
+            if (hand_with_tool=="right")
+            {
                 if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
                 {
                     hasToolR = toolRecognition("handRight", toolLabelR);
+                    hasToolL = false;
                 }
-//                yInfo("tool right is %s", toolLabelR.c_str());
-//                Time::delay(0.5);
-//                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
-//                {
-//                    hasToolL = toolRecognition("handLeft", toolLabelL);
-//                }
-//                yInfo("tool left is %s", toolLabelL.c_str());
-                // reset the timing.
-                tool_lastClock = clock();
+            }
+            else if (hand_with_tool=="left")
+            {
+                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
+                {
+                    hasToolL = toolRecognition("handLeft", toolLabelL);
+                    hasToolR = false;
+                }
             }
             yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
         else
         {
-        // Tool training
+            // Tool training
             Vector blob(4,0.0);
             bool hasToolBlob=false;
 //            hasToolL = false;   hasToolR = false;
