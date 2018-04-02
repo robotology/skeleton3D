@@ -131,7 +131,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 confJoints.clear();
                 if (Bottle *bodyParts=allBodyParts->get(0).asList())
                 {
-
+                    Bottle *nose = bodyParts->find("nose").asList();
+                    CvPoint noseCv;
+                    Vector nose3D(3,0.0);
+                    noseCv.x = (int)nose->get(1).asDouble();
+                    noseCv.y = (int)nose->get(2).asDouble();
+                    get3DPosition(noseCv, nose3D);
+                    // TODO more on this
+//                    if (nose3D[0]>=1.5)
                     for (int partId=0; partId<bodyParts->size();partId++)
                     {
                         if (partId<mapPartsKinect.size())
