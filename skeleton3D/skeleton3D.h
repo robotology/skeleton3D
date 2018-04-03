@@ -77,6 +77,7 @@ protected:
     kinectWrapper::Player   player;
     map<string,double>      confJoints;             //!< confidence of identified skeleton
     double                  partConfThres;          //!< threshold value of identified confidence
+    double                  workspaceX, workspaceY; //!< threshold value for 3D skeleton, ignore skeleton outside this range
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
@@ -379,6 +380,39 @@ public:
         tool_training = false;
         return true;
     }
+
+    bool set_workspace_x(const double &workspace_x)
+    {
+        if (workspace_x>=0)
+        {
+            workspaceX = workspace_x;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_workspace_x()
+    {
+        return workspaceX;
+    }
+
+    bool set_workspace_y(const double &workspace_y)
+    {
+        if (workspace_y>=0)
+        {
+            workspaceY = workspace_y;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_workspace_y()
+    {
+        return workspaceY;
+    }
+
 
     std::map<unsigned int, std::string> mapPartsOpenPose {
         {0,  "Nose"},

@@ -132,4 +132,30 @@ service skeleton3D_IDL
   */
   bool disable_tool_training();
 
+  /**
+  * Sets workspace_x.
+  * @param workspace_x to constraint the workspace for 3D skeleton, ignore skeleton outside this threshold.
+  * @return true/false on success/failure.
+  */
+  bool set_workspace_x(1:double workspace_x);
+
+  /**
+  * Gets workspace_x.
+  * @return the current workspace_x value.
+  */
+  double get_workspace_x();
+
+  /**
+  * Sets workspace_y.
+  * @param workspace_y to constraint the workspace for 3D skeleton, ignore skeleton outside this threshold.
+  * @return true/false on success/failure.
+  */
+  bool set_workspace_y(1:double workspace_y);
+
+  /**
+  * Gets workspace_y.
+  * @return the current workspace_y value.
+  */
+  double get_workspace_y();
+
 }

@@ -145,16 +145,58 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 map<string,kinectWrapper::Joint> jnts;
                 map<string,kinectWrapper::Joint> jntsFiltered;
                 confJoints.clear();
+//                bool ignoreSkeleton = false;
                 if (Bottle *bodyParts=allBodyParts->get(0).asList())
                 {
-                    Bottle *nose = bodyParts->find("nose").asList();
-                    CvPoint noseCv;
-                    Vector nose3D(3,0.0);
-                    noseCv.x = (int)nose->get(1).asDouble();
-                    noseCv.y = (int)nose->get(2).asDouble();
-                    get3DPosition(noseCv, nose3D);
-                    // TODO more on this
-//                    if (nose3D[0]>=1.5)
+                    Bottle neck = bodyParts->findGroup("Neck");
+                    Bottle shR = bodyParts->findGroup("RShoulder");
+//                    yDebug("neck: %s",neck.toString().c_str());
+                    // first check to make make sure the skeleton is the one working with robot
+                    if (!neck.isNull())
+                    {
+                        CvPoint neckCv;
+                        Vector neck3D(3,0.0);
+                        neckCv.x = (int)neck.get(1).asDouble();
+                        neckCv.y = (int)neck.get(2).asDouble();
+                        if (get3DPosition(neckCv, neck3D))
+                        {
+                            yDebug("found neck. Neck3D = %s!!!", neck3D.toString(3,3).c_str());
+                            if (neck3D[0]>=workspaceX || neck3D[1]>=workspaceY || neck3D[1]<=-workspaceY ||
+                                    (neck3D[0] == 0.0 && neck3D[1] == 0.0 && neck3D[2] == 0.0))
+                            {
+                                yWarning("ignore this skeleton!");
+                                goto endOneSkeleton;
+                            }
+                        }
+                        else
+                        {
+                            yWarning("ignore this skeleton!");
+                            goto endOneSkeleton;
+                        }
+                    }
+                    // double check
+                    if (!shR.isNull())
+                    {
+                        CvPoint shoulderCv;
+                        Vector shoulder3D(3,0.0);
+                        shoulderCv.x = (int)shR.get(1).asDouble();
+                        shoulderCv.y = (int)shR.get(2).asDouble();
+                        if (get3DPosition(shoulderCv, shoulder3D))
+                        {
+                            yDebug("found neck. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
+                            if (shoulder3D[0]>=workspaceX || shoulder3D[1]>=workspaceY || shoulder3D[1]<=-workspaceY ||
+                                    (shoulder3D[0] == 0.0 && shoulder3D[1] == 0.0 && shoulder3D[2] == 0.0))
+                            {
+                                yWarning("ignore this skeleton!");
+                                goto endOneSkeleton;
+                            }
+                        }
+                        else
+                        {
+                            yWarning("ignore this skeleton!");
+                            goto endOneSkeleton;
+                        }
+                    }
                     for (int partId=0; partId<bodyParts->size();partId++)
                     {
                         if (partId<mapPartsKinect.size())
@@ -222,12 +264,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                     player.skeleton = jnts;
 
                 ts.update();
+                endOneSkeleton: ;
             }
             else
             {
                 yDebug("[%s] obtainBodyParts wrong format",name.c_str());
                 return false;
             }
+
         }
     }
     else if (use_fake_hand)
@@ -734,6 +778,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     draw_lower = rf.check("draw_lower",Value(0)).asBool();
 
+    workspaceX = rf.check("workspace_x",Value(2.1)).asDouble();
+    workspaceY = rf.check("workspace_y",Value(1.5)).asDouble();
+
     if (use_fake_hand)
     {
         fakeHandPos.resize(3,0.0);
@@ -1032,8 +1079,8 @@ bool    skeleton3D::updateModule()
         }
     }
 
-//    if (tracked)
-//    {
+    if (tracked)
+    {
         // send pose to UDP server
         Vector allJoints;
         for (int i=0; i<mapPartsUdp.size(); i++)
@@ -1307,7 +1354,7 @@ bool    skeleton3D::updateModule()
             yError("problem in sending UDP to KUKA!!!");
 //        else
 //            yDebug("tool package (size %d) sent: %lf %lf %lf", retval_tool, tool_code[0],tool_code[1], tool_code[2]);
-//    }
+    }
 
     return true;
 }
