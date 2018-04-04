@@ -144,7 +144,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         neckCv.y = (int)neck.get(2).asDouble();
                         if (get3DPosition(neckCv, neck3D))
                         {
-                            yDebug("found neck. Neck3D = %s!!!", neck3D.toString(3,3).c_str());
+                            yDebug("found neck. neck3D = %s!!!", neck3D.toString(3,3).c_str());
                             if (neck3D[0]>=workspaceX || neck3D[1]>=workspaceY || neck3D[1]<=-workspaceY ||
                                     (neck3D[0] == 0.0 && neck3D[1] == 0.0 && neck3D[2] == 0.0))
                             {
@@ -167,7 +167,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         shoulderCv.y = (int)shR.get(2).asDouble();
                         if (get3DPosition(shoulderCv, shoulder3D))
                         {
-                            yDebug("found neck. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
+                            yDebug("found shoulder. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
                             if (shoulder3D[0]>=workspaceX || shoulder3D[1]>=workspaceY || shoulder3D[1]<=-workspaceY ||
                                     (shoulder3D[0] == 0.0 && shoulder3D[1] == 0.0 && shoulder3D[2] == 0.0))
                             {
@@ -219,8 +219,8 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                     yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
                             }
                         }
-                        else
-                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
+//                        else
+//                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
                     }
                 }
 
@@ -994,53 +994,33 @@ bool    skeleton3D::updateModule()
         //Tool recognition
         if (!tool_training)
         {
-            tool_timer = (clock() - tool_lastClock) / (double) CLOCKS_PER_SEC;
+            tool_timer = (clock() - tool_lastClock) / (double)CLOCKS_PER_SEC;
 
+                hasToolR = toolRecognition("handRight", toolLabelR);
+                if (hasToolR)
+                    hasToolL = false;
+                hasToolL = toolRecognition("handLeft", toolLabelL);
+                if (hasToolL)
+                    hasToolR = false;
 
-    //        string toolLabelR="", toolLabelL="";
-    //        bool hasToolR = false, hasToolL = false;
-//            yInfo("tool timer is %f", tool_timer);
-//            yInfo("handCV_right is %d, %d", handCV_right.x, handCV_right.y);
-//            yInfo("handCV_left is %d, %d", handCV_left.x, handCV_left.y);
-
-//            if (tool_timer>=0.1)
-//            {
-//                toolLabelL = ""; toolLabelR = "";
-//                if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
-//                {
-//                    hasToolR = toolRecognition("handRight", toolLabelR);
-//                }
-////                yInfo("tool right is %s", toolLabelR.c_str());
-////                Time::delay(0.5);
-////                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
-////                {
-////                    hasToolL = toolRecognition("handLeft", toolLabelL);
-////                }
-////                yInfo("tool left is %s", toolLabelL.c_str());
-//                // reset the timing.
-//                tool_lastClock = clock();
-//            }
-
-//            if (tool_timer>=0.2)
-//            {
-//                if (hand_with_tool=="right")
-//                    hand_with_tool = "left";
-//                else if (hand_with_tool=="left")
-//                    hand_with_tool = "right";
-//                tool_lastClock = clock();
-//            }
-
-//            if (hand_with_tool=="right")
-//            {
-                    hasToolR = toolRecognition("handRight", toolLabelR);
-//                    if (hasToolR)
-//                        hasToolL = false;
-//            }
-//            else if (hand_with_tool=="left")
-//            {             
-                    hasToolL = toolRecognition("handLeft", toolLabelL);
-//                    if (hasToolL)
-//                        hasToolR = false;
+            if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
+            {
+//                    tool_code[0] = 102.0;
+                counterDrill++;
+            }
+            else if(toolLabelL=="polisher" || toolLabelR=="polisher") //polisher is 1
+            {
+//                    tool_code[0] = 101.0;
+                counterPolisher++;
+            }
+            else if(toolLabelL=="hand" || toolLabelR=="hand") //hand is 0
+            {
+                counterHand++;
+            }
+            else
+            {
+//                    tool_code[0] = 100.0;
+            }
             yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
         else
@@ -1117,7 +1097,7 @@ bool    skeleton3D::updateModule()
             counterToolR++; // reduce identification fluctuation
         }
 
-        if (tool_timer>=0.2)
+        if (tool_timer>=0.3)
         {
             tool_lastClock = clock();
             counterToolL = 0;
@@ -1253,7 +1233,10 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
 //                    tool_code[0] = 100.0;
 //                    return false;
 //                }
-                return true;
+                if (toolLabel=="drill" || toolLabel=="polisher")
+                    return true;
+                else
+                    return false;
             }
             else
                 return false;
@@ -1269,20 +1252,10 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             {
                 toolLabel = toolClassIn->get(0).asString();
                 yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
-//                if (toolLabel=="drill") // drill is 1
-//                {
-//                    tool_code[0] = 102.0;
-//                }
-//                else if(toolLabel=="polisher") //polisher is 2
-//                {
-//                    tool_code[0] = 101.0;
-//                }
-//                else
-//                {
-//                    tool_code[0] = 100.0;
-//                    return false;
-//                }
-                return true;
+                if (toolLabel=="drill" || toolLabel=="polisher")
+                    return true;
+                else
+                    return false;
             }
             else
                 return false;
