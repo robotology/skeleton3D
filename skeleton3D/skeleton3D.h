@@ -216,7 +216,8 @@ protected:
     void    addJointAndConf(map<string,kinectWrapper::Joint> &joints,
                             const Vector &pos, const string &partName);
 
-    double  angleAtJoint(const Vector &v1, const Vector &v2);
+    double  angleAtJoint(const Vector &v1, const Vector &v2, const double &direction);
+    double  angleAtJointTan(const Vector &v1, const Vector &v2, const double &direction);
     Vector  vectorBetweenJnts(const Vector &jnt1, const Vector &jnt2);
     Vector  computeAllBodyAngles();
 
@@ -229,9 +230,11 @@ protected:
      */
     double  computeBodyAngle(const string &partName1,
                              const string &partName2,
-                             const string &partName3);
+                             const string &partName3,
+                             const double &direction);
     double  computeFootAngle(const string &partName1,
-                             const string &partName2);
+                             const string &partName2,
+                             const double &direction);
 
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
