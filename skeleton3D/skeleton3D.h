@@ -203,6 +203,9 @@ protected:
                                   const string &partName1, const string &partName2,
                                   const double &segLMin, const double &segLMax, const double &segLNormal);
 
+    void    constraintHip(map<string, kinectWrapper::Joint> &jnts);
+
+
     void    initShowBodySegGui(const string &segmentName, const string &color);
 
     void    updateBodySegGui(const vector<Vector> &segment, const string &segmentName);
@@ -218,6 +221,7 @@ protected:
 
     double  angleAtJoint(const Vector &v1, const Vector &v2, const double &direction);
     double  angleAtJointTan(const Vector &v1, const Vector &v2, const double &direction);
+    double  angleAtJointTan(const Vector &v1, const Vector &v2, const Vector &direction);
     Vector  vectorBetweenJnts(const Vector &jnt1, const Vector &jnt2);
     Vector  computeAllBodyAngles();
 
@@ -232,9 +236,18 @@ protected:
                              const string &partName2,
                              const string &partName3,
                              const double &direction);
+    double  computeBodyAngle(const Vector &jnt1,
+                             const Vector &jnt2,
+                             const Vector &jnt3,
+                             const double &direction);
+
     double  computeFootAngle(const string &partName1,
                              const string &partName2,
                              const double &direction);
+
+    void  computeLowerBodyMeanAngles(double &angleHip,
+                                       double &angleKnee,
+                                       double &angleAnkle);
 
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
@@ -384,7 +397,7 @@ public:
         return true;
     }
 
-    bool set_workspace_x(const double &workspace_x)
+    bool set_workspace_x(const double workspace_x)
     {
         if (workspace_x>=0)
         {
@@ -400,7 +413,7 @@ public:
         return workspaceX;
     }
 
-    bool set_workspace_y(const double &workspace_y)
+    bool set_workspace_y(const double workspace_y)
     {
         if (workspace_y>=0)
         {

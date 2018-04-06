@@ -254,6 +254,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 //                computeSpine(jnts);
                 extrapolateHand(jnts);
                 constraintBodyLinks(jnts);
+                constraintHip(jnts);
 
                 if (use_part_filter)
                 {
@@ -500,7 +501,7 @@ bool    skeleton3D::constraintLink(const Vector &p1, const Vector &p2, Vector &r
         if (segL>=0.0001)
         {
             if (segL>=segLMax || segL<=segLMin)
-                segL = 0.265;
+                segL = segLNormal;
             result = p1 + dir*(segL)/norm(dir);
         }
         else
@@ -523,6 +524,15 @@ void    skeleton3D::constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts)
         constraintOneBodyLink(jnts, "shoulderLeft", "elbowLeft", 0.2, 0.35, 0.3);
         constraintOneBodyLink(jnts, "shoulderCenter", "shoulderRight", 0.15, 0.3, 0.25);
         constraintOneBodyLink(jnts, "shoulderRight", "elbowRight", 0.2, 0.35, 0.3);
+
+        constraintOneBodyLink(jnts, "shoulderLeft", "hipLeft", 0.45, 0.65, 0.55);
+        constraintOneBodyLink(jnts, "shoulderRight", "hipRight", 0.45, 0.65, 0.55);
+
+        constraintOneBodyLink(jnts, "hipLeft", "kneeLeft", 0.4, 0.55, 0.48);
+        constraintOneBodyLink(jnts, "hipRight", "kneeRight", 0.4, 0.55, 0.48);
+
+        constraintOneBodyLink(jnts, "kneeLeft", "ankleLeft", 0.4, 0.55, 0.48);
+        constraintOneBodyLink(jnts, "kneeRight", "ankleRight", 0.4, 0.55, 0.48);
     }
     else
         yDebug("[%s] constraintBodyParts: no any body part", name.c_str());
@@ -545,6 +555,44 @@ void    skeleton3D::constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnt
         }
 
     }
+}
+
+void    skeleton3D::constraintHip(map<string, kinectWrapper::Joint> &jnts)
+{
+    if (!jnts.empty() && jnts.find("hipLeft")!=jnts.end() && jnts.find("hipRight")!=jnts.end() &&
+            jnts.find("shoulderLeft")!=jnts.end() && jnts.find("shoulderRight")!=jnts.end() &&
+            jnts.find("handLeft")!=jnts.end())
+    {
+        Vector hipR(3,0.0), hipL(3,0.0), shR(3,0.0), shL(3,0.0), hL_new(3,0.0), hR_new(3,0.0), handL(3,0.0);
+        hipL = joint2Vector(jnts.at("hipLeft"));
+        hipR = joint2Vector(jnts.at("hipRight"));
+        shL = joint2Vector(jnts.at("shoulderLeft"));
+        shR = joint2Vector(jnts.at("shoulderRight"));
+        handL = joint2Vector(jnts.at("handLeft"));
+
+        double hipLength = norm(hipL-hipR);
+        double handL2hipL = norm(hipL-handL);
+        double handL2hipR = norm(hipR-handL);
+        yDebug("constraintHip condition: hipLength = %f, hLx-shLx=%f, hand2hipL = %f",
+               hipLength, abs(hipL[0]-shL[0]), handL2hipL);
+        if (((hipLength>0.32 || hipLength<0.23) &&
+             (abs(hipL[0]-shL[0])>0.15 || abs(hipR[0]-shR[0])>0.15) &&
+             (handL2hipL<0.2 || handL2hipR<0.2)))// || hL[0]<handL[0])
+        {
+            yWarning("constraintHip");
+            hL_new = shL;
+            hL_new[2] -= 0.55;
+//            hL_new[2] = hipR[2];
+            hR_new = shR;
+            hR_new[2] -= 0.55;
+            assignJointByVec(jnts.at("hipLeft"), hL_new);
+            assignJointByVec(jnts.at("hipRight"), hR_new);
+            yDebug("hL=%s; hL_new=%s",hipL.toString(3,3).c_str(), hL_new.toString(3,3).c_str() );
+            yDebug("hR=%s; hR_new=%s",hipR.toString(3,3).c_str(), hR_new.toString(3,3).c_str() );
+        }
+    }
+    else
+        yDebug("[%s] constraintHip: no any body part", name.c_str());
 }
 
 bool    skeleton3D::getPartPose(Agent* a, const string &partName, Vector &pose)
@@ -1147,7 +1195,7 @@ bool    skeleton3D::updateModule()
             {
 //                    tool_code[0] = 100.0;
             }
-            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
+//            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
         else
         {
@@ -1174,7 +1222,7 @@ bool    skeleton3D::updateModule()
             if (hasToolBlob)
             {
                 // send to recognition pipeline: blob is in Vector of double
-                yDebug("tool recognition");
+//                yDebug("tool recognition");
                 Bottle blobBottle;
                 for (int8_t i=0; i<blob.size(); i++)
                     blobBottle.addDouble(blob[i]);
@@ -1192,7 +1240,7 @@ bool    skeleton3D::updateModule()
                 {
                     toolLabel = toolClassIn->get(0).asString();
 //                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
-                }yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                }   //yDebug("Recognize tool label is: %s",toolLabel.c_str());
                 if (hand_with_tool=="right")
                 {
                     toolLabelR = toolLabel;
@@ -1224,7 +1272,7 @@ bool    skeleton3D::updateModule()
                     tool_code[0] = 100.0;
 
             }
-            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
+//            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
 
         // y-coordinate of the head
@@ -1271,7 +1319,7 @@ bool    skeleton3D::updateModule()
                 SendData[49] = 0.0;
 
             unsigned int counterTool = max(max(counterDrill, counterHand), max(counterDrill,counterPolisher));
-            yInfo("counter value: all %u, drill %u, hand %u, polisher %u", counterTool, counterDrill, counterHand, counterPolisher);
+//            yInfo("counter value: all %u, drill %u, hand %u, polisher %u", counterTool, counterDrill, counterHand, counterPolisher);
             if (counterTool == counterDrill)
                 tool_code[0] = 102.0;
             else if (counterTool == counterPolisher)
@@ -1289,7 +1337,7 @@ bool    skeleton3D::updateModule()
         }
         else
             SendData[49] = sendData49;
-        yDebug("tool_timer %f(s), SendData[49]=%lf",tool_timer, SendData[49]);
+//        yDebug("tool_timer %f(s), SendData[49]=%lf",tool_timer, SendData[49]);
         // sendUDP to Egornometric
         int retval = sendto(sock,SendData,sizeof(SendData),0,(sockaddr*)&serveraddr,sizeof(serveraddr));
 
@@ -1301,9 +1349,10 @@ bool    skeleton3D::updateModule()
 //                   SendData[44], SendData[45], SendData[46], SendData[47], SendData[48]);
 //            yDebug("hip angles (size %d) sent: %lf %lf ", retval,
 //                   SendData[39], SendData[42]);
-        else
-                    yDebug("tool content to Ergo (size %d) sent: %lf %lf ", retval,
-                           SendData[49], SendData[50]);
+
+//        else
+//                    yDebug("tool content to Ergo (size %d) sent: %lf %lf ", retval,
+//                           SendData[49], SendData[50]);
 
         // sendUDP to KUKA
         int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
@@ -1322,8 +1371,8 @@ double  skeleton3D::angleAtJoint(const Vector &v1, const Vector &v2, const doubl
     double angle = (acos(dot(v1,v2)/(norm(v1)*norm(v2))))*180.0/M_PI;
     Vector vn(3,0.0);
     vn[1] = direction;
-    if (dot(vn,cross(v1,v2))<0)
-        angle = -angle;
+//    if (dot(vn,cross(v1,v2))<0)
+//        angle = -angle;
     return angle;
 }
 
@@ -1331,7 +1380,15 @@ double  skeleton3D::angleAtJointTan(const Vector &v1, const Vector &v2, const do
 {
     Vector vn(3,0.0);
     vn[1] = direction;
-    return (atan2(dot(cross(v1,v2),vn),dot(v1,v2)))*180.0/M_PI;
+//    vn[0] = -1.0;
+//    vn[2] = -1.0;
+    return (atan2(dot(cross(v1,v2),vn/norm(vn)),dot(v1,v2)))*180.0/M_PI;
+}
+
+double  skeleton3D::angleAtJointTan(const Vector &v1, const Vector &v2, const Vector &direction)
+{
+    Vector vn = direction;
+    return (atan2(dot(cross(v1,v2),vn/norm(vn)),dot(v1,v2)))*180.0/M_PI;
 }
 
 Vector  skeleton3D::vectorBetweenJnts(const Vector &jnt1, const Vector &jnt2)
@@ -1444,7 +1501,7 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             if (toolClassIn!=NULL)
             {
                 toolLabel = toolClassIn->get(0).asString();
-                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
+//                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
 //                if (toolLabel=="drill") // drill is 1
 //                {
 //                    tool_code[0] = 102.0;
@@ -1476,7 +1533,7 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             if (toolClassIn!=NULL)
             {
                 toolLabel = toolClassIn->get(0).asString();
-                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
+//                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
                 if (toolLabel=="drill" || toolLabel=="polisher")
                     return true;
                 else
@@ -1495,43 +1552,101 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
 Vector  skeleton3D::computeAllBodyAngles()
 {
     Vector allAngles(10,0.0);
+    double angHip = 0.0, angKnee = 0.0, angAnkle = 0.0;
+    computeLowerBodyMeanAngles(angHip,angKnee,angAnkle);
+
 //    yInfo("compute angle 1");
-    allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderCenter", 1.0);
+//    allAngles[0] = computeBodyAngle("hipLeft", "kneeLeft", "shoulderCenter", 1.0);
+    allAngles[0] = angHip;
 //    yInfo("compute angle 2");
-    allAngles[1] = abs(computeBodyAngle("kneeLeft", "ankleLeft", "hipLeft", 1.0));
+//    allAngles[1] = abs(computeBodyAngle("kneeLeft", "ankleLeft", "hipLeft", 1.0));
+    allAngles[1] = angKnee;
 //    yInfo("compute angle 7");
     allAngles[6] = computeBodyAngle("shoulderLeft","hipLeft", "elbowLeft", 1.0);
 //    yInfo("compute angle 8");
     allAngles[7] = abs(computeBodyAngle("elbowLeft" ,"handLeft" ,"shoulderLeft", 1.0));
 
-    allAngles[2] = abs(computeFootAngle("ankleLeft", "kneeLeft", -1.0));
+//    allAngles[2] = abs(computeFootAngle("ankleLeft", "kneeLeft", -1.0));
+    allAngles[2] = angAnkle;
 
     // Right part of the body
 //    yInfo("compute angle 4");
-    allAngles[3] = computeBodyAngle("hipRight", "kneeRight", "shoulderCenter", 1.0);
+//    allAngles[3] = computeBodyAngle("hipRight", "kneeRight", "shoulderCenter", 1.0);
+    allAngles[3] = angHip;
 //    yInfo("compute angle 5");
-    allAngles[4] = abs(computeBodyAngle("kneeRight", "ankleRight", "hipRight", 1.0));
+//    allAngles[4] = abs(computeBodyAngle("kneeRight", "ankleRight", "hipRight", 1.0));
+    allAngles[4] = angKnee;
 //    yInfo("compute angle 9");
     allAngles[8] = computeBodyAngle("shoulderRight","hipRight", "elbowRight", 1.0);
 //    yInfo("compute angle 10");
     allAngles[9] = abs(computeBodyAngle("elbowRight" ,"handRight" ,"shoulderRight", 1.0));
 
-    allAngles[5] = abs(computeFootAngle("ankleRight", "kneeRight", -1.0));
+//    allAngles[5] = abs(computeFootAngle("ankleRight", "kneeRight", -1.0));
+    allAngles[5] = angAnkle;
 
     yInfo("angles: %s", allAngles.toString(3,3).c_str());
+    // constraint hip angles
+//    if (abs(allAngles[0]-allAngles[3])>20.0)
+//        allAngles[0]=allAngles[3];
+
+    if (allAngles[0]<0)
+        allAngles[0] = min(-160.0, allAngles[0]);
+
+    if (allAngles[3]<0)
+        allAngles[3] = min(-160.0, allAngles[3]);
+
+
+    yInfo("constraint angles: %s", allAngles.toString(3,3).c_str());
     return allAngles;
+}
+
+void  skeleton3D::computeLowerBodyMeanAngles(double &angleHip,
+                                             double &angleKnee,
+                                             double &angleAnkle)
+{
+    if (player.skeleton.find("shoulderLeft")!=player.skeleton.end() &&
+            player.skeleton.find("shoulderRight")!=player.skeleton.end() &&
+            player.skeleton.find("hipLeft")!=player.skeleton.end() &&
+            player.skeleton.find("hipRight")!=player.skeleton.end() &&
+            player.skeleton.find("kneeLeft")!=player.skeleton.end() &&
+            player.skeleton.find("kneeRight")!=player.skeleton.end() &&
+            player.skeleton.find("ankleLeft")!=player.skeleton.end() &&
+            player.skeleton.find("ankleRight")!=player.skeleton.end())
+    {
+        Vector hipR(3,0.0), hipL(3,0.0), shR(3,0.0), shL(3,0.0),
+                kL(3,0.0), kR(3,0.0), akL(3,0.0), akR(3,0.0);
+        hipL = joint2Vector(player.skeleton.at("hipLeft"));
+        hipR = joint2Vector(player.skeleton.at("hipRight"));
+        shL = joint2Vector(player.skeleton.at("shoulderLeft"));
+        shR = joint2Vector(player.skeleton.at("shoulderRight"));
+        kL = joint2Vector(player.skeleton.at("kneeLeft"));
+        kR = joint2Vector(player.skeleton.at("kneeRight"));
+        akL = joint2Vector(player.skeleton.at("ankleLeft"));
+        akR = joint2Vector(player.skeleton.at("ankleRight"));
+        Vector hip = (hipL+hipR)/2.0;
+        Vector sh = (shL+shR)/2.0;
+        Vector knee = (kL+kR)/2.0;
+        Vector ankle = (akL+akR)/2.0;
+        hip[1] = 0.0;
+        sh[1] = 0.0;
+        knee[1] = 0.0;
+        ankle[1] = 0.0;
+        Vector toe = ankle;
+        toe[0]  -= 0.1;
+
+        angleHip = computeBodyAngle(hip, sh, knee, -1.0);
+        angleKnee = computeBodyAngle(knee, hip, ankle, 1.0);
+        if (angleKnee<0.0)
+            angleKnee = min(angleKnee, -170.0);
+        angleAnkle = abs(computeBodyAngle(ankle, knee, toe, -1.0));
+
+    }
 }
 
 double  skeleton3D::computeBodyAngle(const string &partName1, const string &partName2,
                                      const string &partName3, const double &direction)
 {
     Vector jnt1(3,0.0), jnt2(3,0.0), jnt3(3,0.0);
-//    if (player.skeleton.find(partName1.c_str())!=player.skeleton.end())
-//        yInfo("found %s", partName1.c_str());
-//    if (player.skeleton.find(partName2.c_str())!=player.skeleton.end())
-//        yInfo("found %s", partName2.c_str());
-//    if (player.skeleton.find(partName3.c_str())!=player.skeleton.end())
-//        yInfo("found %s", partName3.c_str());
     if (player.skeleton.find(partName1.c_str())!=player.skeleton.end() &&
             player.skeleton.find(partName2.c_str())!=player.skeleton.end() &&
             player.skeleton.find(partName3.c_str())!=player.skeleton.end())
@@ -1540,25 +1655,44 @@ double  skeleton3D::computeBodyAngle(const string &partName1, const string &part
         jnt1 = joint2Vector(player.skeleton.at(partName1.c_str()));
         jnt2 = joint2Vector(player.skeleton.at(partName2.c_str()));
         jnt3 = joint2Vector(player.skeleton.at(partName3.c_str()));
-//        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
-//        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+
+        Vector yRefJoint(3,0.0);
+        bool useYRef=false;
+        if (partName1=="hipRight" || partName1=="kneeRight")
+        {
+            yRefJoint = joint2Vector(player.skeleton.at("shoulderRight"));
+            useYRef = true;
+        }
+        else if (partName1=="hipLeft" || partName1=="kneeLeft")
+        {
+            yRefJoint = joint2Vector(player.skeleton.at("shoulderLeft"));
+            useYRef = true;
+        }
+
+        if (useYRef)
+        {
+            jnt1[1] = 0.0;//yRefJoint[1];
+            jnt2[1] = 0.0;//yRefJoint[1];
+            jnt3[1] = 0.0;//yRefJoint[1];
+        }
 
         Vector link12 = jnt2-jnt1;
         Vector link13 = jnt3-jnt1;
 
-        double angle = angleAtJointTan(link12, link13, direction);
-        return angle;
+        Vector dir = jnt1;
+        dir[1] += direction;
+
+        double angle = angleAtJointTan(link12, link13, dir);
+//        double angle = angleAtJointTan(link12, link13, direction);
+
 //        double angle = angleAtJoint(link12,link13);
-//        if (partName1=="hipRight" || partName1=="hipLeft")
-//        {
-//            // 1: hip, 2: knee, 3: shoulder
-//            if (partName1=="hipRight" || partName1=="hipLeft")
-//                angle =min(180.0,angle+10.0);   //offset
-//            if (jnt3[0]<jnt2[0])
-//                return angle;
-//            else
-//                return -angle;
-//        }
+        if (partName1=="hipRight" || partName1=="hipLeft")
+        {
+            // 1: hip, 2: knee, 3: shoulder
+            if ((partName1=="hipRight" || partName1=="hipLeft") && angle<-165.0)
+                angle =min(-180.0,angle-10.0);   //offset
+        }
+        return angle;
 //        else if (partName1=="shoulderRight" || partName1=="shoulderLeft")
 //        {
 //            // 1: shoulder, 2: hip, 3: elbow
@@ -1575,6 +1709,16 @@ double  skeleton3D::computeBodyAngle(const string &partName1, const string &part
 
 }
 
+double  skeleton3D::computeBodyAngle(const Vector &jnt1, const Vector &jnt2, const Vector &jnt3, const double &direction)
+{
+    Vector link12 = jnt2-jnt1;
+    Vector link13 = jnt3-jnt1;
+
+    Vector dir = jnt1;
+    dir[1] += direction;
+    return angleAtJointTan(link12, link13, direction);
+}
+
 double  skeleton3D::computeFootAngle(const string &partName1, const string &partName2,
                                      const double &direction)
 {
@@ -1584,21 +1728,42 @@ double  skeleton3D::computeFootAngle(const string &partName1, const string &part
     {
         jnt1 = joint2Vector(player.skeleton.at(partName1.c_str()));
         jnt2 = joint2Vector(player.skeleton.at(partName2.c_str()));
-//        jnt3 = jnt1;
-//        jnt3[0] -=0.1;
-        jnt3  = jnt2;
-        jnt3[2] = jnt1[2];
+        jnt3 = jnt1;
+        jnt3[0] -=0.1;
+//        jnt3  = jnt2;
+//        jnt3[2] = jnt1[2];
 //        yInfo("joints: %s, %s, %s", jnt1.toString(3,3).c_str(),
 //              jnt2.toString(3,3).c_str(), jnt3.toString(3,3).c_str());
 //        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
 //        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
+
+        Vector yRefJoint(3,0.0);
+        bool useYRef=false;
+        if (partName1=="ankleRight")
+        {
+            yRefJoint = joint2Vector(player.skeleton.at("shoulderRight"));
+            useYRef = true;
+        }
+        else if (partName1=="ankleLeft")
+        {
+            yRefJoint = joint2Vector(player.skeleton.at("shoulderLeft"));
+            useYRef = true;
+        }
+
+        if (useYRef)
+        {
+            jnt1[1] = 0.0;  //yRefJoint[1];
+            jnt2[1] = 0.0;  //yRefJoint[1];
+            jnt3[1] = 0.0;  //yRefJoint[1];
+        }
+
         Vector link12 = jnt2-jnt1;
         Vector link13 = jnt3-jnt1;
 
         //TODO check this
 //        link12[1]=0;    link13[1]=0;
 
-        return angleAtJointTan(link12,link13, direction);
+        return (angleAtJoint(link12,link13, direction));
     }
     else
         return 0.0;
