@@ -245,9 +245,11 @@ protected:
                              const string &partName2,
                              const double &direction);
 
-    void  computeLowerBodyMeanAngles(double &angleHip,
+    void    computeLowerBodyMeanAngles(double &angleHip,
                                        double &angleKnee,
                                        double &angleAnkle);
+
+    void    constraintNegAngle(double &angle, const double &maxValue);
 
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
