@@ -114,7 +114,7 @@ protected:
 
     unsigned int                        counterToolL, counterToolR;
     unsigned int                        counterHand, counterDrill, counterPolisher;
-    float                               sendData49;
+    float                               sendData49, sendData51;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 

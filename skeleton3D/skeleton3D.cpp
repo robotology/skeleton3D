@@ -983,6 +983,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     counterToolL = 0; counterToolR = 0;
     counterHand = 0, counterDrill = 0; counterPolisher = 0;
+    sendData49 = 0.0;   sendData51 = 0.0;
     tool_training = false;
 
     return true;
@@ -1153,7 +1154,7 @@ bool    skeleton3D::updateModule()
         sendUDP.setSubvector(0,allJoints);
         sendUDP.setSubvector(39,allAngles_filtered);
 //        sendUDP.setSubvector(39,allAngles);
-        float SendData[51];
+        float SendData[52];
 
 
         for (int8_t i=0; i<sendUDP.size(); i++)
@@ -1206,17 +1207,17 @@ bool    skeleton3D::updateModule()
 //            toolLabelL = "";    toolLabelR = "";
             if (hand_with_tool=="right")
             {
-                if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
-                {
+//                if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
+//                {
                     hasToolBlob = cropHandBlob("handRight", blob);
-                }
+//                }
             }
             else if (hand_with_tool=="left")
             {
-                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
-                {
+//                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
+//                {
                     hasToolBlob = cropHandBlob("handLeft", blob);
-                }
+//                }
             }
 
             if (hasToolBlob)
@@ -1311,7 +1312,7 @@ bool    skeleton3D::updateModule()
         else //if (toolLabelL == "" && toolLabelL == "" && toolLabelR == "" && toolLabelR == "")
             SendData[50] = 0.0;
 
-        if (tool_timer>=0.3)
+        if (tool_timer>=0.5)
         {
             if (counterToolL>counterToolR)
                 SendData[49] = 1.0;
@@ -1321,13 +1322,20 @@ bool    skeleton3D::updateModule()
             unsigned int counterTool = max(max(counterDrill, counterHand), max(counterDrill,counterPolisher));
 //            yInfo("counter value: all %u, drill %u, hand %u, polisher %u", counterTool, counterDrill, counterHand, counterPolisher);
             if (counterTool == counterDrill)
+            {
                 tool_code[0] = 102.0;
+                SendData[51] = 0.0;
+            }
             else if (counterTool == counterPolisher)
+            {
                 tool_code[0] = 101.0;
+                SendData[51] = 1.0;
+            }
             else if (counterTool == counterHand)
                 tool_code[0] = 100.0;
 
             sendData49 = SendData[49];
+            sendData51 = SendData[51];
             tool_lastClock = clock();
             counterToolL = 0;
             counterToolR = 0;
@@ -1336,7 +1344,11 @@ bool    skeleton3D::updateModule()
             counterPolisher = 0;
         }
         else
+        {
             SendData[49] = sendData49;
+            SendData[51] = sendData51;
+        }
+//        SendData[51] = 1.0;
 //        yDebug("tool_timer %f(s), SendData[49]=%lf",tool_timer, SendData[49]);
         // sendUDP to Egornometric
         int retval = sendto(sock,SendData,sizeof(SendData),0,(sockaddr*)&serveraddr,sizeof(serveraddr));
