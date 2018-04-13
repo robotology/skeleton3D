@@ -13,6 +13,7 @@
 #include <yarp/math/Math.h>
 #include <yarp/math/Rand.h>
 #include <iCub/ctrl/filters.h>
+#include <AssistiveRehab/skeleton.h>
 
 #include <icubclient/all.h>
 #include "kinectWrapper/kinectWrapper.h"
@@ -35,6 +36,7 @@ using namespace yarp::sig;
 using namespace yarp::math;
 using namespace iCub::ctrl;
 using namespace icubclient;
+using namespace assistive_rehab;
 
 class skeleton3D : public RFModule, public skeleton3D_IDL
 {
@@ -52,6 +54,7 @@ protected:
     RpcServer   rpcPort;                            //!< rpc server to receive user request
     RpcClient   rpcGet3D;                           //!< rpc client port to send requests to SFM
     OPCClient   *opc;                               //!< OPC client object
+    BufferedPort<Bottle>    viewerPort;             //!< skeletonViewer port
 
     Port                    portToGui;
     yarp::os::Bottle        cmdGui;
@@ -78,6 +81,9 @@ protected:
     map<string,double>      confJoints;             //!< confidence of identified skeleton
     double                  partConfThres;          //!< threshold value of identified confidence
     double                  workspaceX, workspaceY; //!< threshold value for 3D skeleton, ignore skeleton outside this range
+
+    assistive_rehab::SkeletonWaist  skeletonViz;    //!< skeleton for viewer
+    unordered_map<string,string> keysRemap;
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
@@ -257,6 +263,9 @@ protected:
     bool    askToolLabel(string &label);
 
     bool    toolRecognition(const string &hand, string &toolLabel);
+
+    void    jointsToSkeletonViz(map<string,kinectWrapper::Joint> &joints);
+    void    viewerUpdate();
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();

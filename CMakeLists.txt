@@ -20,6 +20,7 @@ find_package(ICUBcontrib REQUIRED)
 find_package(icubclient)
 find_package(kinectWrapper)
 find_package(OpenCV REQUIRED)
+find_package(AssistiveRehab REQUIRED)
 # find_package(periPersonalSpace)
 # find_package(TensorflowCC COMPONENTS Shared)
 

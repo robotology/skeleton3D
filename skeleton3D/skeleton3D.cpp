@@ -135,22 +135,17 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     mutexResourcesSkeleton.unlock();
     if (allPeople!=NULL)
     {
-//        yInfo("allBodyParts %s",allBodyParts->toString().c_str());
-//        yInfo("allBodyParts size %d",allBodyParts->size());
         for (int person=0; person<allPeople->size(); person++)
         {
             if (Bottle *allBodyParts=allPeople->get(person).asList())
             {
-//                yInfo("bodyParts %s",bodyParts->toString().c_str());
                 map<string,kinectWrapper::Joint> jnts;
                 map<string,kinectWrapper::Joint> jntsFiltered;
                 confJoints.clear();
-//                bool ignoreSkeleton = false;
                 if (Bottle *bodyParts=allBodyParts->get(0).asList())
                 {
                     Bottle neck = bodyParts->findGroup("Neck");
                     Bottle shR = bodyParts->findGroup("RShoulder");
-//                    yDebug("neck: %s",neck.toString().c_str());
                     // first check to make make sure the skeleton is the one working with robot
                     if (!neck.isNull())
                     {
@@ -203,7 +198,6 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         {
                             if (Bottle *part=bodyParts->get(partId).asList())
                             {
-//                                yInfo("part %s",part->toString().c_str());
                                 string partName = part->get(0).asString();
                                 yDebug("[%s] found part as %s",name.c_str(),partName.c_str());
                                 CvPoint partCv;
@@ -231,12 +225,8 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                     addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
                                     addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
                                 }
-//                                else
-//                                    yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
                             }
                         }
-//                        else
-//                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
                     }
                 }
 
@@ -260,9 +250,13 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 {
                     filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
                     player.skeleton = jntsFiltered;
+                    jointsToSkeletonViz(jntsFiltered);
                 }
                 else
+                {
                     player.skeleton = jnts;
+                    jointsToSkeletonViz(jnts);
+                }
 
                 ts.update();
                 endOneSkeleton: ;
@@ -322,6 +316,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
         computeSpine(joints);
 
         player.skeleton = joints;
+        jointsToSkeletonViz(joints);
 
         ts.update();
     }
@@ -332,6 +327,38 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
 
     return true;
+}
+
+void    skeleton3D::jointsToSkeletonViz(map<string, kinectWrapper::Joint> &joints)
+{
+    if (!joints.empty())
+    {
+        vector<Vector> hips;
+        vector<pair<string,Vector>> unordered;
+        for (int8_t i=0; i<mapPartsKinect.size(); i++)
+        {
+            string tag = mapPartsKinect[i].c_str();
+            if (joints.find(tag)!=joints.end())
+            {
+                Vector p = joint2Vector(joints.at(tag));
+                unordered.push_back(make_pair(keysRemap[tag],p));
+            }
+        }
+        skeletonViz.update_fromstd(unordered);
+        skeletonViz.setTag("humanOfCourse");
+    }
+}
+
+void    skeleton3D::viewerUpdate()
+{
+    if (viewerPort.getOutputCount()>0)
+    {
+        Bottle &msg=viewerPort.prepare();
+        msg.clear();
+        Property prop=skeletonViz.toProperty();
+        msg.addList().read(prop);
+        viewerPort.writeStrict();
+    }
 }
 
 void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
@@ -865,11 +892,6 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     // Connect to /skeleton2D/bodyParts:o to get streamed body parts
     bodyPartsInPort.open(("/"+name+"/bodyParts:i").c_str());
-//    std::string bodyParts_streaming = "/skeleton2D/bodyParts:o";
-//    if (!yarp::os::Network::connect(bodyParts_streaming, bodyPartsInPort.getName().c_str()))
-//        yError("[%s] Unable to connect to %s port", name.c_str(),bodyParts_streaming.c_str());
-//    else
-//        yInfo("[%s] Connected to %s port", name.c_str(), bodyParts_streaming.c_str());
 
     // Connect to /visuoTactileWrapper/sensManager:i to stream body parts as objects to PPS
     ppsOutPort.open(("/"+name+"/visuoTactileWrapper/objects:o").c_str());
@@ -945,6 +967,25 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     cmdGui.addString("reset");
     portToGui.write(cmdGui);
 
+    // Visualizing human skeleton with skeletonViewer
+    keysRemap[mapPartsKinect[0].c_str()]=KeyPointTag::head;
+    keysRemap[mapPartsKinect[1].c_str()]=KeyPointTag::shoulder_center;
+    keysRemap[mapPartsKinect[2].c_str()]=KeyPointTag::shoulder_right;
+    keysRemap[mapPartsKinect[3].c_str()]=KeyPointTag::elbow_right;
+    keysRemap[mapPartsKinect[4].c_str()]=KeyPointTag::hand_right;
+    keysRemap[mapPartsKinect[5].c_str()]=KeyPointTag::shoulder_left;
+    keysRemap[mapPartsKinect[6].c_str()]=KeyPointTag::elbow_left;
+    keysRemap[mapPartsKinect[7].c_str()]=KeyPointTag::hand_left;
+    keysRemap[mapPartsKinect[8].c_str()]=KeyPointTag::hip_right;
+    keysRemap[mapPartsKinect[9].c_str()]=KeyPointTag::knee_right;
+    keysRemap[mapPartsKinect[10].c_str()]=KeyPointTag::ankle_right;
+    keysRemap[mapPartsKinect[11].c_str()]=KeyPointTag::hip_left;
+    keysRemap[mapPartsKinect[12].c_str()]=KeyPointTag::knee_left;
+    keysRemap[mapPartsKinect[13].c_str()]=KeyPointTag::ankle_left;
+
+    viewerPort.open(("/"+name+"/viewer:o").c_str());
+
+
     // UDP port to communicate with Ergonometric module
     std::string addr_udp=rf.check("address_udp",Value("192.168.0.62")).asString().c_str();
     int port_udp=rf.check("port_udp",Value(44000)).asInt();
@@ -1015,6 +1056,7 @@ bool    skeleton3D::interruptModule()
     deleteBodySegGui("spine");
     deleteBodySegGui("lower");
     portToGui.interrupt();
+    viewerPort.interrupt();
     return true;
 }
 
@@ -1026,6 +1068,7 @@ bool    skeleton3D::close()
     bodyPartsInPort.close();
     ppsOutPort.close();
     portToGui.close();
+    viewerPort.close();
     handBlobPort.close();
     toolClassInPort.close();
     toolClassInPort_left.close();
@@ -1033,9 +1076,6 @@ bool    skeleton3D::close()
     rpcAskTool.close();
     opc->close();
     delete filterAngles;
-
-//    udp_sender.~udp_client();
-
 
     return true;
 }
@@ -1057,18 +1097,6 @@ bool    skeleton3D::updateModule()
     // Obtain body part from a Tensorflow-based module
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
-
-    // Get the 3D pose of CvPoint of body parts
-//    if (bodyPartsCv.size()>=0 && connected3D)
-//    {
-//        for (int8_t i=0; i<bodyPartsCv.size(); i++)
-//        {
-//            Vector pos(3,0.0);
-//            get3DPosition(bodyPartsCv[i], pos);
-//            yInfo("[%s] 3D pose of CvPoint [%d, %d] from SFM is: %s",
-//                  name.c_str(), bodyPartsCv[i].x, bodyPartsCv[i].y, pos.toString(3,3).c_str());
-//        }
-//    }
 
     // Update OPC or conduct actions
     // check if this skeletton is really tracked
@@ -1115,6 +1143,8 @@ bool    skeleton3D::updateModule()
             opc->commit(partner);
 
             drawBodyGui(partner);
+
+            viewerUpdate();
         }
 
         bodyPartsCv.clear();
@@ -1148,12 +1178,10 @@ bool    skeleton3D::updateModule()
         Vector allAngles = computeAllBodyAngles();
         Vector allAngles_filtered(allAngles.size(),0.0);
         filtAngles(allAngles,allAngles_filtered);
-//        yDebug("filtered angles: %s", allAngles_filtered.toString(3,3).c_str());
 
         Vector sendUDP(49,0.0);
         sendUDP.setSubvector(0,allJoints);
         sendUDP.setSubvector(39,allAngles_filtered);
-//        sendUDP.setSubvector(39,allAngles);
         float SendData[52];
 
 
@@ -1164,19 +1192,12 @@ bool    skeleton3D::updateModule()
         if (!tool_training)
         {
             tool_timer = (clock() - tool_lastClock) / (double)CLOCKS_PER_SEC;
-
-//            if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
-//            {
-                hasToolR = toolRecognition("handRight", toolLabelR);
-                if (hasToolR)
-                    hasToolL = false;
-//            }
-//            if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
-//            {
-                hasToolL = toolRecognition("handLeft", toolLabelL);
-                if (hasToolL)
-                    hasToolR = false;
-//            }
+            hasToolR = toolRecognition("handRight", toolLabelR);
+            if (hasToolR)
+                hasToolL = false;
+            hasToolL = toolRecognition("handLeft", toolLabelL);
+            if (hasToolL)
+                hasToolR = false;
 
             if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
             {
@@ -1207,23 +1228,16 @@ bool    skeleton3D::updateModule()
 //            toolLabelL = "";    toolLabelR = "";
             if (hand_with_tool=="right")
             {
-//                if (allAngles[8]>=10.0 || allAngles[9]>=30.0)
-//                {
-                    hasToolBlob = cropHandBlob("handRight", blob);
-//                }
+                hasToolBlob = cropHandBlob("handRight", blob);
             }
             else if (hand_with_tool=="left")
             {
-//                if (allAngles[3]>=10.0 || allAngles[4]>=30.0)
-//                {
-                    hasToolBlob = cropHandBlob("handLeft", blob);
-//                }
+                hasToolBlob = cropHandBlob("handLeft", blob);
             }
 
             if (hasToolBlob)
             {
                 // send to recognition pipeline: blob is in Vector of double
-//                yDebug("tool recognition");
                 Bottle blobBottle;
                 for (int8_t i=0; i<blob.size(); i++)
                     blobBottle.addDouble(blob[i]);
@@ -1241,7 +1255,7 @@ bool    skeleton3D::updateModule()
                 {
                     toolLabel = toolClassIn->get(0).asString();
 //                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
-                }   //yDebug("Recognize tool label is: %s",toolLabel.c_str());
+                }   
                 if (hand_with_tool=="right")
                 {
                     toolLabelR = toolLabel;
@@ -1392,8 +1406,6 @@ double  skeleton3D::angleAtJointTan(const Vector &v1, const Vector &v2, const do
 {
     Vector vn(3,0.0);
     vn[1] = direction;
-//    vn[0] = -1.0;
-//    vn[2] = -1.0;
     return (atan2(dot(cross(v1,v2),vn/norm(vn)),dot(v1,v2)))*180.0/M_PI;
 }
 
@@ -1423,12 +1435,6 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
     if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
     {
         Vector pose2d(2,0.0);
-//        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
-//        pose2d[0] = (double)jnt.u;
-//        pose2d[1] = (double)jnt.v;
-        // use for training tool
-//        pose2d[0] = handCV.x;
-//        pose2d[1] = handCV.y;
 
         if (hand == "handRight")
         {
@@ -1492,7 +1498,6 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
     if (hasToolBlob)
     {
         // send to recognition pipeline: blob is in Vector of double
-//        yDebug("tool recognition");
         Bottle blobBottle;
         for (int8_t i=0; i<blob.size(); i++)
             blobBottle.addDouble(blob[i]);
@@ -1596,7 +1601,7 @@ Vector  skeleton3D::computeAllBodyAngles()
 //    allAngles[5] = abs(computeFootAngle("ankleRight", "kneeRight", -1.0));
     allAngles[5] = angAnkle;
 
-    yInfo("angles: %s", allAngles.toString(3,3).c_str());
+//    yInfo("angles: %s", allAngles.toString(3,3).c_str());
 
     // constraint hip angles
     if (allAngles[0]<0)
@@ -1606,7 +1611,7 @@ Vector  skeleton3D::computeAllBodyAngles()
         allAngles[3] = min(-160.0, allAngles[3]);
 
 
-    yInfo("constraint angles: %s", allAngles.toString(3,3).c_str());
+//    yInfo("constraint angles: %s", allAngles.toString(3,3).c_str());
     return allAngles;
 }
 
@@ -1711,16 +1716,6 @@ double  skeleton3D::computeBodyAngle(const string &partName1, const string &part
                 angle =min(-180.0,angle-10.0);   //offset
         }
         return angle;
-//        else if (partName1=="shoulderRight" || partName1=="shoulderLeft")
-//        {
-//            // 1: shoulder, 2: hip, 3: elbow
-//            if ((jnt1[0]+jnt2[0])/2.0+0.05>jnt3[0])
-//                return angle;
-//            else
-//                return -angle;
-//        }
-//        else
-//            return angle;   //angleAtJoint(link12,link13);
     }
     else
         return 0.0;
@@ -1750,10 +1745,6 @@ double  skeleton3D::computeFootAngle(const string &partName1, const string &part
         jnt3[0] -=0.1;
 //        jnt3  = jnt2;
 //        jnt3[2] = jnt1[2];
-//        yInfo("joints: %s, %s, %s", jnt1.toString(3,3).c_str(),
-//              jnt2.toString(3,3).c_str(), jnt3.toString(3,3).c_str());
-//        Vector link12 = vectorBetweenJnts(jnt1, jnt2);
-//        Vector link13 = vectorBetweenJnts(jnt1, jnt3);
 
         Vector yRefJoint(3,0.0);
         bool useYRef=false;

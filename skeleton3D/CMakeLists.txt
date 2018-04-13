@@ -24,7 +24,8 @@ set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.cpp
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${YARP_INCLUDE_DIRS}
                     ${ICUB_INCLUDE_DIRS}
-                    ${kinectWrapper_INCLUDE_DIRS})
+                    ${kinectWrapper_INCLUDE_DIRS}
+                    ${AssistiveRehab_INCLUDE_DIRS})
 include_directories(${main_project_path}/lib/include)
 #                    ${main_project_path}/lib/include/iCub/vtMappingTF)
 
@@ -41,7 +42,7 @@ add_definitions(-D_USE_MATH_DEFINES)
 
 add_executable(skeleton3D ${source} ${header} ${source_files} ${include_files} ${IDL_GEN_FILES} ${idl_files}) #${lib_files})# ${source_files} ${include_files} )
 
-target_link_libraries(skeleton3D ${YARP_LIBRARIES} ${icubclient_LIBRARIES} ${OpenCV_LIBRARIES} ctrlLib)# TensorflowCC::Shared)
+target_link_libraries(skeleton3D ${YARP_LIBRARIES} ${icubclient_LIBRARIES} ${OpenCV_LIBRARIES} ctrlLib ${AssistiveRehab_LIBRARIES})# TensorflowCC::Shared)
 
 install(TARGETS skeleton3D DESTINATION bin)
 
