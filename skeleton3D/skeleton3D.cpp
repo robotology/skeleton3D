@@ -125,7 +125,7 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
             yError("[%s] SFM replied with wrong size",name.c_str());
     }
 
-    return (norm(x)>0.0);
+    return (norm(x)>=0.0);
 }
 
 bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
@@ -170,7 +170,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         }
                         else
                         {
-                            yWarning("ignore this skeleton!");
+                            yWarning("No neck3D, ignore this skeleton!");
                             goto endOneSkeleton;
                         }
                     }
@@ -193,7 +193,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         }
                         else
                         {
-                            yWarning("ignore this skeleton!");
+                            yWarning("No shoulder3D, ignore this skeleton!");
                             goto endOneSkeleton;
                         }
                     }
@@ -1263,11 +1263,11 @@ bool    skeleton3D::updateModule()
 
                 if (toolLabel=="drill") // drill is 1
                 {
-                    tool_code[0] = 102.0;
+                    tool_code[0] = 101.0;
                 }
                 else if(toolLabel=="polisher") //polisher is 2
                 {
-                    tool_code[0] = 101.0;
+                    tool_code[0] = 102.0;
                 }
                 else
                     tool_code[0] = 100.0;
@@ -1323,12 +1323,12 @@ bool    skeleton3D::updateModule()
 //            yInfo("counter value: all %u, drill %u, hand %u, polisher %u", counterTool, counterDrill, counterHand, counterPolisher);
             if (counterTool == counterDrill)
             {
-                tool_code[0] = 102.0;
+                tool_code[0] = 101.0;
                 SendData[51] = 0.0;
             }
             else if (counterTool == counterPolisher)
             {
-                tool_code[0] = 101.0;
+                tool_code[0] = 102.0;
                 SendData[51] = 1.0;
             }
             else if (counterTool == counterHand)
@@ -1362,9 +1362,9 @@ bool    skeleton3D::updateModule()
 //            yDebug("hip angles (size %d) sent: %lf %lf ", retval,
 //                   SendData[39], SendData[42]);
 
-//        else
-//                    yDebug("tool content to Ergo (size %d) sent: %lf %lf ", retval,
-//                           SendData[49], SendData[50]);
+        else
+                    yDebug("tool content to Ergo (size %d) sent: %lf %lf %lf", retval,
+                           SendData[49], SendData[50], SendData[51]);
 
         // sendUDP to KUKA
         int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
@@ -1575,6 +1575,8 @@ Vector  skeleton3D::computeAllBodyAngles()
 //    yInfo("compute angle 8");
     allAngles[7] = computeBodyAngle("elbowLeft" ,"handLeft" ,"shoulderLeft", 1.0);
     constraintNegAngle(allAngles[7], -179.0);
+    if (allAngles[7]<=0.0)
+        allAngles[7] =179.0;
 
 //    allAngles[2] = abs(computeFootAngle("ankleLeft", "kneeLeft", -1.0));
     allAngles[2] = angAnkle;
@@ -1592,11 +1594,13 @@ Vector  skeleton3D::computeAllBodyAngles()
 //    yInfo("compute angle 10");
     allAngles[9] = computeBodyAngle("elbowRight" ,"handRight" ,"shoulderRight", 1.0);
     constraintNegAngle(allAngles[9], -179.0);
+    if (allAngles[9]<=0.0)
+        allAngles[9] =179.0;
 
 //    allAngles[5] = abs(computeFootAngle("ankleRight", "kneeRight", -1.0));
     allAngles[5] = angAnkle;
 
-    yInfo("angles: %s", allAngles.toString(3,3).c_str());
+//    yInfo("angles: %s", allAngles.toString(3,3).c_str());
 
     // constraint hip angles
     if (allAngles[0]<0)
@@ -1606,7 +1610,7 @@ Vector  skeleton3D::computeAllBodyAngles()
         allAngles[3] = min(-160.0, allAngles[3]);
 
 
-    yInfo("constraint angles: %s", allAngles.toString(3,3).c_str());
+//    yInfo("constraint angles: %s", allAngles.toString(3,3).c_str());
     return allAngles;
 }
 
