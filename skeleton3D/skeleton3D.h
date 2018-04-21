@@ -70,6 +70,7 @@ protected:
     map<string,double>      confJoints;             //!< confidence of identified skeleton
     double                  partConfThres;          //!< threshold value of identified confidence
     double                  workspaceX, workspaceY; //!< threshold value for 3D skeleton, ignore skeleton outside this range
+    double                  workspaceX_min;
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
