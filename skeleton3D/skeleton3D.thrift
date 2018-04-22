@@ -146,6 +146,19 @@ service skeleton3D_IDL
   double get_workspace_x();
 
   /**
+  * Sets workspace_x_min.
+  * @param workspace_x_min to constraint the workspace for 3D skeleton, ignore skeleton outside this threshold.
+  * @return true/false on success/failure.
+  */
+  bool set_workspace_x_min(1:double workspace_x_min);
+
+  /**
+  * Gets workspace_x.
+  * @return the current workspace_x_min value.
+  */
+  double get_workspace_x_min();
+
+  /**
   * Sets workspace_y.
   * @param workspace_y to constraint the workspace for 3D skeleton, ignore skeleton outside this threshold.
   * @return true/false on success/failure.
@@ -157,5 +170,18 @@ service skeleton3D_IDL
   * @return the current workspace_y value.
   */
   double get_workspace_y();
+
+  /**
+  * Sets workspace_y_max.
+  * @param workspace_y_max to constraint the workspace for 3D skeleton, ignore skeleton outside this threshold.
+  * @return true/false on success/failure.
+  */
+  bool set_workspace_y_max(1:double workspace_y_max);
+
+  /**
+  * Gets workspace_y_max.
+  * @return the current workspace_y_max value.
+  */
+  double get_workspace_y_max();
 
 }
