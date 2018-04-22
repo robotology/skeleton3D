@@ -145,7 +145,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         if (get3DPosition(neckCv, neck3D))
                         {
                             yDebug("found neck. neck3D = %s!!!", neck3D.toString(3,3).c_str());
-                            if (neck3D[0]<workspaceX_min || neck3D[0]>=workspaceX || neck3D[1]>=workspaceY || neck3D[1]<=-workspaceY ||
+                            if (neck3D[0]<workspaceX_min || neck3D[0]>=workspaceX || neck3D[1]>=workspaceY_max || neck3D[1]<=-workspaceY ||
                                     (neck3D[0] == 0.0 && neck3D[1] == 0.0 && neck3D[2] == 0.0))
                             {
                                 yWarning("ignore this skeleton!");
@@ -168,7 +168,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         if (get3DPosition(shoulderCv, shoulder3D))
                         {
                             yDebug("found shoulder. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
-                            if (shoulder3D[0]<workspaceX_min ||shoulder3D[0]>=workspaceX || shoulder3D[1]>=workspaceY || shoulder3D[1]<=-workspaceY ||
+                            if (shoulder3D[0]<workspaceX_min ||shoulder3D[0]>=workspaceX || shoulder3D[1]>=workspaceY_max || shoulder3D[1]<=-workspaceY ||
                                     (shoulder3D[0] == 0.0 && shoulder3D[1] == 0.0 && shoulder3D[2] == 0.0))
                             {
                                 yWarning("ignore this skeleton!");
@@ -704,8 +704,10 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     draw_lower = rf.check("draw_lower",Value(0)).asBool();
 
     workspaceX = rf.check("workspace_x",Value(2.1)).asDouble();
-    workspaceX_min = rf.check("workspace_x_min",Value(0.45)).asDouble();
+    workspaceX_min = rf.check("workspace_x_min",Value(0.60)).asDouble();
     yInfo("workspace_x_min = %f", workspaceX_min);
+    workspaceY_max = rf.check("workspace_y_max",Value(0.5)).asDouble();
+    yInfo("workspace_y_max = %f", workspaceY_max);
     workspaceY = rf.check("workspace_y",Value(1.5)).asDouble();
 
     if (use_fake_hand)

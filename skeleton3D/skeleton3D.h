@@ -71,6 +71,7 @@ protected:
     double                  partConfThres;          //!< threshold value of identified confidence
     double                  workspaceX, workspaceY; //!< threshold value for 3D skeleton, ignore skeleton outside this range
     double                  workspaceX_min;
+    double                  workspaceY_max;
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
@@ -355,7 +356,18 @@ public:
         return workspaceX;
     }
 
-    bool set_workspace_y(const double &workspace_y)
+    bool set_workspace_x_min(const double workspace_x_min)
+    {
+        workspaceX_min = workspace_x_min;
+        return true;
+    }
+
+    double get_workspace_x_min()
+    {
+        return workspaceX;
+    }
+
+    bool set_workspace_y(const double workspace_y)
     {
         if (workspace_y>=0)
         {
@@ -369,6 +381,22 @@ public:
     double get_workspace_y()
     {
         return workspaceY;
+    }
+
+    bool set_workspace_y_max(const double workspace_y_max)
+    {
+        if (workspace_y_max>=0)
+        {
+            workspaceY_max = workspace_y_max;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_workspace_y_max()
+    {
+        return workspaceY_max;
     }
 
 
