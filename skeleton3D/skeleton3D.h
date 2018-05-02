@@ -364,7 +364,7 @@ public:
 
     double get_workspace_x_min()
     {
-        return workspaceX;
+        return workspaceX_min;
     }
 
     bool set_workspace_y(const double workspace_y)
