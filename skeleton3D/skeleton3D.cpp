@@ -975,21 +975,19 @@ bool    skeleton3D::updateModule()
     {
         tool_timer = (clock() - tool_lastClock) / (double)CLOCKS_PER_SEC;
 
-            hasToolR = toolRecognition("handRight", toolLabelR);
-            if (hasToolR)
-                hasToolL = false;
-            hasToolL = toolRecognition("handLeft", toolLabelL);
-            if (hasToolL)
-                hasToolR = false;
+        hasToolR = toolRecognition("handRight", toolLabelR);
+        if (hasToolR)
+            hasToolL = false;
+        hasToolL = toolRecognition("handLeft", toolLabelL);
+        if (hasToolL)
+            hasToolR = false;
 
         if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
         {
-//                    tool_code[0] = 102.0;
             counterDrill++;
         }
         else if(toolLabelL=="polisher" || toolLabelR=="polisher") //polisher is 1
         {
-//                    tool_code[0] = 101.0;
             counterPolisher++;
         }
         else if(toolLabelL=="hand" || toolLabelR=="hand") //hand is 0
@@ -998,7 +996,6 @@ bool    skeleton3D::updateModule()
         }
         else
         {
-//                    tool_code[0] = 100.0;
         }
         yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
     }
@@ -1007,8 +1004,6 @@ bool    skeleton3D::updateModule()
         // Tool training
         Vector blob(4,0.0);
         bool hasToolBlob=false;
-//            hasToolL = false;   hasToolR = false;
-//            toolLabelL = "";    toolLabelR = "";
         if (hand_with_tool=="right")
         {
             hasToolBlob = cropHandBlob("handRight", blob);
