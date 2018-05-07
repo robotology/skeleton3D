@@ -970,146 +970,121 @@ bool    skeleton3D::updateModule()
     else
         yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
-    // Tool recoginition
-    Vector blob(4,0.0);
-    bool hasToolBlob=false;
-    if (hand_with_tool=="right")
+    //Tool recognition
+    if (!tool_training)
     {
-        hasToolBlob = cropHandBlob("handRight", blob);
-    }
-    else if (hand_with_tool=="left")
-    {
-        hasToolBlob = cropHandBlob("handLeft", blob);
-    }
+        tool_timer = (clock() - tool_lastClock) / (double)CLOCKS_PER_SEC;
 
-    if (hasToolBlob)
-    {
-        // send to recognition pipeline: blob is in Vector of double
-        yDebug("tool recognition");
-        Bottle blobBottle;
-        for (int8_t i=0; i<blob.size(); i++)
-            blobBottle.addDouble(blob[i]);
+            hasToolR = toolRecognition("handRight", toolLabelR);
+            if (hasToolR)
+                hasToolL = false;
+            hasToolL = toolRecognition("handLeft", toolLabelL);
+            if (hasToolL)
+                hasToolR = false;
 
-        Bottle& output = handBlobPort.prepare();
-        output.clear();
-        output.addList()=blobBottle;
-        handBlobPort.write();
-
-        //Tool recognition
-        if (!tool_training)
+        if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
         {
-            tool_timer = (clock() - tool_lastClock) / (double)CLOCKS_PER_SEC;
-
-                hasToolR = toolRecognition("handRight", toolLabelR);
-                if (hasToolR)
-                    hasToolL = false;
-                hasToolL = toolRecognition("handLeft", toolLabelL);
-                if (hasToolL)
-                    hasToolR = false;
-
-            if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
-            {
 //                    tool_code[0] = 102.0;
-                counterDrill++;
-            }
-            else if(toolLabelL=="polisher" || toolLabelR=="polisher") //polisher is 1
-            {
+            counterDrill++;
+        }
+        else if(toolLabelL=="polisher" || toolLabelR=="polisher") //polisher is 1
+        {
 //                    tool_code[0] = 101.0;
-                counterPolisher++;
-            }
-            else if(toolLabelL=="hand" || toolLabelR=="hand") //hand is 0
-            {
-                counterHand++;
-            }
-            else
-            {
-//                    tool_code[0] = 100.0;
-            }
-            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
+            counterPolisher++;
+        }
+        else if(toolLabelL=="hand" || toolLabelR=="hand") //hand is 0
+        {
+            counterHand++;
         }
         else
         {
-            // Tool training
-            Vector blob(4,0.0);
-            bool hasToolBlob=false;
+//                    tool_code[0] = 100.0;
+        }
+        yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
+    }
+    else
+    {
+        // Tool training
+        Vector blob(4,0.0);
+        bool hasToolBlob=false;
 //            hasToolL = false;   hasToolR = false;
 //            toolLabelL = "";    toolLabelR = "";
+        if (hand_with_tool=="right")
+        {
+            hasToolBlob = cropHandBlob("handRight", blob);
+        }
+        else if (hand_with_tool=="left")
+        {
+            hasToolBlob = cropHandBlob("handLeft", blob);
+        }
+
+        if (hasToolBlob)
+        {
+            // send to recognition pipeline: blob is in Vector of double
+            yDebug("tool recognition");
+            Bottle blobBottle;
+            for (int8_t i=0; i<blob.size(); i++)
+                blobBottle.addDouble(blob[i]);
+
+            Bottle& output = handBlobPort.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort.write();
+
+            // read from /onTheFlyRecognition/human:io
+            string toolLabel="";
+            toolLabelL = "";    toolLabelR = "";
+            Bottle *toolClassIn = toolClassInPort.read(false);
+            if (toolClassIn!=NULL)
+            {
+                toolLabel = toolClassIn->get(0).asString();
+//                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            }yDebug("Recognize tool label is: %s",toolLabel.c_str());
             if (hand_with_tool=="right")
             {
-                hasToolBlob = cropHandBlob("handRight", blob);
+                toolLabelR = toolLabel;
+                if (toolLabel =="drill" || toolLabel == "polisher")
+                {
+                    hasToolR = true;
+                    hasToolL = false;
+                }
             }
             else if (hand_with_tool=="left")
             {
-                hasToolBlob = cropHandBlob("handLeft", blob);
-            }
-
-            if (hasToolBlob)
-            {
-                // send to recognition pipeline: blob is in Vector of double
-                yDebug("tool recognition");
-                Bottle blobBottle;
-                for (int8_t i=0; i<blob.size(); i++)
-                    blobBottle.addDouble(blob[i]);
-
-                Bottle& output = handBlobPort.prepare();
-                output.clear();
-                output.addList()=blobBottle;
-                handBlobPort.write();
-
-                // read from /onTheFlyRecognition/human:io
-                string toolLabel="";
-                toolLabelL = "";    toolLabelR = "";
-                Bottle *toolClassIn = toolClassInPort.read(false);
-                if (toolClassIn!=NULL)
+                toolLabelL = toolLabel;
+                if (toolLabel =="drill" || toolLabel == "polisher")
                 {
-                    toolLabel = toolClassIn->get(0).asString();
-//                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
-                }yDebug("Recognize tool label is: %s",toolLabel.c_str());
-                if (hand_with_tool=="right")
-                {
-                    toolLabelR = toolLabel;
-                    if (toolLabel =="drill" || toolLabel == "polisher")
-                    {
-                        hasToolR = true;
-                        hasToolL = false;
-                    }
-                }
-                else if (hand_with_tool=="left")
-                {
-                    toolLabelL = toolLabel;
-                    if (toolLabel =="drill" || toolLabel == "polisher")
-                    {
-                        hasToolL = true;
-                        hasToolR = false;
-                    }
+                    hasToolL = true;
+                    hasToolR = false;
                 }
             }
-            yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
         }
+        yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
     }
-        // tool in which hand
-        if (!hasToolL && !hasToolR)
-        {
-//            yWarning("Empty hand!");
-        }
-        else if (hasToolL && !hasToolR)
-        {
-            counterToolL++; // reduce identification fluctuation
-        }
-        else if (!hasToolL && hasToolR)
-        {
-            counterToolR++; // reduce identification fluctuation
-        }
 
-        if (tool_timer>=0.3)
-        {
-            tool_lastClock = clock();
-            counterToolL = 0;
-            counterToolR = 0;
-            counterHand = 0;
-            counterDrill = 0;
-            counterPolisher = 0;
-        }
+    // tool in which hand
+    if (!hasToolL && !hasToolR)
+    {
+//            yWarning("Empty hand!");
+    }
+    else if (hasToolL && !hasToolR)
+    {
+        counterToolL++; // reduce identification fluctuation
+    }
+    else if (!hasToolL && hasToolR)
+    {
+        counterToolR++; // reduce identification fluctuation
+    }
+
+    if (tool_timer>=0.3)
+    {
+        tool_lastClock = clock();
+        counterToolL = 0;
+        counterToolR = 0;
+        counterHand = 0;
+        counterDrill = 0;
+        counterPolisher = 0;
+    }
 
     return true;
 }
