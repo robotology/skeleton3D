@@ -1183,31 +1183,12 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             output.clear();
             output.addList()=blobBottle;
             handBlobPort.write();
-            // send twice
-    //        output.clear();
-    //        output.addList()=blobBottle;
-    //        handBlobPort.write();
-
-    //        Time::delay(0.1);
             Bottle *toolClassIn = toolClassInPort.read(false);
             if (toolClassIn!=NULL)
             {
                 toolLabel = toolClassIn->get(0).asString();
                 yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
-//                if (toolLabel=="drill") // drill is 1
-//                {
-//                    tool_code[0] = 102.0;
-//                }
-//                else if(toolLabel=="polisher") //polisher is 2
-//                {
-//                    tool_code[0] = 101.0;
-//                }
-//                else
-//                {
-//                    tool_code[0] = 100.0;
-//                    return false;
-//                }
-                if (toolLabel=="drill" || toolLabel=="polisher")
+                if (toolLabel!="?" && toolLabel!="")
                     return true;
                 else
                     return false;
@@ -1226,7 +1207,7 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             {
                 toolLabel = toolClassIn->get(0).asString();
                 yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
-                if (toolLabel=="drill" || toolLabel=="polisher")
+                if (toolLabel!="?" && toolLabel!="")
                     return true;
                 else
                     return false;
