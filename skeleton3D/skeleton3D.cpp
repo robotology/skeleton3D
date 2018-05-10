@@ -975,10 +975,10 @@ bool    skeleton3D::updateModule()
     {
         object_timer = (clock() - object_lastClock) / (double)CLOCKS_PER_SEC;
 
-        hasObjectR = objectRecognition("handRight", objectLabelR);
+        hasObjectR = objectRecognition("handRight", objectLabelR, blobR);
         if (hasObjectR)
             hasObjectL = false;
-        hasObjectL = objectRecognition("handLeft", objectLabelL);
+        hasObjectL = objectRecognition("handLeft", objectLabelL, blobL);
         if (hasObjectL)
             hasObjectR = false;
 
@@ -1082,6 +1082,11 @@ bool    skeleton3D::updateModule()
         counterPolisher = 0;
     }
 
+    if (hasObjectL)
+        updateObjectOPC(objectLabelL,blobL);
+    if (hasObjectR)
+        updateObjectOPC(objectLabelR,blobR);
+
     return true;
 }
 
@@ -1164,9 +1169,30 @@ bool    skeleton3D::askToolLabel(string &label)
         return false;
 }
 
-bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel)
+void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blob)
 {
-    Vector blob(4,0.0);
+    Object *obj=opc->addOrRetrieveEntity<Object>(objectLabel);
+    // TODO: modify objectRecognition to obtain the blob also
+    CvPoint cogBlob;
+    cogBlob.x=(int)(blob[0]+blob[2])/2.0;
+    cogBlob.y=(int)(blob[1]+blob[3])/2.0;
+    Vector objPos(3,0.0);
+    if (get3DPosition(cogBlob,objPos))
+    {
+        obj->m_present=1.0;
+        obj->m_ego_position = objPos;
+        obj->m_dimensions = part_dimension;
+    }
+    else
+    {
+        obj->m_present=0.0;
+    }
+    opc->commit(obj);
+}
+
+bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, Vector &blob)
+{
+    blob.resize(4,0.0);
     bool hasObjectBlob=false;
     hasObjectBlob = cropHandBlob(hand.c_str(), blob);
 

@@ -97,6 +97,7 @@ protected:
     string                              objectLabelR;
     string                              objectLabelL;
     bool                                hasObjectR, hasObjectL;
+    Vector                              blobL, blobR;
     bool                                object_training;
 
     unsigned int                        counterObjectL, counterObjectR;
@@ -197,7 +198,8 @@ protected:
     bool    cropHandBlob(const string &hand, Vector &blob);
     bool    askToolLabel(string &label);
 
-    bool    objectRecognition(const string &hand, string &toolLabel);
+    void    updateObjectOPC(const string &objectLabel, const Vector &blob);
+    bool    objectRecognition(const string &hand, string &toolLabel, Vector &blob);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
