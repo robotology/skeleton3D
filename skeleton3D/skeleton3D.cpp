@@ -196,11 +196,11 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 partCv.y = (int)part->get(2).asDouble();
 
                                 //TODO make this better use for training tool
-                                if (tool_training)
+                                if (object_training)
                                 {
-                                    if (hand_with_tool=="right" && (partName =="RWrist" || partName =="Rwrist"))
+                                    if (hand_with_object=="right" && (partName =="RWrist" || partName =="Rwrist"))
                                         handCV = partCv;
-                                    else if (hand_with_tool=="left" && (partName =="LWrist" || partName =="Lwrist"))
+                                    else if (hand_with_object=="left" && (partName =="LWrist" || partName =="Lwrist"))
                                         handCV = partCv;
                                 }
 
@@ -690,7 +690,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     radius=rf.check("radius",Value(5.0)).asDouble();
-    hand_with_tool=rf.check("hand_with_tool",Value("right")).asString().c_str();
+    hand_with_object=rf.check("hand_with_object",Value("right")).asString().c_str();
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     hand_valence = body_valence;
@@ -760,16 +760,16 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     handBlobPort.open(("/"+name+"/handBlobs:o").c_str());
     rpcAskTool.open(("/"+name+"/askTool:rpc").c_str());
-    toolClassInPort.open(("/"+name+"/toolClass:i").c_str());
+    objectClassInPort.open(("/"+name+"/toolClass:i").c_str());
 
     handBlobPort_left.open(("/"+name+"/handBlobs_left:o").c_str());
-    toolClassInPort_left.open(("/"+name+"/toolClass_left:i").c_str());
+    objectClassInPort_left.open(("/"+name+"/toolClass_left:i").c_str());
 
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
-    tool_lastClock = clock();
+    object_lastClock = clock();
 
     segLMax = 0.35;
     segLMin = 0.20;
@@ -785,7 +785,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     string opcName=rf.check("opc",Value("OPC")).asString().c_str();
     opc = new OPCClient(name);
     dSince = 0.0;
-    tool_timer = 0.0;
+    object_timer = 0.0;
     while (!opc->connect(opcName))
     {
         yInfo()<<"Waiting connection to OPC...";
@@ -821,12 +821,12 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     cmdGui.addString("reset");
     portToGui.write(cmdGui);
 
-    toolLabelR="";      toolLabelL="";
-    hasToolR = false;   hasToolL = false;
+    objectLabelR="";      objectLabelL="";
+    hasObjectR = false;   hasObjectL = false;
 
-    counterToolL = 0; counterToolR = 0;
+    counterObjectL = 0; counterObjectR = 0;
     counterHand = 0, counterDrill = 0; counterPolisher = 0;
-    tool_training = false;
+    object_training = false;
     return true;
 }
 
@@ -847,8 +847,8 @@ bool    skeleton3D::interruptModule()
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
     handBlobPort.interrupt();
-    toolClassInPort.interrupt();
-    toolClassInPort_left.interrupt();
+    objectClassInPort.interrupt();
+    objectClassInPort_left.interrupt();
     handBlobPort_left.interrupt();          yDebug("check 12");
     rpcAskTool.interrupt();                 yDebug("check 13");
 
@@ -868,8 +868,8 @@ bool    skeleton3D::close()
     ppsOutPort.close();
     portToGui.close();
     handBlobPort.close();
-    toolClassInPort.close();
-    toolClassInPort_left.close();
+    objectClassInPort.close();
+    objectClassInPort_left.close();
     handBlobPort_left.close();
     rpcAskTool.close();
     opc->close();
@@ -970,53 +970,53 @@ bool    skeleton3D::updateModule()
     else
         yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
-    //Tool recognition
-    if (!tool_training)
+    //Object recognition
+    if (!object_training)
     {
-        tool_timer = (clock() - tool_lastClock) / (double)CLOCKS_PER_SEC;
+        object_timer = (clock() - object_lastClock) / (double)CLOCKS_PER_SEC;
 
-        hasToolR = toolRecognition("handRight", toolLabelR);
-        if (hasToolR)
-            hasToolL = false;
-        hasToolL = toolRecognition("handLeft", toolLabelL);
-        if (hasToolL)
-            hasToolR = false;
+        hasObjectR = objectRecognition("handRight", objectLabelR);
+        if (hasObjectR)
+            hasObjectL = false;
+        hasObjectL = objectRecognition("handLeft", objectLabelL);
+        if (hasObjectL)
+            hasObjectR = false;
 
-        if (toolLabelL=="drill" || toolLabelR=="drill") // drill is 2
+        if (objectLabelL=="drill" || objectLabelR=="drill") // drill is 2
         {
             counterDrill++;
         }
-        else if(toolLabelL=="polisher" || toolLabelR=="polisher") //polisher is 1
+        else if(objectLabelL=="polisher" || objectLabelR=="polisher") //polisher is 1
         {
             counterPolisher++;
         }
-        else if(toolLabelL=="hand" || toolLabelR=="hand") //hand is 0
+        else if(objectLabelL=="hand" || objectLabelR=="hand") //hand is 0
         {
             counterHand++;
         }
         else
         {
         }
-        yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
+        yDebug("Recognize object label is: right - %s, left - %s",objectLabelR.c_str(), objectLabelL.c_str());
     }
     else
     {
-        // Tool training
+        // Object training
         Vector blob(4,0.0);
-        bool hasToolBlob=false;
-        if (hand_with_tool=="right")
+        bool hasObjectBlob=false;
+        if (hand_with_object=="right")
         {
-            hasToolBlob = cropHandBlob("handRight", blob);
+            hasObjectBlob = cropHandBlob("handRight", blob);
         }
-        else if (hand_with_tool=="left")
+        else if (hand_with_object=="left")
         {
-            hasToolBlob = cropHandBlob("handLeft", blob);
+            hasObjectBlob = cropHandBlob("handLeft", blob);
         }
 
-        if (hasToolBlob)
+        if (hasObjectBlob)
         {
             // send to recognition pipeline: blob is in Vector of double
-            yDebug("tool recognition");
+            yDebug("object recognition");
             Bottle blobBottle;
             for (int8_t i=0; i<blob.size(); i++)
                 blobBottle.addDouble(blob[i]);
@@ -1027,55 +1027,56 @@ bool    skeleton3D::updateModule()
             handBlobPort.write();
 
             // read from /onTheFlyRecognition/human:io
-            string toolLabel="";
-            toolLabelL = "";    toolLabelR = "";
-            Bottle *toolClassIn = toolClassInPort.read(false);
-            if (toolClassIn!=NULL)
+            string objectLabel="";
+            objectLabelL = "";    objectLabelR = "";
+            Bottle *objectClassIn = objectClassInPort.read(false);
+            if (objectClassIn!=NULL)
             {
-                toolLabel = toolClassIn->get(0).asString();
+                objectLabel = objectClassIn->get(0).asString();
 //                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
-            }yDebug("Recognize tool label is: %s",toolLabel.c_str());
-            if (hand_with_tool=="right")
+            }
+            yDebug("Recognize object label is: %s",objectLabel.c_str());
+            if (hand_with_object=="right")
             {
-                toolLabelR = toolLabel;
-                if (toolLabel =="drill" || toolLabel == "polisher")
+                objectLabelR = objectLabel;
+                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
                 {
-                    hasToolR = true;
-                    hasToolL = false;
+                    hasObjectR = true;
+                    hasObjectL = false;
                 }
             }
-            else if (hand_with_tool=="left")
+            else if (hand_with_object=="left")
             {
-                toolLabelL = toolLabel;
-                if (toolLabel =="drill" || toolLabel == "polisher")
+                objectLabelL = objectLabel;
+                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
                 {
-                    hasToolL = true;
-                    hasToolR = false;
+                    hasObjectL = true;
+                    hasObjectR = false;
                 }
             }
         }
-        yDebug("Recognize tool label is: right - %s, left - %s",toolLabelR.c_str(), toolLabelL.c_str());
+        yDebug("Recognize object label is: right - %s, left - %s",objectLabelR.c_str(), objectLabelL.c_str());
     }
 
-    // tool in which hand
-    if (!hasToolL && !hasToolR)
+    // object in which hand
+    if (!hasObjectL && !hasObjectR)
     {
 //            yWarning("Empty hand!");
     }
-    else if (hasToolL && !hasToolR)
+    else if (hasObjectL && !hasObjectR)
     {
-        counterToolL++; // reduce identification fluctuation
+        counterObjectL++; // reduce identification fluctuation
     }
-    else if (!hasToolL && hasToolR)
+    else if (!hasObjectL && hasObjectR)
     {
-        counterToolR++; // reduce identification fluctuation
+        counterObjectR++; // reduce identification fluctuation
     }
 
-    if (tool_timer>=0.3)
+    if (object_timer>=0.3)
     {
-        tool_lastClock = clock();
-        counterToolL = 0;
-        counterToolR = 0;
+        object_lastClock = clock();
+        counterObjectL = 0;
+        counterObjectR = 0;
         counterHand = 0;
         counterDrill = 0;
         counterPolisher = 0;
@@ -1163,13 +1164,13 @@ bool    skeleton3D::askToolLabel(string &label)
         return false;
 }
 
-bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
+bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel)
 {
     Vector blob(4,0.0);
-    bool hasToolBlob=false;
-    hasToolBlob = cropHandBlob(hand.c_str(), blob);
+    bool hasObjectBlob=false;
+    hasObjectBlob = cropHandBlob(hand.c_str(), blob);
 
-    if (hasToolBlob)
+    if (hasObjectBlob)
     {
         // send to recognition pipeline: blob is in Vector of double
 //        yDebug("tool recognition");
@@ -1183,12 +1184,12 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             output.clear();
             output.addList()=blobBottle;
             handBlobPort.write();
-            Bottle *toolClassIn = toolClassInPort.read(false);
-            if (toolClassIn!=NULL)
+            Bottle *objectClassIn = objectClassInPort.read(false);
+            if (objectClassIn!=NULL)
             {
-                toolLabel = toolClassIn->get(0).asString();
-                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
-                if (toolLabel!="?" && toolLabel!="")
+                objectLabel = objectClassIn->get(0).asString();
+                yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
+                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
                     return true;
                 else
                     return false;
@@ -1202,12 +1203,12 @@ bool    skeleton3D::toolRecognition(const string &hand, string &toolLabel)
             output.clear();
             output.addList()=blobBottle;
             handBlobPort_left.write();
-            Bottle *toolClassIn = toolClassInPort_left.read(false);
-            if (toolClassIn!=NULL)
+            Bottle *objectClassIn = objectClassInPort_left.read(false);
+            if (objectClassIn!=NULL)
             {
-                toolLabel = toolClassIn->get(0).asString();
-                yDebug("Recognize tool label in %s is: %s",hand.c_str(), toolLabel.c_str());
-                if (toolLabel!="?" && toolLabel!="")
+                objectLabel = objectClassIn->get(0).asString();
+                yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
+                if (objectLabel!="?" && objectLabel!="")
                     return true;
                 else
                     return false;

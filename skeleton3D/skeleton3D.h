@@ -49,8 +49,8 @@ protected:
     yarp::os::Bottle        cmdGui;
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
-    BufferedPort<Bottle>    toolClassInPort;        //!< buffered port of input of received class of tool from onTheFlyRecoginition
-    BufferedPort<Bottle>    toolClassInPort_left;   //!< buffered port of input of received class of tool from onTheFlyRecoginition
+    BufferedPort<Bottle>    objectClassInPort;        //!< buffered port of input of received class of tool from onTheFlyRecoginition
+    BufferedPort<Bottle>    objectClassInPort_left;   //!< buffered port of input of received class of tool from onTheFlyRecoginition
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
     BufferedPort<Bottle>    handBlobPort;           //!< buffered port of output to send blob with @see hand_with_tool
@@ -89,17 +89,17 @@ protected:
 
     double                      segLMax, segLMin;   //!< threshold for arm constraint
     double                              radius;     //!< hand blob radius
-    string                              hand_with_tool;
+    string                              hand_with_object;
     CvPoint                             handCV, handCV_right, handCV_left;
     float                               tool_code[3];
-    double                              tool_timer;
-    unsigned long                       tool_lastClock;
-    string                              toolLabelR;
-    string                              toolLabelL;
-    bool                                hasToolR, hasToolL;
-    bool                                tool_training;
+    double                              object_timer;
+    unsigned long                       object_lastClock;
+    string                              objectLabelR;
+    string                              objectLabelL;
+    bool                                hasObjectR, hasObjectL;
+    bool                                object_training;
 
-    unsigned int                        counterToolL, counterToolR;
+    unsigned int                        counterObjectL, counterObjectR;
     unsigned int                        counterHand, counterDrill, counterPolisher;
     float                               sendData49;
 
@@ -197,7 +197,7 @@ protected:
     bool    cropHandBlob(const string &hand, Vector &blob);
     bool    askToolLabel(string &label);
 
-    bool    toolRecognition(const string &hand, string &toolLabel);
+    bool    objectRecognition(const string &hand, string &toolLabel);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -328,15 +328,15 @@ public:
 
     bool enable_tool_training(const string &hand)
     {
-        tool_training = true;
-        hand_with_tool = hand;
-        yInfo("hand_with_tool is %s",hand_with_tool.c_str());
+        object_training = true;
+        hand_with_object = hand;
+        yInfo("hand_with_tool is %s",hand_with_object.c_str());
         return true;
     }
 
     bool disable_tool_training()
     {
-        tool_training = false;
+        object_training = false;
         return true;
     }
 
