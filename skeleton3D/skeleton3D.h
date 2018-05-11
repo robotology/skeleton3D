@@ -180,6 +180,15 @@ protected:
      */
     bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
 
+    bool    constraintLink(const Vector &p1, const Vector &p2, Vector &result,
+                           const double &segLMin, const double &segLMax, const double &segLNormal);
+
+    void    constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts);
+
+    void    constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnts,
+                                  const string &partName1, const string &partName2,
+                                  const double &segLMin, const double &segLMax, const double &segLNormal);
+
     void    initShowBodySegGui(const string &segmentName, const string &color);
 
     void    updateBodySegGui(const vector<Vector> &segment, const string &segmentName);

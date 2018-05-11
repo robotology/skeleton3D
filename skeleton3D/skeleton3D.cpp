@@ -226,6 +226,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 
                 computeSpine(jnts);
                 extrapolateHand(jnts);
+                constraintBodyLinks(jnts);
 
                 // TODO: check if a new joint==0.0 in jnts, use the old value from player.skeleton
                 if (jnts.size()>=8)
@@ -469,6 +470,71 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     {
         result.resize(3,0.0);
         return false;
+    }
+}
+
+bool    skeleton3D::constraintLink(const Vector &p1, const Vector &p2, Vector &result,
+                                   const double &segLMin, const double &segLMax, const double &segLNormal)
+{
+    if (p1.size()==3 && p2.size()==3)
+    {
+        Vector dir(3,0.0);
+        dir = p2-p1;
+        double segL = norm(dir);
+        if (segL>=0.0001)
+        {
+            if (segL>=segLMax || segL<=segLMin)
+                segL = segLNormal;
+            result = p1 + dir*(segL)/norm(dir);
+        }
+        else
+            result = p1 + dir*(0.0001)/0.0001;
+        yDebug("constraintLink: result = %s",result.toString(3,3).c_str());
+        return true;
+    }
+    else
+    {
+        result.resize(3,0.0);
+        return false;
+    }
+}
+
+void    skeleton3D::constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts)
+{
+    if (!jnts.empty())
+    {
+        constraintOneBodyLink(jnts, "shoulderCenter", "shoulderLeft", 0.15, 0.3, 0.25);
+        constraintOneBodyLink(jnts, "shoulderLeft", "elbowLeft", 0.2, 0.35, 0.3);
+        constraintOneBodyLink(jnts, "shoulderCenter", "shoulderRight", 0.15, 0.3, 0.25);
+        constraintOneBodyLink(jnts, "shoulderRight", "elbowRight", 0.2, 0.35, 0.3);
+
+        constraintOneBodyLink(jnts, "shoulderLeft", "hipLeft", 0.45, 0.65, 0.55);
+        constraintOneBodyLink(jnts, "shoulderRight", "hipRight", 0.45, 0.65, 0.55);
+
+        constraintOneBodyLink(jnts, "hipLeft", "kneeLeft", 0.4, 0.55, 0.48);
+        constraintOneBodyLink(jnts, "hipRight", "kneeRight", 0.4, 0.55, 0.48);
+
+        constraintOneBodyLink(jnts, "kneeLeft", "ankleLeft", 0.4, 0.55, 0.48);
+        constraintOneBodyLink(jnts, "kneeRight", "ankleRight", 0.4, 0.55, 0.48);
+    }
+    else
+        yDebug("[%s] constraintBodyParts: no any body part", name.c_str());
+}
+
+void    skeleton3D::constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnts,
+                                          const string &partName1, const string &partName2,
+                                          const double &segLMin, const double &segLMax, const double &segLNormal)
+{
+    if (jnts.find(partName1.c_str())!=jnts.end() && jnts.find(partName2.c_str())!=jnts.end())
+    {
+        Vector p1(3,0.0), p2(3,0.0), p2_new(3,0.0);
+        p1 = joint2Vector(jnts.at(partName1.c_str()));
+        p2 = joint2Vector(jnts.at(partName2.c_str()));
+        if (constraintLink(p1, p2, p2_new, segLMin, segLMax, segLNormal))
+        {
+            assignJointByVec(jnts.at(partName2.c_str()), p2_new);
+        }
+
     }
 }
 
