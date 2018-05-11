@@ -38,6 +38,38 @@
         <node>icub22</node>
     </module>
 
+    <!-- Tool connection-->
+    <connection>
+        <from>/skeleton3D/askTool:rpc</from>
+        <to>/onTheFlyRecognition/human:io</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/onTheFlyRecognition/class:o</from>
+        <to>/skeleton3D/toolClass:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/onTheFlyRecognition_left/class:o</from>
+        <to>/skeleton3D/toolClass_left:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <!-- On the fly connection-->
+    <connection>
+        <from>/skeleton3D/handBlobs:o</from>
+        <to>/onTheFlyRecognition/blobs:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/skeleton3D/handBlobs_left:o</from>
+        <to>/onTheFlyRecognition_left/blobs:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
     <!--Skeleton modules-->
     <module>
         <name>yarpview</name>
