@@ -309,7 +309,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
     else
     {
-        yDebug("[%s] obtainBodyParts return empty",name.c_str());
+        yWarning("[%s] obtainBodyParts return empty",name.c_str());
         return false;
     }
 
