@@ -703,12 +703,12 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     draw_lower = rf.check("draw_lower",Value(0)).asBool();
 
-    workspaceX = rf.check("workspace_x",Value(2.1)).asDouble();
-    workspaceX_min = rf.check("workspace_x_min",Value(0.60)).asDouble();
+    workspaceX = rf.check("workspace_x",Value(0.1)).asDouble();
+    workspaceX_min = rf.check("workspace_x_min",Value(-1.2)).asDouble();
     yInfo("workspace_x_min = %f", workspaceX_min);
     workspaceY_max = rf.check("workspace_y_max",Value(0.5)).asDouble();
     yInfo("workspace_y_max = %f", workspaceY_max);
-    workspaceY = rf.check("workspace_y",Value(1.5)).asDouble();
+    workspaceY = rf.check("workspace_y",Value(1.0)).asDouble();
 
     if (use_fake_hand)
     {
