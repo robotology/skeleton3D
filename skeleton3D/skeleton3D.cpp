@@ -93,7 +93,7 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
                 tmp[1]=reply.get(i+1).asDouble();
                 tmp[2]=reply.get(i+2).asDouble();
 
-                if (norm(tmp)>0.0 & tmp[0]>0.0 & tmp[0]<=5.0)
+                if (norm(tmp)>0.0 & tmp[0]<0.0 & tmp[0]>=-5.0)
                 {
                     x+=tmp;
                     cnt++;
@@ -447,7 +447,7 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
 
 bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result)
 {
-    double handDim = 0.05;
+    double handDim = 0.1;
     if (p1.size()==3 && p2.size()==3)
     {
         Vector dir(3,0.0);
@@ -976,11 +976,7 @@ bool    skeleton3D::updateModule()
         object_timer = (clock() - object_lastClock) / (double)CLOCKS_PER_SEC;
 
         hasObjectR = objectRecognition("handRight", objectLabelR, blobR);
-        if (hasObjectR)
-            hasObjectL = false;
         hasObjectL = objectRecognition("handLeft", objectLabelL, blobL);
-        if (hasObjectL)
-            hasObjectR = false;
 
         if (objectLabelL=="drill" || objectLabelR=="drill") // drill is 2
         {
@@ -1234,7 +1230,7 @@ bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, V
             {
                 objectLabel = objectClassIn->get(0).asString();
                 yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
-                if (objectLabel!="?" && objectLabel!="")
+                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
                     return true;
                 else
                     return false;
