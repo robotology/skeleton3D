@@ -1244,10 +1244,16 @@ void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blo
         obj->m_present=1.0;
         obj->m_ego_position = objPos;
         obj->m_dimensions = part_dimension;
+
+        // TODO check this
+        if (norm(obj->getSelfRelativePosition(Vector(3,0.0)))>0.45)
+            obj->m_objectarea = ObjectArea::HUMAN;
+        else
+            obj->m_objectarea = ObjectArea::SHARED;
     }
     else
     {
-        obj->m_present=0.0;
+        obj->m_present=0.5;
     }
     opc->commit(obj);
 }
