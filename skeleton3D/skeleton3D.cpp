@@ -1206,6 +1206,7 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
     if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
     {
         Vector pose2d(2,0.0);
+        double d;
 //        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
 //        pose2d[0] = (double)jnt.u;
 //        pose2d[1] = (double)jnt.v;
@@ -1217,6 +1218,7 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
         {
             pose2d[0] = handCV_right.x;
             pose2d[1] = handCV_right.y;
+            d = player.skeleton.at(hand.c_str()).z;
         }
         else if (hand == "handLeft")
         {
@@ -1232,7 +1234,10 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
 
         blob[0] = pose2d[0];   //centroid.x
         blob[1] = pose2d[1];   //centroid.y
-        blob[2] = radius*radius;   //pixelCount
+
+        // TODO: change the radius according to the distance: radius = 30 works fine for 1m
+        double radius_t = radius + d*(50-radius)/(1-0.4);
+        blob[2] = radius_t*radius_t;   //pixelCount
 //        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
         return true;
     }
