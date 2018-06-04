@@ -404,7 +404,7 @@ void    skeleton3D::computeSpine(map<string, kinectWrapper::Joint> &jnts)
 {
     Vector hipR(3,0.0), hipL(3,0.0), head(3,0.0), spine(3,0.0);
     if (!jnts.empty() && jnts.find("hipRight")!=jnts.end() && jnts.find("hipLeft")!=jnts.end()
-            && jnts.find("head")!=jnts.end())
+            && jnts.find("shoulderCenter")!=jnts.end())
     {
         hipR[0] = jnts.at("hipRight").x;
         hipR[1] = jnts.at("hipRight").y;
@@ -1283,6 +1283,8 @@ void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blo
         obj->m_present=1.0;
         obj->m_ego_position = objPos;
         obj->m_dimensions = part_dimension;
+        obj->m_color=Vector(3,0.0);
+        obj->m_color[1]=255.0;
 
         // TODO check this
         if (norm(obj->getSelfRelativePosition(Vector(3,0.0)))>0.45)
