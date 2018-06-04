@@ -794,7 +794,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     yDebug("SFMrpc is %s", SFMrpc.c_str());
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
-    radius=rf.check("radius",Value(5.0)).asDouble();
+    radius=rf.check("radius",Value(30.0)).asDouble();
     hand_with_object=rf.check("hand_with_object",Value("right")).asString().c_str();
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
@@ -1103,7 +1103,7 @@ bool    skeleton3D::updateModule()
     else
     {
         // Object training
-        Vector blob(4,0.0);
+        Vector blob(3,0.0);
         bool hasObjectBlob=false;
         if (hand_with_object=="right")
         {
@@ -1225,10 +1225,14 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
         }
 
 //        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
-        blob[0] = pose2d[0] - radius;   //top-left.x
-        blob[1] = pose2d[1] - radius;   //top-left.y
-        blob[2] = pose2d[0] + radius;   //bottom-right.x
-        blob[3] = pose2d[1] + radius;   //bottom-right.y
+//        blob[0] = pose2d[0] - radius;   //top-left.x
+//        blob[1] = pose2d[1] - radius;   //top-left.y
+//        blob[2] = pose2d[0] + radius;   //bottom-right.x
+//        blob[3] = pose2d[1] + radius;   //bottom-right.y
+
+        blob[0] = pose2d[0];   //centroid.x
+        blob[1] = pose2d[1];   //centroid.y
+        blob[2] = radius*radius;   //pixelCount
 //        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
         return true;
     }
