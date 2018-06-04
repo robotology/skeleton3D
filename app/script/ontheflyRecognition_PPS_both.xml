@@ -12,7 +12,7 @@
           
     <module>
         <name>managerOnTheFly</name>    
-        <parameters>--radius_human 20</parameters>           
+        <parameters>--radius_human 30</parameters>           
         <node>icub22</node>
     </module>
 
@@ -30,7 +30,7 @@
 
     <module>
         <name>yarpview</name>
-        <parameters>--name /onTheFlyRecognition/view --x 300 --y 0 --w 700 --h 700</parameters>
+        <parameters>--name /onTheFlyRecognition/view --x 600 --y 0 --w 400 --h 400</parameters>
         <node>icub22</node>
     </module>
 
@@ -46,7 +46,7 @@
           
     <module>
         <name>managerOnTheFly</name>   
-	    <parameters>--name onTheFlyRecognition_left --radius_human 20</parameters>            
+	    <parameters>--name onTheFlyRecognition_left --radius_human 30</parameters>            
         <node>icub22</node>
     </module>
 
@@ -64,7 +64,7 @@
 
     <module>
         <name>yarpview</name>
-        <parameters>--name /onTheFlyRecognition_left/view --x 1000 --y  0 --w 700 --h 700</parameters>
+        <parameters>--name /onTheFlyRecognition_left/view --x 1000 --y  0 --w 400 --h 400</parameters>
         <node>icub22</node>
     </module>
 
