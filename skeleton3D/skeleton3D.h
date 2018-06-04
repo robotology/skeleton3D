@@ -115,6 +115,14 @@ protected:
     bool    get3DPosition(const CvPoint &point, Vector &x);
 
     /**
+     * @brief backproj2stereo
+     * @param x Vector for 3D point coordinate.
+     * @param point A CvPoint in left image frame
+     * @return True if can back project from 3D to stereo from SFM, False otherwise
+     */
+    bool    backproj2stereo(const Vector &x, CvPoint &point);
+
+    /**
      * @brief obtainBodyParts Get body parts position and confidence from Tensorflow-based skeleton2D module
      * @param partsCV Set of CvPoint(s) of body parts from skeleton2D module
      * @return True if can obtain the good value from skeleton2D module, False otherwise

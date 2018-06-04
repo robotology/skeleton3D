@@ -112,6 +112,37 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
     return (norm(x)>0.0);
 }
 
+bool    skeleton3D::backproj2stereo(const Vector &x, CvPoint &point)
+{
+    if (rpcGet3D.getOutputCount()>0)
+    {
+        // thanks to SFM we are here
+        // safe against borders checking
+        // command format: Rect tlx tly w h step
+        Bottle cmd,reply;
+        cmd.addString("cart2stereo");
+        cmd.addDouble(x[0]);
+        cmd.addDouble(x[1]);
+        cmd.addDouble(x[2]);
+
+        mutexResourcesSFM.lock();
+        rpcGet3D.write(cmd,reply);
+        mutexResourcesSFM.unlock();
+        int sz=reply.size();
+        if ((sz>0) && ((sz%4)==0))
+        {
+            point.x = reply.get(0).asDouble();
+            point.y = reply.get(1).asDouble();
+        }
+        else
+            return false;
+
+    }
+    else
+        return false;
+
+}
+
 bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
 {
     mutexResourcesSkeleton.lock();
@@ -434,12 +465,20 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
             jnts.at("handLeft").x = handL_new[0];
             jnts.at("handLeft").y = handL_new[1];
             jnts.at("handLeft").z = handL_new[2];
+
+            CvPoint temp;
+            if (backproj2stereo(handL_new,temp))
+                handCV_left = temp;
         }
         if (extrapolatePoint(elbowR,handR,handR_new))
         {
             jnts.at("handRight").x = handR_new[0];
             jnts.at("handRight").y = handR_new[1];
             jnts.at("handRight").z = handR_new[2];
+
+            CvPoint temp;
+            if (backproj2stereo(handR_new,temp))
+                handCV_right = temp;
         }
     }
     else
