@@ -1103,7 +1103,7 @@ bool    skeleton3D::updateModule()
     else
     {
         // Object training
-        Vector blob(3,0.0);
+        Vector blob(4,0.0);
         bool hasObjectBlob=false;
         if (hand_with_object=="right")
         {
@@ -1226,19 +1226,22 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
         }
 
         d = player.skeleton.at(hand.c_str()).z;
-
+        double radius_t = radius + d*(50-radius)/(1-0.3);
 //        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
-//        blob[0] = pose2d[0] - radius;   //top-left.x
-//        blob[1] = pose2d[1] - radius;   //top-left.y
-//        blob[2] = pose2d[0] + radius;   //bottom-right.x
-//        blob[3] = pose2d[1] + radius;   //bottom-right.y
 
-        blob[0] = pose2d[0];   //centroid.x
-        blob[1] = pose2d[1];   //centroid.y
+        // This will be sent to onTheFlyRecognition/roi:i
+        blob[0] = pose2d[0] - radius_t;   //top-left.x
+        blob[1] = pose2d[1] - radius_t;   //top-left.y
+        blob[2] = pose2d[0] + radius_t;   //bottom-right.x
+        blob[3] = pose2d[1] + radius_t;   //bottom-right.y
 
-        // TODO: change the radius according to the distance: radius = 30 works fine for 1m
-        double radius_t = radius + d*(50-radius)/(1-0.4);
-        blob[2] = radius_t*radius_t;   //pixelCount
+        // This will be sent to onTheFlyRecognition/blobs:i
+//        blob[0] = pose2d[0];   //centroid.x
+//        blob[1] = pose2d[1];   //centroid.y
+//        blob[2] = radius_t*radius_t;   //pixelCount
+
+
+
 //        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
         return true;
     }
