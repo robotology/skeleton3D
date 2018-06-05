@@ -160,9 +160,17 @@ protected:
      * @brief addPartToStream Accumulate a body part by name to streamed Bottle before sending it to PPS
      * @param a An icubclient Agent, which contains all OPC-related information, e.g skeleton, position, dimensions of parts, valence of parts
      * @param partName String value of the name of a part
-     * @param streamedObj A Yarp Bottle to store streamed body parts
+     * @param streamedObj A Yarp Bottle to store streamed body parts & objects
      */
     void    addPartToStream(Agent* a, const string &partName, Bottle &streamedObj);
+
+    /**
+     * @brief addObjectToStream Accumulate a body part by name to streamed Bottle before sending it to PPS
+     * @param o An icubclient Object, which contains all OPC-related information, e.g position, dimensions of parts, valence of parts
+     * @param objectName String value of the name of a object
+     * @param streamedObj A Yarp Bottle to store streamed body parts & objects
+     */
+    void    addObjectToStream(const string &objectName, Bottle &streamedObj);
 
     /**
      * @brief computeValence Compute the body part valence based on the identified confidence rate

@@ -391,6 +391,19 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     streamedObjs.addList()=part;
 }
 
+void    skeleton3D::addObjectToStream(const string &objectName, Bottle &streamedObj)
+{
+    Bottle part;
+    Object* obj = opc->addOrRetrieveEntity<Object>(objectName);
+    part.addDouble(obj->m_ego_position[0]); // X
+    part.addDouble(obj->m_ego_position[1]); // Y
+    part.addDouble(obj->m_ego_position[2]); // Z
+    part.addDouble(part_dimension/2.0);                     // RADIUS
+    part.addDouble(obj->m_value);
+
+    streamedObj.addList()=part;
+}
+
 double  skeleton3D::computeValence(const string &partName)
 {
     double conf = confJoints[partName.c_str()];
@@ -638,6 +651,11 @@ bool    skeleton3D::streamPartsToPPS()
 
         if (use_mid_arms)
             addMidArmsToStream(objects);
+
+        if (hasObjectL)
+            addObjectToStream(objectLabelL,objects);
+        if (hasObjectR)
+            addObjectToStream(objectLabelR,objects);
 
         Bottle& output=ppsOutPort.prepare();
         output.clear();
@@ -1070,10 +1088,7 @@ bool    skeleton3D::updateModule()
             opc->commit(partner);
         }
     }
-    if(streamPartsToPPS())
-        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
-    else
-        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
+
 
     //Object recognition
     if (!object_training)
@@ -1187,6 +1202,11 @@ bool    skeleton3D::updateModule()
         updateObjectOPC(objectLabelL,blobL);
     if (hasObjectR)
         updateObjectOPC(objectLabelR,blobR);
+
+    if(streamPartsToPPS())
+        yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
+    else
+        yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
     return true;
 }
@@ -1337,7 +1357,7 @@ bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, V
             {
                 objectLabel = objectClassIn->get(0).asString();
                 yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
-                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
+                if (objectLabel.c_str()!="?" && objectLabel.c_str()!="" && objectLabel.c_str()!="hand")
                     return true;
                 else
                     return false;
