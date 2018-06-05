@@ -60,13 +60,13 @@
     <!-- On the fly connection-->
     <connection>
         <from>/skeleton3D/handBlobs:o</from>
-        <to>/onTheFlyRecognition/blobs:i</to>
+        <to>/onTheFlyRecognition/roi:i</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
         <from>/skeleton3D/handBlobs_left:o</from>
-        <to>/onTheFlyRecognition_left/blobs:i</to>
+        <to>/onTheFlyRecognition_left/roi:i</to>
         <protocol>tcp</protocol>
     </connection>
 
