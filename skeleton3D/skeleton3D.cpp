@@ -1120,7 +1120,7 @@ bool    skeleton3D::updateModule()
             yDebug("object recognition");
             Bottle blobBottle;
             for (int8_t i=0; i<blob.size(); i++)
-                blobBottle.addDouble(blob[i]);
+                blobBottle.addInt((int)blob[i]);
 
             Bottle& output = handBlobPort.prepare();
             output.clear();
@@ -1218,13 +1218,14 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
         {
             pose2d[0] = handCV_right.x;
             pose2d[1] = handCV_right.y;
-            d = player.skeleton.at(hand.c_str()).z;
         }
         else if (hand == "handLeft")
         {
             pose2d[0] = handCV_left.x;
-            pose2d[1] = handCV_left.y;
+            pose2d[1] = handCV_left.y;            
         }
+
+        d = player.skeleton.at(hand.c_str()).z;
 
 //        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
 //        blob[0] = pose2d[0] - radius;   //top-left.x
