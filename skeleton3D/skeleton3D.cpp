@@ -1245,8 +1245,11 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
             pose2d[1] = handCV_left.y;            
         }
 
-        d = player.skeleton.at(hand.c_str()).z;
-        double radius_t = radius + d*(50-radius)/(1-0.3);
+        d = player.skeleton.at(hand.c_str()).x;
+//        double radius_t = radius + (fabs(d)-0.3)*(-45+radius)/(1.3-0.3);
+        double r_max = 50, d_radius=1.1;
+        double radius_t = r_max*(1.0-fabs(d)/(d_radius*radius/(r_max-radius)+d_radius));
+        yInfo("d = %f, fabs(d) = %f, radius_t = %f", d, fabs(d), radius_t);
 //        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
 
         // This will be sent to onTheFlyRecognition/roi:i
@@ -1357,10 +1360,10 @@ bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, V
             {
                 objectLabel = objectClassIn->get(0).asString();
                 yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
-                if (objectLabel.c_str()!="?" && objectLabel.c_str()!="" && objectLabel.c_str()!="hand")
-                    return true;
-                else
+                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
                     return false;
+                else
+                    return true;
             }
             else
                 return false;
@@ -1376,10 +1379,10 @@ bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, V
             {
                 objectLabel = objectClassIn->get(0).asString();
                 yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
-                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
-                    return true;
-                else
+                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
                     return false;
+                else
+                    return true;
             }
             else
                 return false;
