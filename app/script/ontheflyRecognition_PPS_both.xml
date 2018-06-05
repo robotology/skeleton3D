@@ -11,7 +11,7 @@
 
           
     <module>
-        <name>managerOnTheFly</name>    
+        <name>managerOTFR</name>    
         <parameters>--radius_human 30</parameters>           
         <node>icub22</node>
     </module>
@@ -45,7 +45,7 @@
 
           
     <module>
-        <name>managerOnTheFly</name>   
+        <name>managerOTFR</name>   
 	    <parameters>--name onTheFlyRecognition_left --radius_human 30</parameters>            
         <node>icub22</node>
     </module>
