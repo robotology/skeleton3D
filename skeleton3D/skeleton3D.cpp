@@ -1308,31 +1308,34 @@ bool    skeleton3D::askToolLabel(string &label)
 
 void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blob)
 {
-    Object *obj=opc->addOrRetrieveEntity<Object>(objectLabel);
-    // TODO: modify objectRecognition to obtain the blob also
-    CvPoint cogBlob;
-    cogBlob.x=(int)(blob[0]+blob[2])/2.0;
-    cogBlob.y=(int)(blob[1]+blob[3])/2.0;
-    Vector objPos(3,0.0);
-    if (get3DPosition(cogBlob,objPos))
+    if (objectLabel.compare("?")!=0 && objectLabel.compare("")!=0 && objectLabel.compare("hand")!=0)
     {
-        obj->m_present=1.0;
-        obj->m_ego_position = objPos;
-        obj->m_dimensions = part_dimension;
-        obj->m_color=Vector(3,0.0);
-        obj->m_color[1]=255.0;
+        Object *obj=opc->addOrRetrieveEntity<Object>(objectLabel);
+        // TODO: modify objectRecognition to obtain the blob also
+        CvPoint cogBlob;
+        cogBlob.x=(int)(blob[0]+blob[2])/2.0;
+        cogBlob.y=(int)(blob[1]+blob[3])/2.0;
+        Vector objPos(3,0.0);
+        if (get3DPosition(cogBlob,objPos))
+        {
+            obj->m_present=1.0;
+            obj->m_ego_position = objPos;
+            obj->m_dimensions = part_dimension;
+            obj->m_color=Vector(3,0.0);
+            obj->m_color[1]=255.0;
 
-        // TODO check this
-        if (norm(obj->getSelfRelativePosition(Vector(3,0.0)))>0.45)
-            obj->m_objectarea = ObjectArea::HUMAN;
+            // TODO check this
+            if (norm(obj->getSelfRelativePosition(Vector(3,0.0)))>0.45)
+                obj->m_objectarea = ObjectArea::HUMAN;
+            else
+                obj->m_objectarea = ObjectArea::SHARED;
+        }
         else
-            obj->m_objectarea = ObjectArea::SHARED;
+        {
+            obj->m_present=0.5;
+        }
+        opc->commit(obj);
     }
-    else
-    {
-        obj->m_present=0.5;
-    }
-    opc->commit(obj);
 }
 
 bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, Vector &blob)
@@ -1360,7 +1363,8 @@ bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, V
             {
                 objectLabel = objectClassIn->get(0).asString();
                 yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
-                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
+//                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
+                if (objectLabel.compare("?")==0 || objectLabel.compare("")==0 || objectLabel.compare("hand")==0)
                     return false;
                 else
                     return true;
@@ -1379,7 +1383,8 @@ bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, V
             {
                 objectLabel = objectClassIn->get(0).asString();
                 yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
-                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
+//                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
+                if (objectLabel.compare("?")==0 || objectLabel.compare("")==0 || objectLabel.compare("hand")==0)
                     return false;
                 else
                     return true;
