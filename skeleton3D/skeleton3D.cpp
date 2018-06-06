@@ -394,14 +394,30 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
 void    skeleton3D::addObjectToStream(const string &objectName, Bottle &streamedObj)
 {
     Bottle part;
-    Object* obj = opc->addOrRetrieveEntity<Object>(objectName);
-    part.addDouble(obj->m_ego_position[0]); // X
-    part.addDouble(obj->m_ego_position[1]); // Y
-    part.addDouble(obj->m_ego_position[2]); // Z
-    part.addDouble(part_dimension/2.0);                     // RADIUS
-    part.addDouble(obj->m_value);
+//    Object* obj = opc->addOrRetrieveEntity<Object>(objectName);
 
-    streamedObj.addList()=part;
+    Entity* e = opc->getEntity(objectName, true);
+    Object *obj;
+    if(e) {
+        obj = dynamic_cast<Object*>(e);
+    }
+    else {
+        yError() << objectName << " is not an Entity";
+    }
+    if(obj)
+    {
+        part.addDouble(obj->m_ego_position[0]); // X
+        part.addDouble(obj->m_ego_position[1]); // Y
+        part.addDouble(obj->m_ego_position[2]); // Z
+        part.addDouble(part_dimension/2.0);                     // RADIUS
+        part.addDouble(obj->m_value);
+
+        streamedObj.addList()=part;
+    }
+    else
+    {
+        yError() << "Could not cast" << e->name() << "to Object";
+    }
 }
 
 double  skeleton3D::computeValence(const string &partName)
