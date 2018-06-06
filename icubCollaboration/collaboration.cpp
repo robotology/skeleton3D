@@ -17,9 +17,14 @@ bool    collaboration::configure(ResourceFinder &rf)
     opc->checkout();
 
     // Port to react-Control
-    rpcReactCtrl.open(("/"+name+"/reactController/rpc").c_str());
-    std::string reactCtrlRPC = "/reactController/rpc";
+    rpcReactCtrl.open(("/"+name+"/reactController/rpc:o").c_str());
+    std::string reactCtrlRPC = "/reactController/rpc:i";
     connectedReactCtrl = yarp::os::Network::connect(rpcReactCtrl.getName().c_str(), reactCtrlRPC);
+    while (!connectedReactCtrl)
+    {
+        yInfo()<<"Waiting connection to reactController...";
+        Time::delay(1.0);
+    }
 
     // ARE
     rpcARE.open(("/"+name+"/ARE/cmd:io").c_str());
