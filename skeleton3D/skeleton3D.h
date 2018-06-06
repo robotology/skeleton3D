@@ -49,11 +49,17 @@ protected:
     yarp::os::Bottle        cmdGui;
 
     BufferedPort<Bottle>    bodyPartsInPort;        //!< buffered port of input of received body parts location in image
+    BufferedPort<Bottle>    objectClassInPort;        //!< buffered port of input of received class of tool from onTheFlyRecoginition
+    BufferedPort<Bottle>    objectClassInPort_left;   //!< buffered port of input of received class of tool from onTheFlyRecoginition
 
     BufferedPort<Bottle>    ppsOutPort;             //!< buffered port of output to send body parts as obstacles to PPS (visuoTactileWrapper)
+    BufferedPort<Bottle>    handBlobPort;           //!< buffered port of output to send blob with @see hand_with_tool
+    BufferedPort<Bottle>    handBlobPort_left;      //!< buffered port of output to send blob with @see hand_with_tool
+    RpcClient               rpcAskTool;             //!< rpc client port to send requests to /onTheFlyRecognition/human:io
 
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
+    Mutex                   mutexResourcesTool;
 
     bool                    connected3D;
     bool                    connectedPPS;
@@ -62,6 +68,10 @@ protected:
     icubclient::Agent*      partner;                //!< human as an agent object
     kinectWrapper::Player   player;
     map<string,double>      confJoints;             //!< confidence of identified skeleton
+    double                  partConfThres;          //!< threshold value of identified confidence
+    double                  workspaceX, workspaceY; //!< threshold value for 3D skeleton, ignore skeleton outside this range
+    double                  workspaceX_min;
+    double                  workspaceY_max;
 
     double                  dSince;                 //!< double value of timers
     unsigned long           dTimingLastApparition;  //!< time struct of the last appartition of an agent
@@ -78,10 +88,21 @@ protected:
     bool                        use_mid_arms;       //!< flag for calculation of midpoints in forearms
 
     double                      segLMax, segLMin;   //!< threshold for arm constraint
-//    std::unique_ptr<tensorflow::Session> session;   //!< Tensorflow session
+    double                              radius;     //!< hand blob radius
+    string                              hand_with_object;
+    CvPoint                             handCV, handCV_right, handCV_left;
+    float                               tool_code[3];
+    double                              object_timer;
+    unsigned long                       object_lastClock;
+    string                              objectLabelR;
+    string                              objectLabelL;
+    bool                                hasObjectR, hasObjectL;
+    Vector                              blobL, blobR;
+    bool                                object_training;
 
-//    vtMappingTF             *vtMapRight;
-
+    unsigned int                        counterObjectL, counterObjectR;
+    unsigned int                        counterHand, counterDrill, counterPolisher;
+    float                               sendData49;
 
     void    filt(map<string,kinectWrapper::Joint> &joints, map<string,kinectWrapper::Joint> &jointsFiltered);
 
@@ -92,6 +113,14 @@ protected:
      * @return True if can get 3D point from SFM, False otherwise
      */
     bool    get3DPosition(const CvPoint &point, Vector &x);
+
+    /**
+     * @brief backproj2stereo
+     * @param x Vector for 3D point coordinate.
+     * @param point A CvPoint in left image frame
+     * @return True if can back project from 3D to stereo from SFM, False otherwise
+     */
+    bool    backproj2stereo(const Vector &x, CvPoint &point);
 
     /**
      * @brief obtainBodyParts Get body parts position and confidence from Tensorflow-based skeleton2D module
@@ -131,9 +160,17 @@ protected:
      * @brief addPartToStream Accumulate a body part by name to streamed Bottle before sending it to PPS
      * @param a An icubclient Agent, which contains all OPC-related information, e.g skeleton, position, dimensions of parts, valence of parts
      * @param partName String value of the name of a part
-     * @param streamedObj A Yarp Bottle to store streamed body parts
+     * @param streamedObj A Yarp Bottle to store streamed body parts & objects
      */
     void    addPartToStream(Agent* a, const string &partName, Bottle &streamedObj);
+
+    /**
+     * @brief addObjectToStream Accumulate a body part by name to streamed Bottle before sending it to PPS
+     * @param o An icubclient Object, which contains all OPC-related information, e.g position, dimensions of parts, valence of parts
+     * @param objectName String value of the name of a object
+     * @param streamedObj A Yarp Bottle to store streamed body parts & objects
+     */
+    void    addObjectToStream(const string &objectName, Bottle &streamedObj);
 
     /**
      * @brief computeValence Compute the body part valence based on the identified confidence rate
@@ -159,6 +196,15 @@ protected:
      */
     bool    extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result);
 
+    bool    constraintLink(const Vector &p1, const Vector &p2, Vector &result,
+                           const double &segLMin, const double &segLMax, const double &segLNormal);
+
+    void    constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts);
+
+    void    constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnts,
+                                  const string &partName1, const string &partName2,
+                                  const double &segLMin, const double &segLMax, const double &segLNormal);
+
     void    initShowBodySegGui(const string &segmentName, const string &color);
 
     void    updateBodySegGui(const vector<Vector> &segment, const string &segmentName);
@@ -171,6 +217,14 @@ protected:
 
     void    addJointAndConf(map<string,kinectWrapper::Joint> &joints,
                             const Vector &pos, const string &partName);
+
+    Vector  joint2Vector(const kinectWrapper::Joint &joint);
+
+    bool    cropHandBlob(const string &hand, Vector &blob);
+    bool    askToolLabel(string &label);
+
+    void    updateObjectOPC(const string &objectLabel, const Vector &blob);
+    bool    objectRecognition(const string &hand, string &toolLabel, Vector &blob);
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -298,6 +352,80 @@ public:
         use_mid_arms = false;
         return true;
     }
+
+    bool enable_tool_training(const string &hand)
+    {
+        object_training = true;
+        hand_with_object = hand;
+        yInfo("hand_with_tool is %s",hand_with_object.c_str());
+        return true;
+    }
+
+    bool disable_tool_training()
+    {
+        object_training = false;
+        return true;
+    }
+
+    bool set_workspace_x(const double &workspace_x)
+    {
+        if (workspace_x>=0)
+        {
+            workspaceX = workspace_x;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_workspace_x()
+    {
+        return workspaceX;
+    }
+
+    bool set_workspace_x_min(const double workspace_x_min)
+    {
+        workspaceX_min = workspace_x_min;
+        return true;
+    }
+
+    double get_workspace_x_min()
+    {
+        return workspaceX_min;
+    }
+
+    bool set_workspace_y(const double workspace_y)
+    {
+        if (workspace_y>=0)
+        {
+            workspaceY = workspace_y;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_workspace_y()
+    {
+        return workspaceY;
+    }
+
+    bool set_workspace_y_max(const double workspace_y_max)
+    {
+        if (workspace_y_max>=0)
+        {
+            workspaceY_max = workspace_y_max;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_workspace_y_max()
+    {
+        return workspaceY_max;
+    }
+
 
     std::map<unsigned int, std::string> mapPartsOpenPose {
         {0,  "Nose"},

@@ -1,0 +1,201 @@
+
+<application>
+
+    <name>On The Fly PPS both pipelines</name>
+
+    <dependencies>
+
+    </dependencies>
+
+    <!-- Modules -->
+
+          
+    <module>
+        <name>managerOTFR</name>    
+        <parameters>--radius_human 30</parameters>           
+        <node>icub22</node>
+    </module>
+
+    <module>
+        <name>caffeCoder</name>
+        <parameters>--from caffeCoder_resnet.ini</parameters>
+        <node>icub-cuda</node>
+    </module>
+
+    <module>
+        <name>linearClassifierModule</name>
+        <parameters>--BufferSize 10 --CSVM 1.0 --databaseFolder OTFDatabase --WeightedSVM 1</parameters>
+        <node>icub-cuda</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /onTheFlyRecognition/view --x 600 --y 0 --w 400 --h 400</parameters>
+        <node>icub22</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /onTheFlyRecognition/confidence --x 700 --y 750</parameters>
+        <node>icub22</node>
+    </module>
+
+
+    <!-- Modules left side -->
+
+          
+    <module>
+        <name>managerOTFR</name>   
+	    <parameters>--name onTheFlyRecognition_left --radius_human 30</parameters>            
+        <node>icub22</node>
+    </module>
+
+    <module>
+        <name>caffeCoder</name>
+	    <parameters>--from caffeCoder_resnet.ini --name caffeCoder_left</parameters>
+        <node>icub-cuda</node>
+    </module>
+
+    <module>
+        <name>linearClassifierModule</name>
+	    <parameters>--name linearClassifier_left --BufferSize 10 --CSVM 1.0 --databaseFolder OTFDatabase --WeightedSVM 1</parameters>
+        <node>icub-cuda</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /onTheFlyRecognition_left/view --x 1000 --y  0 --w 400 --h 400</parameters>
+        <node>icub22</node>
+    </module>
+
+    <module>
+        <name>yarpview</name>
+        <parameters>--name /onTheFlyRecognition_left/confidence --x 1000 --y 750</parameters>
+        <node>icub22</node>
+    </module>
+
+    <!-- Connections -->
+
+    <connection>
+        <from>/icub/camcalib/left/out</from>
+        <to>/onTheFlyRecognition/img:i</to>
+        <protocol>fast_tcp</protocol>
+    </connection>
+
+
+    <!-- Coding -->
+
+    <connection>
+        <from>/skeleton3D/handBlobs:o</from>
+        <to>/onTheFlyRecognition/roi:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+
+
+    <connection>
+        <from>/onTheFlyRecognition/crop:o</from>
+        <to>/caffeCoder/img:i</to>
+        <protocol>fast_tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/caffeCoder/code:o</from>
+        <to>/linearClassifier/features:i</to>
+        <protocol>tcp</protocol>
+    </connection> 
+
+    <connection>
+        <from>/linearClassifier/scores:o</from>
+        <to>/onTheFlyRecognition/scores:i</to>
+        <protocol>tcp</protocol>
+    </connection> 
+
+    <!-- Manager -->
+
+    <connection>
+        <from>/onTheFlyRecognition/classifier:io</from>
+        <to>/linearClassifier/rpc</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+
+    <!-- Visualization -->
+
+    <connection>
+        <from>/onTheFlyRecognition/show:o</from>
+        <to>/onTheFlyRecognition/view</to>
+        <protocol>fast_tcp</protocol>
+    </connection>
+    
+    <connection>
+        <from>/onTheFlyRecognition/confidence:o</from>
+        <to>/onTheFlyRecognition/confidence</to>
+        <protocol>mcast</protocol>
+    </connection>
+
+    <!-- Connections left -->
+
+    <connection>
+        <from>/icub/camcalib/left/out</from>
+        <to>/onTheFlyRecognition_left/img:i</to>
+        <protocol>fast_tcp</protocol>
+    </connection>
+
+
+    <!-- Coding -->
+
+    <connection>
+        <from>/skeleton3D/handBlobs_left:o</from>
+        <to>/onTheFlyRecognition_left/roi:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+
+
+    <connection>
+        <from>/onTheFlyRecognition_left/crop:o</from>
+        <to>/caffeCoder_left/img:i</to>
+        <protocol>fast_tcp</protocol>
+    </connection>
+
+    <connection>
+        <from>/caffeCoder_left/code:o</from>
+        <to>/linearClassifier_left/features:i</to>
+        <protocol>tcp</protocol>
+    </connection> 
+
+    <connection>
+        <from>/linearClassifier_left/scores:o</from>
+        <to>/onTheFlyRecognition_left/scores:i</to>
+        <protocol>tcp</protocol>
+    </connection> 
+
+    <!-- Manager -->
+
+    <connection>
+        <from>/onTheFlyRecognition_left/classifier:io</from>
+        <to>/linearClassifier_left/rpc</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+
+    <!-- Visualization -->
+
+    <connection>
+        <from>/onTheFlyRecognition_left/show:o</from>
+        <to>/onTheFlyRecognition_left/view</to>
+        <protocol>fast_tcp</protocol>
+    </connection>
+    
+    <connection>
+        <from>/onTheFlyRecognition_left/confidence:o</from>
+        <to>/onTheFlyRecognition_left/confidence</to>
+        <protocol>mcast</protocol>
+    </connection>
+
+   
+</application>
+
+
+

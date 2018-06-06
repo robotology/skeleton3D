@@ -44,7 +44,8 @@ void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,ki
                 jntFilted.y = posFilted[1];
                 jntFilted.z = posFilted[2];
                 jointsFiltered.insert(std::pair<string,kinectWrapper::Joint>(partName.c_str(),jntFilted));
-                yDebug("[%s] filt: apply median filter for %s",name.c_str(), partName.c_str());
+//                yDebug("[%s] filt: apply median filter for %s",name.c_str(), partName.c_str());
+//                yDebug("[%s] filt: pose of %s is %s",name.c_str(), partName.c_str(), posFilted.toString(3,3).c_str());
             }
             else
             {
@@ -92,7 +93,7 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
                 tmp[1]=reply.get(i+1).asDouble();
                 tmp[2]=reply.get(i+2).asDouble();
 
-                if (norm(tmp)>0.0 & tmp[0]>0.0 & tmp[0]<=5.0)
+                if (norm(tmp)>0.0 & tmp[0]<0.0 & tmp[0]>=-5.0)
                 {
                     x+=tmp;
                     cnt++;
@@ -109,6 +110,37 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
     }
 
     return (norm(x)>0.0);
+}
+
+bool    skeleton3D::backproj2stereo(const Vector &x, CvPoint &point)
+{
+    if (rpcGet3D.getOutputCount()>0)
+    {
+        // thanks to SFM we are here
+        // safe against borders checking
+        // command format: Rect tlx tly w h step
+        Bottle cmd,reply;
+        cmd.addString("cart2stereo");
+        cmd.addDouble(x[0]);
+        cmd.addDouble(x[1]);
+        cmd.addDouble(x[2]);
+
+        mutexResourcesSFM.lock();
+        rpcGet3D.write(cmd,reply);
+        mutexResourcesSFM.unlock();
+        int sz=reply.size();
+        if ((sz>0) && ((sz%4)==0))
+        {
+            point.x = reply.get(0).asDouble();
+            point.y = reply.get(1).asDouble();
+        }
+        else
+            return false;
+
+    }
+    else
+        return false;
+
 }
 
 bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
@@ -128,9 +160,58 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 map<string,kinectWrapper::Joint> jnts;
                 map<string,kinectWrapper::Joint> jntsFiltered;
                 confJoints.clear();
+//                bool ignoreSkeleton = false;
                 if (Bottle *bodyParts=allBodyParts->get(0).asList())
                 {
-
+                    Bottle neck = bodyParts->findGroup("Neck");
+                    Bottle shR = bodyParts->findGroup("RShoulder");
+//                    yDebug("neck: %s",neck.toString().c_str());
+                    // first check to make make sure the skeleton is the one working with robot
+                    if (!neck.isNull())
+                    {
+                        CvPoint neckCv;
+                        Vector neck3D(3,0.0);
+                        neckCv.x = (int)neck.get(1).asDouble();
+                        neckCv.y = (int)neck.get(2).asDouble();
+                        if (get3DPosition(neckCv, neck3D))
+                        {
+                            yDebug("found neck. neck3D = %s!!!", neck3D.toString(3,3).c_str());
+                            if (neck3D[0]<workspaceX_min || neck3D[0]>=workspaceX || neck3D[1]>=workspaceY_max || neck3D[1]<=-workspaceY ||
+                                    (neck3D[0] == 0.0 && neck3D[1] == 0.0 && neck3D[2] == 0.0))
+                            {
+                                yWarning("ignore this skeleton!");
+                                goto endOneSkeleton;
+                            }
+                        }
+                        else
+                        {
+                            yWarning("ignore this skeleton!");
+                            goto endOneSkeleton;
+                        }
+                    }
+                    // double check
+                    if (!shR.isNull())
+                    {
+                        CvPoint shoulderCv;
+                        Vector shoulder3D(3,0.0);
+                        shoulderCv.x = (int)shR.get(1).asDouble();
+                        shoulderCv.y = (int)shR.get(2).asDouble();
+                        if (get3DPosition(shoulderCv, shoulder3D))
+                        {
+                            yDebug("found shoulder. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
+                            if (shoulder3D[0]<workspaceX_min ||shoulder3D[0]>=workspaceX || shoulder3D[1]>=workspaceY_max || shoulder3D[1]<=-workspaceY ||
+                                    (shoulder3D[0] == 0.0 && shoulder3D[1] == 0.0 && shoulder3D[2] == 0.0))
+                            {
+                                yWarning("ignore this skeleton!");
+                                goto endOneSkeleton;
+                            }
+                        }
+                        else
+                        {
+                            yWarning("ignore this skeleton!");
+                            goto endOneSkeleton;
+                        }
+                    }
                     for (int partId=0; partId<bodyParts->size();partId++)
                     {
                         if (partId<mapPartsKinect.size())
@@ -145,7 +226,21 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 partCv.x = (int)part->get(1).asDouble();
                                 partCv.y = (int)part->get(2).asDouble();
 
-                                if (partConf>=0.0001)
+                                //TODO make this better use for training tool
+                                if (object_training)
+                                {
+                                    if (hand_with_object=="right" && (partName =="RWrist" || partName =="Rwrist"))
+                                        handCV = partCv;
+                                    else if (hand_with_object=="left" && (partName =="LWrist" || partName =="Lwrist"))
+                                        handCV = partCv;
+                                }
+
+                                if (partName =="RWrist" || partName =="Rwrist")
+                                    handCV_right = partCv;
+                                else if (partName =="LWrist" || partName =="Lwrist")
+                                    handCV_left = partCv;
+
+                                if (partConf>=0.0001)// && partName =="Lshoulder")
                                 {
                                     partsCV.push_back(partCv);
                                     addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
@@ -155,13 +250,26 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                     yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
                             }
                         }
-                        else
-                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
+//                        else
+//                            yDebug("[%s] obtainBodyParts: don't deal with face parts!",name.c_str());
                     }
                 }
 
                 computeSpine(jnts);
                 extrapolateHand(jnts);
+                constraintBodyLinks(jnts);
+
+                // TODO: check if a new joint==0.0 in jnts, use the old value from player.skeleton
+                if (jnts.size()>=8)
+                    for (map<string,kinectWrapper::Joint>::iterator jnt = player.skeleton.begin(); jnt != player.skeleton.end(); jnt++)
+                    {
+                        if (jnts.find(jnt->first)==jnts.end())    // No specific joint in jnts (get3DPosition return empty)
+                        {
+                            kinectWrapper::Joint joint = jnt->second;
+                            jnts.insert(std::pair<string,kinectWrapper::Joint>(jnt->first,joint));
+                        }
+                    }
+
                 if (use_part_filter)
                 {
                     filt(jnts,jntsFiltered);    // Filt the obtain skeleton with Median Filter, tune by filterOrder. The noise is due to the SFM 3D estimation
@@ -171,12 +279,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                     player.skeleton = jnts;
 
                 ts.update();
+                endOneSkeleton: ;
             }
             else
             {
                 yDebug("[%s] obtainBodyParts wrong format",name.c_str());
                 return false;
             }
+
         }
     }
     else if (use_fake_hand)
@@ -231,7 +341,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
     }
     else
     {
-        yDebug("[%s] obtainBodyParts return empty",name.c_str());
+        yWarning("[%s] obtainBodyParts return empty",name.c_str());
         return false;
     }
 
@@ -245,6 +355,9 @@ void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
     if (get3DPosition(point,pos))
     {
         kinectWrapper::Joint joint;
+        joint.u = (int)point.x;
+        joint.v = (int)point.y;
+        yInfo("joint 2D: %d, %d",joint.u, joint.v);
         joint.x = pos[0];
         joint.y = pos[1];
         joint.z = pos[2];
@@ -278,6 +391,35 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     streamedObjs.addList()=part;
 }
 
+void    skeleton3D::addObjectToStream(const string &objectName, Bottle &streamedObj)
+{
+    Bottle part;
+//    Object* obj = opc->addOrRetrieveEntity<Object>(objectName);
+
+    Entity* e = opc->getEntity(objectName, true);
+    Object *obj;
+    if(e) {
+        obj = dynamic_cast<Object*>(e);
+    }
+    else {
+        yError() << objectName << " is not an Entity";
+    }
+    if(obj)
+    {
+        part.addDouble(obj->m_ego_position[0]); // X
+        part.addDouble(obj->m_ego_position[1]); // Y
+        part.addDouble(obj->m_ego_position[2]); // Z
+        part.addDouble(part_dimension/2.0);                     // RADIUS
+        part.addDouble(obj->m_value);
+
+        streamedObj.addList()=part;
+    }
+    else
+    {
+        yError() << "Could not cast" << e->name() << "to Object";
+    }
+}
+
 double  skeleton3D::computeValence(const string &partName)
 {
     double conf = confJoints[partName.c_str()];
@@ -291,7 +433,7 @@ void    skeleton3D::computeSpine(map<string, kinectWrapper::Joint> &jnts)
 {
     Vector hipR(3,0.0), hipL(3,0.0), head(3,0.0), spine(3,0.0);
     if (!jnts.empty() && jnts.find("hipRight")!=jnts.end() && jnts.find("hipLeft")!=jnts.end()
-            && jnts.find("head")!=jnts.end())
+            && jnts.find("shoulderCenter")!=jnts.end())
     {
         hipR[0] = jnts.at("hipRight").x;
         hipR[1] = jnts.at("hipRight").y;
@@ -352,12 +494,20 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
             jnts.at("handLeft").x = handL_new[0];
             jnts.at("handLeft").y = handL_new[1];
             jnts.at("handLeft").z = handL_new[2];
+
+            CvPoint temp;
+            if (backproj2stereo(handL_new,temp))
+                handCV_left = temp;
         }
         if (extrapolatePoint(elbowR,handR,handR_new))
         {
             jnts.at("handRight").x = handR_new[0];
             jnts.at("handRight").y = handR_new[1];
             jnts.at("handRight").z = handR_new[2];
+
+            CvPoint temp;
+            if (backproj2stereo(handR_new,temp))
+                handCV_right = temp;
         }
     }
     else
@@ -366,7 +516,7 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
 
 bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector &result)
 {
-    double handDim = 0.05;
+    double handDim = 0.1;
     if (p1.size()==3 && p2.size()==3)
     {
         Vector dir(3,0.0);
@@ -388,6 +538,71 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
     {
         result.resize(3,0.0);
         return false;
+    }
+}
+
+bool    skeleton3D::constraintLink(const Vector &p1, const Vector &p2, Vector &result,
+                                   const double &segLMin, const double &segLMax, const double &segLNormal)
+{
+    if (p1.size()==3 && p2.size()==3)
+    {
+        Vector dir(3,0.0);
+        dir = p2-p1;
+        double segL = norm(dir);
+        if (segL>=0.0001)
+        {
+            if (segL>=segLMax || segL<=segLMin)
+                segL = segLNormal;
+            result = p1 + dir*(segL)/norm(dir);
+        }
+        else
+            result = p1 + dir*(0.0001)/0.0001;
+        yDebug("constraintLink: result = %s",result.toString(3,3).c_str());
+        return true;
+    }
+    else
+    {
+        result.resize(3,0.0);
+        return false;
+    }
+}
+
+void    skeleton3D::constraintBodyLinks(map<string, kinectWrapper::Joint> &jnts)
+{
+    if (!jnts.empty())
+    {
+        constraintOneBodyLink(jnts, "shoulderCenter", "shoulderLeft", 0.15, 0.3, 0.25);
+        constraintOneBodyLink(jnts, "shoulderLeft", "elbowLeft", 0.2, 0.35, 0.3);
+        constraintOneBodyLink(jnts, "shoulderCenter", "shoulderRight", 0.15, 0.3, 0.25);
+        constraintOneBodyLink(jnts, "shoulderRight", "elbowRight", 0.2, 0.35, 0.3);
+
+        constraintOneBodyLink(jnts, "shoulderLeft", "hipLeft", 0.45, 0.65, 0.55);
+        constraintOneBodyLink(jnts, "shoulderRight", "hipRight", 0.45, 0.65, 0.55);
+
+        constraintOneBodyLink(jnts, "hipLeft", "kneeLeft", 0.4, 0.55, 0.48);
+        constraintOneBodyLink(jnts, "hipRight", "kneeRight", 0.4, 0.55, 0.48);
+
+        constraintOneBodyLink(jnts, "kneeLeft", "ankleLeft", 0.4, 0.55, 0.48);
+        constraintOneBodyLink(jnts, "kneeRight", "ankleRight", 0.4, 0.55, 0.48);
+    }
+    else
+        yDebug("[%s] constraintBodyParts: no any body part", name.c_str());
+}
+
+void    skeleton3D::constraintOneBodyLink(map<string, kinectWrapper::Joint> &jnts,
+                                          const string &partName1, const string &partName2,
+                                          const double &segLMin, const double &segLMax, const double &segLNormal)
+{
+    if (jnts.find(partName1.c_str())!=jnts.end() && jnts.find(partName2.c_str())!=jnts.end())
+    {
+        Vector p1(3,0.0), p2(3,0.0), p2_new(3,0.0);
+        p1 = joint2Vector(jnts.at(partName1.c_str()));
+        p2 = joint2Vector(jnts.at(partName2.c_str()));
+        if (constraintLink(p1, p2, p2_new, segLMin, segLMax, segLNormal))
+        {
+            assignJointByVec(jnts.at(partName2.c_str()), p2_new);
+        }
+
     }
 }
 
@@ -452,6 +667,11 @@ bool    skeleton3D::streamPartsToPPS()
 
         if (use_mid_arms)
             addMidArmsToStream(objects);
+
+        if (hasObjectL)
+            addObjectToStream(objectLabelL,objects);
+        if (hasObjectR)
+            addObjectToStream(objectLabelR,objects);
 
         Bottle& output=ppsOutPort.prepare();
         output.clear();
@@ -608,6 +828,9 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     yDebug("SFMrpc is %s", SFMrpc.c_str());
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
+    radius=rf.check("radius",Value(30.0)).asDouble();
+    hand_with_object=rf.check("hand_with_object",Value("right")).asString().c_str();
+
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     hand_valence = body_valence;
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
@@ -618,6 +841,13 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     use_mid_arms = rf.check("use_mid_arms",Value(0)).asBool();
 
     draw_lower = rf.check("draw_lower",Value(0)).asBool();
+
+    workspaceX = rf.check("workspace_x",Value(0.1)).asDouble();
+    workspaceX_min = rf.check("workspace_x_min",Value(-1.2)).asDouble();
+    yInfo("workspace_x_min = %f", workspaceX_min);
+    workspaceY_max = rf.check("workspace_y_max",Value(0.5)).asDouble();
+    yInfo("workspace_y_max = %f", workspaceY_max);
+    workspaceY = rf.check("workspace_y",Value(1.0)).asDouble();
 
     if (use_fake_hand)
     {
@@ -667,10 +897,18 @@ bool    skeleton3D::configure(ResourceFinder &rf)
         yInfo("[%s] Connected to %s port", name.c_str(), visuoTactileWrapper_inport.c_str());
 
 
+    handBlobPort.open(("/"+name+"/handBlobs:o").c_str());
+    rpcAskTool.open(("/"+name+"/askTool:rpc").c_str());
+    objectClassInPort.open(("/"+name+"/toolClass:i").c_str());
+
+    handBlobPort_left.open(("/"+name+"/handBlobs_left:o").c_str());
+    objectClassInPort_left.open(("/"+name+"/toolClass_left:i").c_str());
+
     dThresholdDisparition = rf.check("dThresholdDisparition",Value("3.0")).asDouble();
 
     // initialise timing in case of misrecognition
     dTimingLastApparition = clock();
+    object_lastClock = clock();
 
     segLMax = 0.35;
     segLMin = 0.20;
@@ -686,6 +924,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     string opcName=rf.check("opc",Value("OPC")).asString().c_str();
     opc = new OPCClient(name);
     dSince = 0.0;
+    object_timer = 0.0;
     while (!opc->connect(opcName))
     {
         yInfo()<<"Waiting connection to OPC...";
@@ -721,6 +960,12 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     cmdGui.addString("reset");
     portToGui.write(cmdGui);
 
+    objectLabelR="";      objectLabelL="";
+    hasObjectR = false;   hasObjectL = false;
+
+    counterObjectL = 0; counterObjectR = 0;
+    counterHand = 0, counterDrill = 0; counterPolisher = 0;
+    object_training = false;
     return true;
 }
 
@@ -729,17 +974,22 @@ bool    skeleton3D::interruptModule()
     yDebug("[%s] Interupt module",name.c_str());
 
     yDebug("[%s] Remove partner", name.c_str());
-    opc->checkout();                        yDebug("check 1");
-    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);    yDebug("check 2");
-    partner->m_present=0.0;                 yDebug("check 3");
-    opc->commit(partner);                   yDebug("check 4");
-    opc->removeEntity(partner->opc_id());   yDebug("check 5");
-    delete partner;                         yDebug("check 6");
-    opc->interrupt();                       yDebug("check 7");
+    opc->checkout();
+    partner = opc->addOrRetrieveEntity<Agent>(partner_default_name);
+    partner->m_present=0.0;
+    opc->commit(partner);
+    opc->removeEntity(partner->opc_id());
+    delete partner;
+    opc->interrupt();
     rpcPort.interrupt();
     rpcGet3D.interrupt();
     bodyPartsInPort.interrupt();
     ppsOutPort.interrupt();
+    handBlobPort.interrupt();
+    objectClassInPort.interrupt();
+    objectClassInPort_left.interrupt();
+    handBlobPort_left.interrupt();          yDebug("check 12");
+    rpcAskTool.interrupt();                 yDebug("check 13");
 
     deleteBodySegGui("upper");
     deleteBodySegGui("spine");
@@ -756,6 +1006,11 @@ bool    skeleton3D::close()
     bodyPartsInPort.close();
     ppsOutPort.close();
     portToGui.close();
+    handBlobPort.close();
+    objectClassInPort.close();
+    objectClassInPort_left.close();
+    handBlobPort_left.close();
+    rpcAskTool.close();
     opc->close();
     return true;
 }
@@ -777,21 +1032,6 @@ bool    skeleton3D::updateModule()
     // Obtain body part from a Tensorflow-based module
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
-
-    // test tensorflow-base calibrator (mapping)
-    Vector handPose(3,0.0), elbowPose(3,0.0);
-    handPose[0] = -0.13; handPose[1] = -0.15; handPose[2] = 0.15;
-    elbowPose[0] = -0.3; elbowPose[1] = -0.21; elbowPose[2] = 0.12;
-//    handPose[0] = -0.32063; handPose[1] = 0.050248; handPose[2] = 0.10134;
-//    elbowPose[0] = -0.66542; elbowPose[1] = 0.064199; elbowPose[2] = 0.052125;
-
-//    if (vtMapRight->setInput(handPose, elbowPose))
-//        if (vtMapRight->computeMapping())
-//        {
-//            vtMapRight->getOutput(handPose);
-//            yInfo("handPose after mapping: %s", handPose.toString(3,3).c_str());
-//        }
-
 
     // Get the 3D pose of CvPoint of body parts
     if (bodyPartsCv.size()>=0 && connected3D)
@@ -865,10 +1105,312 @@ bool    skeleton3D::updateModule()
         }
     }
 
+
+    //Object recognition
+    if (!object_training)
+    {
+        object_timer = (clock() - object_lastClock) / (double)CLOCKS_PER_SEC;
+
+        hasObjectR = objectRecognition("handRight", objectLabelR, blobR);
+        hasObjectL = objectRecognition("handLeft", objectLabelL, blobL);
+
+        if (objectLabelL=="drill" || objectLabelR=="drill") // drill is 2
+        {
+            counterDrill++;
+        }
+        else if(objectLabelL=="polisher" || objectLabelR=="polisher") //polisher is 1
+        {
+            counterPolisher++;
+        }
+        else if(objectLabelL=="hand" || objectLabelR=="hand") //hand is 0
+        {
+            counterHand++;
+        }
+        else
+        {
+        }
+        yDebug("Recognize object label is: right - %s, left - %s",objectLabelR.c_str(), objectLabelL.c_str());
+    }
+    else
+    {
+        // Object training
+        Vector blob(4,0.0);
+        bool hasObjectBlob=false;
+        if (hand_with_object=="right")
+        {
+            hasObjectBlob = cropHandBlob("handRight", blob);
+        }
+        else if (hand_with_object=="left")
+        {
+            hasObjectBlob = cropHandBlob("handLeft", blob);
+        }
+
+        if (hasObjectBlob)
+        {
+            // send to recognition pipeline: blob is in Vector of double
+            yDebug("object recognition");
+            Bottle blobBottle;
+            for (int8_t i=0; i<blob.size(); i++)
+                blobBottle.addInt((int)blob[i]);
+
+            Bottle& output = handBlobPort.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort.write();
+
+            // read from /onTheFlyRecognition/human:io
+            string objectLabel="";
+            objectLabelL = "";    objectLabelR = "";
+            Bottle *objectClassIn = objectClassInPort.read(false);
+            if (objectClassIn!=NULL)
+            {
+                objectLabel = objectClassIn->get(0).asString();
+//                    yDebug("Recognize tool label is: %s",toolLabel.c_str());
+            }
+            yDebug("Recognize object label is: %s",objectLabel.c_str());
+            if (hand_with_object=="right")
+            {
+                objectLabelR = objectLabel;
+                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
+                {
+                    hasObjectR = true;
+                    hasObjectL = false;
+                }
+            }
+            else if (hand_with_object=="left")
+            {
+                objectLabelL = objectLabel;
+                if (objectLabel!="?" && objectLabel!="" && objectLabel!="hand")
+                {
+                    hasObjectL = true;
+                    hasObjectR = false;
+                }
+            }
+        }
+        yDebug("Recognize object label is: right - %s, left - %s",objectLabelR.c_str(), objectLabelL.c_str());
+    }
+
+    // object in which hand
+    if (!hasObjectL && !hasObjectR)
+    {
+//            yWarning("Empty hand!");
+    }
+    else if (hasObjectL && !hasObjectR)
+    {
+        counterObjectL++; // reduce identification fluctuation
+    }
+    else if (!hasObjectL && hasObjectR)
+    {
+        counterObjectR++; // reduce identification fluctuation
+    }
+
+    if (object_timer>=0.3)
+    {
+        object_lastClock = clock();
+        counterObjectL = 0;
+        counterObjectR = 0;
+        counterHand = 0;
+        counterDrill = 0;
+        counterPolisher = 0;
+    }
+
+    if (hasObjectL)
+        updateObjectOPC(objectLabelL,blobL);
+    if (hasObjectR)
+        updateObjectOPC(objectLabelR,blobR);
+
     if(streamPartsToPPS())
         yInfo("[%s] Streamed body parts as objects to PPS",name.c_str());
     else
         yWarning("[%s] Cannot stream body parts as objects to PPS",name.c_str());
 
     return true;
+}
+
+Vector  skeleton3D::joint2Vector(const kinectWrapper::Joint &joint)
+{
+    Vector jnt(3,0.0);
+    jnt[0] = joint.x;
+    jnt[1] = joint.y;
+    jnt[2] = joint.z;
+
+    return jnt;
+}
+
+bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
+{
+    if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
+    {
+        Vector pose2d(2,0.0);
+        double d;
+//        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
+//        pose2d[0] = (double)jnt.u;
+//        pose2d[1] = (double)jnt.v;
+        // use for training tool
+//        pose2d[0] = handCV.x;
+//        pose2d[1] = handCV.y;
+
+        if (hand == "handRight")
+        {
+            pose2d[0] = handCV_right.x;
+            pose2d[1] = handCV_right.y;
+        }
+        else if (hand == "handLeft")
+        {
+            pose2d[0] = handCV_left.x;
+            pose2d[1] = handCV_left.y;            
+        }
+
+        d = player.skeleton.at(hand.c_str()).x;
+//        double radius_t = radius + (fabs(d)-0.3)*(-45+radius)/(1.3-0.3);
+        double r_max = 50, d_radius=1.1;
+        double radius_t = r_max*(1.0-fabs(d)/(d_radius*radius/(r_max-radius)+d_radius));
+        yInfo("d = %f, fabs(d) = %f, radius_t = %f", d, fabs(d), radius_t);
+//        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
+
+        // This will be sent to onTheFlyRecognition/roi:i
+        blob[0] = pose2d[0] - radius_t;   //top-left.x
+        blob[1] = pose2d[1] - radius_t;   //top-left.y
+        blob[2] = pose2d[0] + radius_t;   //bottom-right.x
+        blob[3] = pose2d[1] + radius_t;   //bottom-right.y
+
+        // This will be sent to onTheFlyRecognition/blobs:i
+//        blob[0] = pose2d[0];   //centroid.x
+//        blob[1] = pose2d[1];   //centroid.y
+//        blob[2] = radius_t*radius_t;   //pixelCount
+
+
+
+//        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
+        return true;
+    }
+    else
+        return false;
+
+}
+
+bool    skeleton3D::askToolLabel(string &label)
+{
+    yDebug("askToolLabel");
+    if (rpcAskTool.getOutputCount()>0)
+    {
+        Bottle cmd,reply;
+//        cmd.addString("what");
+        cmd.addVocab(Vocab::encode("what"));
+        yDebug("check 1");
+//        cmd.addInt(0);
+
+//        mutexResourcesTool.lock();
+        rpcAskTool.write(cmd,reply);
+//        mutexResourcesTool.unlock();
+
+        int sz=reply.size();
+        yDebug("check sz reply: %d",sz);
+        if (sz>0)
+        {
+            label = reply.get(0).asString();
+            yInfo("[%s] Tool is %s", name.c_str(), label.c_str());
+            return true;
+        }
+        else
+        {
+            yError("[%s] No tool recognize",name.c_str());
+            return false;
+        }
+    }
+    else
+        return false;
+}
+
+void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blob)
+{
+    if (objectLabel.compare("?")!=0 && objectLabel.compare("")!=0 && objectLabel.compare("hand")!=0)
+    {
+        Object *obj=opc->addOrRetrieveEntity<Object>(objectLabel);
+        // TODO: modify objectRecognition to obtain the blob also
+        CvPoint cogBlob;
+        cogBlob.x=(int)(blob[0]+blob[2])/2.0;
+        cogBlob.y=(int)(blob[1]+blob[3])/2.0;
+        Vector objPos(3,0.0);
+        if (get3DPosition(cogBlob,objPos))
+        {
+            obj->m_present=1.0;
+            obj->m_ego_position = objPos;
+            obj->m_dimensions = part_dimension;
+            obj->m_color=Vector(3,0.0);
+            obj->m_color[1]=255.0;
+
+            // TODO check this
+            if (norm(obj->getSelfRelativePosition(Vector(3,0.0)))>0.45)
+                obj->m_objectarea = ObjectArea::HUMAN;
+            else
+                obj->m_objectarea = ObjectArea::SHARED;
+        }
+        else
+        {
+            obj->m_present=0.5;
+        }
+        opc->commit(obj);
+    }
+}
+
+bool    skeleton3D::objectRecognition(const string &hand, string &objectLabel, Vector &blob)
+{
+    blob.resize(4,0.0);
+    bool hasObjectBlob=false;
+    hasObjectBlob = cropHandBlob(hand.c_str(), blob);
+
+    if (hasObjectBlob)
+    {
+        // send to recognition pipeline: blob is in Vector of double
+//        yDebug("tool recognition");
+        Bottle blobBottle;
+        for (int8_t i=0; i<blob.size(); i++)
+            blobBottle.addDouble(blob[i]);
+
+        if (hand=="handRight")
+        {
+            Bottle& output = handBlobPort.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort.write();
+            Bottle *objectClassIn = objectClassInPort.read(false);
+            if (objectClassIn!=NULL)
+            {
+                objectLabel = objectClassIn->get(0).asString();
+                yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
+//                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
+                if (objectLabel.compare("?")==0 || objectLabel.compare("")==0 || objectLabel.compare("hand")==0)
+                    return false;
+                else
+                    return true;
+            }
+            else
+                return false;
+        }
+        else if (hand=="handLeft")
+        {
+            Bottle& output = handBlobPort_left.prepare();
+            output.clear();
+            output.addList()=blobBottle;
+            handBlobPort_left.write();
+            Bottle *objectClassIn = objectClassInPort_left.read(false);
+            if (objectClassIn!=NULL)
+            {
+                objectLabel = objectClassIn->get(0).asString();
+                yDebug("Recognize object label in %s is: %s",hand.c_str(), objectLabel.c_str());
+//                if (objectLabel.c_str()=="?" || objectLabel.c_str()=="" || objectLabel.c_str()=="hand")
+                if (objectLabel.compare("?")==0 || objectLabel.compare("")==0 || objectLabel.compare("hand")==0)
+                    return false;
+                else
+                    return true;
+            }
+            else
+                return false;
+        }
+        else
+            return false;
+    }
+    else
+        return false;
 }
