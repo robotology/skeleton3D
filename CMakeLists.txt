@@ -44,6 +44,7 @@ add_subdirectory(app)
 add_subdirectory(yetAnotherAvoidance)
 #add_subdirectory(visuoTactileCalib)
 add_subdirectory(skeleton3D)
+add_subdirectory(icubCollaboration)
 
 #set (lib_files          ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h
 #                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp)
