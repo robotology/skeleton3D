@@ -2,7 +2,7 @@
 
 bool    collaboration::configure(ResourceFinder &rf)
 {
-    name=rf.check("name",Value("skeleton3D")).asString().c_str();
+    name=rf.check("name",Value("icubCollaboration")).asString().c_str();
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     // OPC client
