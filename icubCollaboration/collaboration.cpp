@@ -6,6 +6,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     // OPC client
+    partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
     string opcName=rf.check("opc",Value("OPC")).asString().c_str();
     opc = new OPCClient(name);
 
@@ -22,6 +23,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     connectedReactCtrl = yarp::os::Network::connect(rpcReactCtrl.getName().c_str(), reactCtrlRPC);
     while (!connectedReactCtrl)
     {
+        connectedReactCtrl = yarp::os::Network::connect(rpcReactCtrl.getName().c_str(), reactCtrlRPC);
         yInfo()<<"Waiting connection to reactController...";
         Time::delay(1.0);
     }
@@ -36,6 +38,18 @@ bool    collaboration::configure(ResourceFinder &rf)
     // rpc port
     rpcPort.open("/"+name+"/rpc");
     attach(rpcPort);
+
+    // home position for reactCtrl
+    homePosL.resize(3, 0.05);
+    homePosL[0] = -0.2;
+    homePosL[1] = -0.2;
+
+    homePosR.resize(3, 0.05);
+    homePosR[0] = -0.2;
+    homePosR[1] = +0.2;
+
+    basket.resize(3, 0.0);
+    // TODO set this
 
     return true;
 }
@@ -79,23 +93,177 @@ bool    collaboration::updateModule()
 bool    collaboration::moveReactPPS(const string &target, const string &arm)
 {
     // get object pos with name <-- target
+    Entity* e = opc->getEntity(target, true);
+    Object *o;
+    if(e) {
+        o = dynamic_cast<Object*>(e);
+    }
+    else {
+        yError() << target << " is not an Entity";
+        return false;
+    }
+    if(!o) {
+        yError() << "Could not cast" << e->name() << "to Object";
+        return false;
+    }
+
+    Vector offset(3,0.0);
+    offset[0] += 0.05; // 5cm closer to robot
+
+    return moveReactPPS(o->m_ego_position+offset, arm);
 }
 
 bool    collaboration::moveReactPPS(const Vector &pos, const string &arm)
 {
     // TODO: arm to decide which hand
 
-    Bottle cmd, bPos;
+    yDebug () << "ReactCtrl::set_xd start";
+    Bottle cmd, bPos, rep;
     cmd.addString("set_xd");
     for (int8_t i=0; i<pos.size(); i++)
         bPos.addDouble(pos[i]);
     cmd.addList() = bPos;
-    return rpcReactCtrl.write(cmd);
+
+    yDebug("Command sent to ReactCtrl: %s",cmd.toString().c_str());
+    if (rpcReactCtrl.write(cmd, rep))
+        return rep.get(0).asBool();
+    else
+        return false;
 }
 
 bool    collaboration::stopReactPPS()
 {
-    Bottle cmd;
+    yDebug () << "ReactCtrl::stop start";
+    Bottle cmd, rep;
     cmd.addString("stop");
-    return rpcReactCtrl.write(cmd);
+
+    yDebug("Command sent to ReactCtrl: %s",cmd.toString().c_str());
+    if (rpcReactCtrl.write(cmd, rep))
+        return rep.get(0).asBool();
+    else
+        return false;
+}
+
+bool    collaboration::takeARE(const string &target, const string &arm)
+{
+    // get object pos with name <-- target
+    yDebug() << "ARE::take start";
+
+    Entity* e = opc->getEntity(target, true);
+    Object *o;
+    if(e) {
+        o = dynamic_cast<Object*>(e);
+    }
+    else {
+        yError() << target << " is not an Entity";
+        return false;
+    }
+    if(!o) {
+        yError() << "Could not cast" << e->name() << "to Object";
+        return false;
+    }
+
+    // TODO: check if use takeARE of graspARE
+    return takeARE(o->m_ego_position, arm);
+}
+
+bool    collaboration::takeARE(const Vector &pos, const string &arm)
+{
+    Bottle cmd, target, rep;
+    bool ret = false;
+
+    cmd.addVocab(Vocab::encode("take"));
+    target.addString("cartesian");
+    for (int8_t i=0; i<pos.size(); i++)
+        target.addDouble(pos[i]);
+    cmd.addList() = target;
+    cmd.addString(arm.c_str());
+    cmd.addString("side");
+    cmd.addString("still");
+
+    yDebug("Command sent to ARE: %s",cmd.toString().c_str());
+
+    if (rpcARE.write(cmd, rep))
+        ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
+
+    yDebug() << "[takeARE] Reply from ARE: " << rep.toString();
+    return ret;
+}
+
+bool    collaboration::graspARE(const Vector &pos, const string &arm)
+{
+    Bottle cmd, target, rep;
+    bool ret = false;
+
+    cmd.addVocab(Vocab::encode("grasp"));
+    target.addString("cartesian");
+    for (int8_t i=0; i<pos.size(); i++)
+        target.addDouble(pos[i]);
+
+    Vector rpy(3,0.0);
+    rpy[1] = -25.0*M_PI/180.0;
+    Vector rot = dcm2axis(rpy2dcm(rpy));
+    for (int8_t i=0; i<rot.size(); i++)
+        target.addDouble(rot[i]);
+
+    cmd.addList() = target;
+    cmd.addString(arm.c_str());
+    cmd.addString("still");
+
+    yDebug("Command sent to ARE: %s",cmd.toString().c_str());
+    if (rpcARE.write(cmd, rep))
+        ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
+
+    yDebug() << "[graspARE] Reply from ARE: " << rep.toString();
+    return ret;
+
+}
+
+bool    collaboration::giveARE(const string &target, const string &arm)
+{
+    // target should be human empty hand :)
+    yDebug() << "ARE::give start";
+
+    Entity* e = opc->getEntity(partner_default_name, true);
+    Object *o;
+    Agent* a;
+    if(e) {
+        a = dynamic_cast<Agent*>(e);
+    }
+    else {
+        yError() << target << " is not an Entity";
+        return false;
+    }
+    if(!a) {
+        yError() << "Could not cast" << e->name() << "to Agent";
+        return false;
+    }
+    Vector pos = a->m_body.m_parts[target.c_str()];
+
+    Vector offset(3,0.0);
+    offset[0] += 0.05; // 5cm closer to robot
+    return giveARE(pos+offset, arm);
+}
+
+bool    collaboration::giveARE(const Vector &pos, const string &arm)
+{
+    Bottle cmd, target, rep;
+    bool ret = false;
+
+    cmd.addVocab(Vocab::encode("give"));
+    target.addString("cartesian");
+    for (int8_t i=0; i<pos.size(); i++)
+        target.addDouble(pos[i]);
+    cmd.addList() = target;
+    cmd.addString(arm.c_str());
+    cmd.addString("side");
+    cmd.addString("still");
+
+    yDebug("Command sent to ARE: %s",cmd.toString().c_str());
+
+    if (rpcARE.write(cmd, rep))
+        ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
+
+    yDebug() << "[takeARE] Reply from ARE: " << rep.toString();
+    return ret;
 }

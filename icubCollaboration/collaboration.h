@@ -19,6 +19,10 @@
 
 #include "collaboration_IDL.h"
 
+#define MODE_RECEIVE    1
+#define MODE_GIVE       2
+#define MODE_IDLE       0
+
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -33,11 +37,15 @@ protected:
     string      name;
 
     bool        connectedReactCtrl, connectedARE;
+    int8_t      running_mode;
 
     RpcServer   rpcPort;                            //!< rpc server to receive user request
     OPCClient   *opc;                               //!< OPC client object
     RpcClient   rpcReactCtrl;                       //!< rpc client port to send requests to /reactController/rpc
     RpcClient   rpcARE;                             //!< rpc client port to send requests to /actionsRenderingEngine/cmd:io
+    string      partner_default_name;
+
+    Vector      homePosL, homePosR, basket;
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -54,19 +62,46 @@ protected:
 
     bool    takeARE(const string &target, const string &arm);
 
+    bool    takeARE(const Vector &pos, const string &arm);
+
+    bool    graspARE(const Vector &pos, const string &arm);
+
     /**
      * @brief move move a robot arm with simple cartesian controller
      * @param pos Vector of 3D Cartesian position
      * @return True/False if completing action sucessfully or not
      */
-    bool    move(const Vector &pos);
+    bool    move(const Vector &pos, const string &arm);
 
     bool    giveARE(const string &target, const string &arm);
 
+    bool    giveARE(const Vector &pos, const string &arm);
+
 public:
+
+    /**
+     * @brief receive_object whole procedure to receive an object from human
+     * @param _object
+     * @return
+     */
     bool    receive_object(const string &_object)
     {
+        running_mode = MODE_RECEIVE;
+        string arm = "left";
+        Vector homePos(3,0.0);
+        if (arm=="left")
+            homePos = homePosL;
+        else if (arm=="right")
+            homePos = homePosR;
+        else
+            return false;
 
+        bool ok = moveReactPPS(_object, arm);
+        ok = ok && takeARE(_object, arm);
+        ok = ok && moveReactPPS(homePos, arm);
+//        ok = ok && move(basket, arm);
+        running_mode = MODE_IDLE;
+        return ok;
     }
 
     bool    move_pos_React(const Vector &_pos)
@@ -74,9 +109,52 @@ public:
         return moveReactPPS(_pos,"left");
     }
 
+    /**
+     * @brief hand_over_object whole procedure to give an object to human
+     * @param _object
+     * @return
+     */
     bool    hand_over_object(const string &_object)
     {
+        running_mode = MODE_GIVE;
+        string arm = "left";
+        Vector homePos(3,0.0);
+        if (arm=="left")
+            homePos = homePosL;
+        else if (arm=="right")
+            homePos = homePosR;
+        else
+            return false;
 
+        // TODO grasp on table
+        // ok = graspOnTable(_object, arm);
+
+        bool ok = moveReactPPS(_object, arm);   //move to near empty hand
+        ok = ok && giveARE(_object, arm);
+        ok = ok && moveReactPPS(homePos, arm);
+
+        running_mode = MODE_IDLE;
+        return ok;
+    }
+
+    bool    take_pos_ARE(const Vector &_pos, const string &_arm)
+    {
+        return takeARE(_pos,_arm);
+    }
+
+    bool    grasp_pos_ARE(const Vector &_pos, const string &_arm)
+    {
+        return graspARE(_pos, _arm);
+    }
+
+    bool    give_human_ARE(const string &_partH, const string &_armR)
+    {
+        return giveARE(_partH, _armR);
+    }
+
+    bool    stop_React()
+    {
+        return stopReactPPS();
     }
 };
 

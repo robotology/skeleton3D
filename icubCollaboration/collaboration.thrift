@@ -39,4 +39,34 @@ service collaboration_IDL
   * @return true/false on success/failure.
   */
   bool move_pos_React(1:Vector _pos);
+
+  /**
+  * Take target at a position, use to test connect with ARE.
+  * @param _pos Vector of position.
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool take_pos_ARE(1:Vector _pos, 2:string _arm);
+
+  /**
+  * Grasp target at a position, use to test connect with ARE.
+  * @param _pos Vector of position.
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool grasp_pos_ARE(1:Vector _pos, 2:string _arm);
+
+  /**
+  * Give object to a person, use to test connect with ARE.
+  * @param _partH name of human part in string.
+  * @param _armR left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool give_human_ARE(1:string _partH, 2:string _armR);
+
+  /**
+  * Stop motion with React
+  * @return true/false on success/failure.
+  */
+  bool stop_React();
 }
