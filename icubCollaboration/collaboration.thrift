@@ -49,6 +49,14 @@ service collaboration_IDL
   bool take_pos_ARE(1:Vector _pos, 2:string _arm);
 
   /**
+  * Drop target at a position, use to test connect with ARE.
+  * @param _pos Vector of position.
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool drop_pos_ARE(1:Vector _pos, 2:string _arm);
+
+  /**
   * Grasp target at a position, use to test connect with ARE.
   * @param _pos Vector of position.
   * @param _arm left/right arm in string

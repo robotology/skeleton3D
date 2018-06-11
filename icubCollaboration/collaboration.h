@@ -99,6 +99,8 @@ protected:
 
     bool    giveARE(const Vector &pos, const string &arm);
 
+    bool    dropARE(const Vector &pos, const string &arm);
+
     bool    checkPosReachable(const Vector &pos, const string &arm);
 
 public:
@@ -164,6 +166,11 @@ public:
     bool    take_pos_ARE(const Vector &_pos, const string &_arm)
     {
         return takeARE(_pos,_arm);
+    }
+
+    bool    drop_pos_ARE(const Vector &_pos, const string &_arm)
+    {
+        return dropARE(_pos,_arm);
     }
 
     bool    grasp_pos_ARE(const Vector &_pos, const string &_arm)

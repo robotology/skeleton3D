@@ -125,6 +125,7 @@ bool    collaboration::interruptModule()
 {
     yDebug("[%s] Interupt module",name.c_str());
 
+    homeARE();
     yDebug("[%s] Remove partner", name.c_str());
     opc->checkout();
     opc->interrupt();
@@ -388,6 +389,30 @@ bool    collaboration::giveARE(const Vector &pos, const string &arm)
         ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
 
     yDebug() << "[takeARE] Reply from ARE: " << rep.toString();
+    return ret;
+}
+
+bool    collaboration::dropARE(const Vector &pos, const string &arm)
+{
+    Bottle cmd, target, rep;
+    bool ret = false;
+
+    cmd.addVocab(Vocab::encode("drop"));
+    cmd.addString("over");
+    target.addString("cartesian");
+    for (int8_t i=0; i<pos.size(); i++)
+        target.addDouble(pos[i]);
+    cmd.addList() = target;
+    cmd.addString(arm.c_str());
+    cmd.addString("still");
+
+
+    yDebug("Command sent to ARE: %s",cmd.toString().c_str());
+
+    if (rpcARE.write(cmd, rep))
+        ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
+
+    yDebug() << "[dropARE] Reply from ARE: " << rep.toString();
     return ret;
 }
 
