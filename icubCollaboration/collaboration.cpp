@@ -8,8 +8,8 @@ bool    collaboration::configure(ResourceFinder &rf)
     // Workspace
     workspaceX=rf.check("workspaceX",Value(-0.4)).asDouble();
     workspaceY=rf.check("workspaceY",Value(0.25)).asDouble();
-    workspaceZ_low=rf.check("workspaceZ_low",Value(0.2)).asDouble();
-    workspaceZ_high=rf.check("workspaceZ_high",Value(-0.1)).asDouble();
+    workspaceZ_low=rf.check("workspaceZ_low",Value(-0.1)).asDouble();
+    workspaceZ_high=rf.check("workspaceZ_high",Value(0.2)).asDouble();
 
     // OPC client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
@@ -120,7 +120,10 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm)
     if (checkPosReachable(targetPos+offset, arm))
         return moveReactPPS(targetPos+offset, arm);
     else
+    {
+        yDebug("%s is unreachable", (targetPos+offset).toString(3,3).c_str());
         return false;
+    }
 }
 
 bool    collaboration::moveReactPPS(const Vector &pos, const string &arm)
@@ -197,7 +200,10 @@ bool    collaboration::takeARE(const string &target, const string &arm)
     if (checkPosReachable(targetPos, arm))
         return takeARE(targetPos, arm);
     else
+    {
+        yDebug("%s is unreachable", targetPos.toString(3,3).c_str());
         return false;
+    }
 }
 
 bool    collaboration::takeARE(const Vector &pos, const string &arm)
@@ -271,6 +277,8 @@ bool    collaboration::giveARE(const string &target, const string &arm)
         return false;
     }
     Vector pos = a->m_body.m_parts[target.c_str()];
+    yDebug("targetPos = %s",pos.toString(3,3).c_str());
+    yDebug("workspace x= %f, y=%f, z=[%f, %f]", workspaceX, workspaceY, workspaceZ_low, workspaceZ_high);
 
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
@@ -278,7 +286,10 @@ bool    collaboration::giveARE(const string &target, const string &arm)
     if (checkPosReachable(pos+offset, arm))
         return giveARE(pos+offset, arm);
     else
+    {
+        yDebug("%s is unreachable", (pos+offset).toString(3,3).c_str());
         return false;
+    }
 }
 
 bool    collaboration::giveARE(const Vector &pos, const string &arm)
@@ -306,12 +317,16 @@ bool    collaboration::giveARE(const Vector &pos, const string &arm)
 
 bool    collaboration::checkPosReachable(const Vector &pos, const string &arm)
 {
-    bool ok = pos[0] >= workspaceX; //workspaceX is negative
-    ok = ok && pos[2] <= workspaceZ_high && pos[2] >= workspaceZ_low;
+    bool ok = (pos[0] >= workspaceX); //workspaceX is negative
+    ok = ok && (pos[2] <= workspaceZ_high) && (pos[2] >= workspaceZ_low);
     if (arm=="left")
-        ok = ok && pos[1] >= -workspaceY;
+    {
+        ok = ok && (pos[1] >= -workspaceY);
+    }
     else if (arm=="right")
-        ok = ok && pos[1] <=  workspaceY;
+    {
+        ok = ok && (pos[1] <=  workspaceY);
+    }
     else
         return false;
     return ok;
