@@ -5,6 +5,12 @@ bool    collaboration::configure(ResourceFinder &rf)
     name=rf.check("name",Value("icubCollaboration")).asString().c_str();
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
+    // Workspace
+    workspaceX=rf.check("workspaceX",Value(-0.4)).asDouble();
+    workspaceY=rf.check("workspaceY",Value(0.25)).asDouble();
+    workspaceZ_low=rf.check("workspaceZ_low",Value(0.2)).asDouble();
+    workspaceZ_high=rf.check("workspaceZ_high",Value(-0.1)).asDouble();
+
     // OPC client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
     string opcName=rf.check("opc",Value("OPC")).asString().c_str();
@@ -110,7 +116,11 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm)
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
 
-    return moveReactPPS(o->m_ego_position+offset, arm);
+    Vector targetPos = o->m_ego_position;
+    if (checkPosReachable(targetPos+offset, arm))
+        return moveReactPPS(targetPos+offset, arm);
+    else
+        return false;
 }
 
 bool    collaboration::moveReactPPS(const Vector &pos, const string &arm)
@@ -129,6 +139,25 @@ bool    collaboration::moveReactPPS(const Vector &pos, const string &arm)
         return rep.get(0).asBool();
     else
         return false;
+}
+
+bool    collaboration::homeARE()
+{
+    yDebug() << "ARE::home start";
+
+    Bottle cmd, rep;
+    bool ret = false;
+
+    cmd.addVocab(Vocab::encode("home"));
+    cmd.addString("all");
+
+    yDebug("Command sent to ARE: %s",cmd.toString().c_str());
+
+    if (rpcARE.write(cmd, rep))
+        ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
+
+    yDebug() << "[homeARE] Reply from ARE: " << rep.toString();
+    return ret;
 }
 
 bool    collaboration::stopReactPPS()
@@ -163,8 +192,12 @@ bool    collaboration::takeARE(const string &target, const string &arm)
         return false;
     }
 
-    // TODO: check if use takeARE of graspARE
-    return takeARE(o->m_ego_position, arm);
+    Vector targetPos = o->m_ego_position;
+    // TODO: check if use takeARE or graspARE
+    if (checkPosReachable(targetPos, arm))
+        return takeARE(targetPos, arm);
+    else
+        return false;
 }
 
 bool    collaboration::takeARE(const Vector &pos, const string &arm)
@@ -266,4 +299,17 @@ bool    collaboration::giveARE(const Vector &pos, const string &arm)
 
     yDebug() << "[takeARE] Reply from ARE: " << rep.toString();
     return ret;
+}
+
+bool    collaboration::checkPosReachable(const Vector &pos, const string &arm)
+{
+    bool ok = pos[0] >= workspaceX; //workspaceX is negative
+    ok = ok && pos[2] <= workspaceZ_high && pos[2] >= workspaceZ_low;
+    if (arm=="left")
+        ok = ok && pos[1] >= -workspaceY;
+    else if (arm=="right")
+        ok = ok && pos[1] <=  workspaceY;
+    else
+        return false;
+    return ok;
 }

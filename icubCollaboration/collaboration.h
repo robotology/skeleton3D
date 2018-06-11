@@ -46,6 +46,7 @@ protected:
     string      partner_default_name;
 
     Vector      homePosL, homePosR, basket;
+    double      workspaceX, workspaceY, workspaceZ_low, workspaceZ_high;
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -57,6 +58,8 @@ protected:
     bool    moveReactPPS(const string &target, const string &arm);
 
     bool    moveReactPPS(const Vector &pos, const string &arm);
+
+    bool    homeARE();
 
     bool    stopReactPPS();
 
@@ -76,6 +79,8 @@ protected:
     bool    giveARE(const string &target, const string &arm);
 
     bool    giveARE(const Vector &pos, const string &arm);
+
+    bool    checkPosReachable(const Vector &pos, const string &arm);
 
 public:
 
@@ -155,6 +160,11 @@ public:
     bool    stop_React()
     {
         return stopReactPPS();
+    }
+
+    bool    home_ARE()
+    {
+        return homeARE();
     }
 };
 

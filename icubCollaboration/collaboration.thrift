@@ -69,4 +69,10 @@ service collaboration_IDL
   * @return true/false on success/failure.
   */
   bool stop_React();
+
+  /**
+  * Home ARE
+  * @return true/false on success/failure.
+  */
+  bool home_ARE();
 }
