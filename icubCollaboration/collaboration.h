@@ -92,7 +92,7 @@ public:
     bool    receive_object(const string &_object)
     {
         running_mode = MODE_RECEIVE;
-        string arm = "left";
+        string arm = "right";
         Vector homePos(3,0.0);
         if (arm=="left")
             homePos = homePosL;
@@ -122,7 +122,7 @@ public:
     bool    hand_over_object(const string &_object)
     {
         running_mode = MODE_GIVE;
-        string arm = "left";
+        string arm = "right";
         Vector homePos(3,0.0);
         if (arm=="left")
             homePos = homePosL;
