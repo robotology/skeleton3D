@@ -135,7 +135,7 @@ public:
         // ok = graspOnTable(_object, arm);
 
         bool ok = moveReactPPS(_object, arm);   //move to near empty hand
-        ok = ok && giveARE(_object, arm);
+        ok = ok && giveARE(_object, arm);       //give to empty hand
         ok = ok && moveReactPPS(homePos, arm);
 
         running_mode = MODE_IDLE;

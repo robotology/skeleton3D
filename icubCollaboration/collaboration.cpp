@@ -274,7 +274,11 @@ bool    collaboration::giveARE(const string &target, const string &arm)
 
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
-    return giveARE(pos+offset, arm);
+
+    if (checkPosReachable(pos+offset, arm))
+        return giveARE(pos+offset, arm);
+    else
+        return false;
 }
 
 bool    collaboration::giveARE(const Vector &pos, const string &arm)
