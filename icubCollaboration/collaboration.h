@@ -35,6 +35,7 @@ class collaboration : public RFModule, public collaboration_IDL
 protected:
     double      period;
     string      name;
+    string      robot;
 
     bool        connectedReactCtrl, connectedARE;
     int8_t      running_mode;
@@ -47,6 +48,24 @@ protected:
 
     Vector      homePosL, homePosR, basket;
     double      workspaceX, workspaceY, workspaceZ_low, workspaceZ_high;
+
+
+    // Interfaces for the torso
+    yarp::dev::PolyDriver           ddT;
+    yarp::dev::PolyDriver           ddG; // gaze  controller  driver
+    yarp::dev::IEncoders            *iencsT;
+    yarp::dev::IVelocityControl     *ivelT;
+    yarp::dev::IPositionControl     *iposT;
+    yarp::dev::IControlMode         *imodT;
+    yarp::dev::IControlLimits       *ilimT;
+    yarp::sig::Vector               *encsT;
+    int jntsT;
+
+    // Gaze interface
+    yarp::dev::IGazeControl         *igaze;
+    yarp::dev::IPositionControl     *iposG;
+    int contextGaze;
+    Vector                          homeAng;
 
     bool    configure(ResourceFinder &rf);
     bool    interruptModule();
@@ -165,6 +184,14 @@ public:
     bool    home_ARE()
     {
         return homeARE();
+    }
+
+    bool    move_torso(const Vector &_ang)
+    {
+        Vector ang = _ang;
+        for (int8_t i=0; i<3; i++)
+            imodT->setControlMode(i, VOCAB_CM_POSITION);
+        return iposT->positionMove(ang.data());
     }
 };
 

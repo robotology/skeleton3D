@@ -75,4 +75,11 @@ service collaboration_IDL
   * @return true/false on success/failure.
   */
   bool home_ARE();
+
+  /**
+  * move torso
+  * @param _ang Vector of angle.
+  * @return true/false on success/failure.
+  */
+  bool move_torso(1:Vector _ang);
 }

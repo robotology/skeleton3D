@@ -3,6 +3,7 @@
 bool    collaboration::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("icubCollaboration")).asString().c_str();
+    robot=rf.check("robot",Value("icub")).asString().c_str();
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     // Workspace
@@ -41,6 +42,66 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     // TODO: Cartesian Controller
 
+    yarp::os::Property OptT;
+    OptT.put("robot",  robot);
+    OptT.put("part",   "torso");
+    OptT.put("device", "remote_controlboard");
+    OptT.put("remote", "/"+robot+"/torso");
+    OptT.put("local",  "/"+name +"/torso");
+    if (!ddT.open(OptT))
+    {
+        yError("[reactCtrlThread]Could not open torso PolyDriver!");
+        return false;
+    }
+
+    bool okT = 1;
+
+    if (ddT.isValid())
+    {
+        okT = okT && ddT.view(iencsT);
+        okT = okT && ddT.view(ivelT);
+        okT = okT && ddT.view(iposT);
+        okT = okT && ddT.view(imodT);
+        okT = okT && ddT.view(ilimT);
+
+    }
+    iencsT->getAxes(&jntsT);
+    encsT = new yarp::sig::Vector(jntsT,0.0);
+
+    if (!okT)
+    {
+        yError("[reactCtrlThread]Problems acquiring torso interfaces!!!!");
+        return false;
+    }
+
+    Property OptGaze;
+    OptGaze.put("device","gazecontrollerclient");
+    OptGaze.put("remote","/iKinGazeCtrl");
+    OptGaze.put("local","/"+name+"/gaze");
+
+    if ((!ddG.open(OptGaze)) || (!ddG.view(igaze)))
+    {
+        yError(" could not open the Gaze Controller!");
+        return false;
+    }
+
+    igaze -> storeContext(&contextGaze);
+    igaze -> setSaccadesMode(false);
+    igaze -> setNeckTrajTime(0.75);
+    igaze -> setEyesTrajTime(0.5);
+
+    homeAng.resize(3,0.0);
+    homeAng[0]=+0.0;   // azimuth-relative component wrt the current configuration [deg]
+    homeAng[1]=-20.0;   // elevation-relative component wrt the current configuration [deg]
+    homeAng[2]=+0.0;   // vergence-relative component wrt the current configuration [deg]
+
+    igaze -> lookAtAbsAnglesSync(homeAng);
+    igaze -> waitMotionDone(0.1,5.0);
+
+    Vector curAng(3,0.0);
+    igaze->getAngles(curAng);
+    yDebug("current angle %s",curAng.toString(3,3).c_str());
+
     // rpc port
     rpcPort.open("/"+name+"/rpc");
     attach(rpcPort);
@@ -68,6 +129,8 @@ bool    collaboration::interruptModule()
     opc->checkout();
     opc->interrupt();
     rpcPort.interrupt();
+    rpcARE.interrupt();
+    rpcReactCtrl.interrupt();
 
     return true;
 }
@@ -77,6 +140,19 @@ bool    collaboration::close()
     yDebug("[%s] closing module",name.c_str());
     rpcPort.close();
     opc->close();
+    rpcARE.close();
+    rpcReactCtrl.close();
+
+    yInfo("Closing gaze controller..");
+    Vector ang(3,0.0);
+    igaze -> lookAtAbsAngles(ang);
+    igaze -> restoreContext(contextGaze);
+    igaze -> stopControl();
+    ddG.close();
+
+    delete encsT; encsT = NULL;
+    ddT.close();
+
     return true;
 }
 
