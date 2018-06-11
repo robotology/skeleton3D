@@ -258,7 +258,6 @@ bool    collaboration::giveARE(const string &target, const string &arm)
     yDebug() << "ARE::give start";
 
     Entity* e = opc->getEntity(partner_default_name, true);
-    Object *o;
     Agent* a;
     if(e) {
         a = dynamic_cast<Agent*>(e);
