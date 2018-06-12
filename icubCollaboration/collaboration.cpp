@@ -128,11 +128,11 @@ bool    collaboration::configure(ResourceFinder &rf)
     // home position for reactCtrl
     homePosL.resize(3, 0.05);
     homePosL[0] = -0.2;
-    homePosL[1] = -0.2;
+    homePosL[1] = -0.3;
 
     homePosR.resize(3, 0.05);
     homePosR[0] = -0.2;
-    homePosR[1] = +0.2;
+    homePosR[1] = +0.3;
 
     basket.resize(3, 0.0);
     // TODO set this
@@ -211,6 +211,10 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm, con
 
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
+    if (arm=="right")
+        offset[1] +=0.05;   //5cm on the right
+    else if (arm=="left")
+        offset[1] -=0.05;   //5cm on the left
 
     Vector targetPos = o->m_ego_position;
     if (checkPosReachable(targetPos+offset, arm))
@@ -253,6 +257,8 @@ bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const 
             yDebug("checktime %f",checkTime-start);
         }
     }
+    if (checkTime-start+1.0<=timeout)
+        Time::delay(1.0);
     stop_React();
 
     return (ok);
@@ -312,7 +318,8 @@ bool    collaboration::takeARE(const string &target, const string &arm)
     Vector targetPos = o->m_ego_position;
     // TODO: check if use takeARE or graspARE
     if (checkPosReachable(targetPos, arm))
-        return takeARE(targetPos, arm);
+//        return takeARE(targetPos, arm);
+        return graspARE(targetPos, arm);
     else
     {
         yDebug("%s is unreachable", targetPos.toString(3,3).c_str());
@@ -353,9 +360,22 @@ bool    collaboration::graspARE(const Vector &pos, const string &arm)
     for (int8_t i=0; i<pos.size(); i++)
         target.addDouble(pos[i]);
 
-    Vector rpy(3,0.0);
-    rpy[1] = -25.0*M_PI/180.0;
-    Vector rot = dcm2axis(rpy2dcm(rpy));
+//    Vector rpy(3,0.0);
+//    rpy[0] = 77.0*M_PI/180.0;
+//    rpy[0] = -4.0*M_PI/180.0;
+//    rpy[2] = 170.0*M_PI/180.0;
+//    Vector rot = dcm2axis(rpy2dcm(rpy));
+    Matrix R(3,3);
+    // pose x-axis y-axis z-axis: palm inward, pointing forward
+    R(0,0)=-1.0; R(0,1)= 0.0; R(0,2)= 0.0; // x-coordinate
+    R(1,0)= 0.0; R(1,1)= 0.0; R(1,2)=-1.0; // y-coordinate
+    R(2,0)= 0.0; R(2,1)=-1.0; R(2,2)= 0.0; // z-coordinate
+
+    if (arm=="left")
+        R(1,2) = 1.0;
+
+    Vector rot = dcm2axis(R);
+    yDebug("grasp rot=%s", rot.toString(3,3).c_str());
     for (int8_t i=0; i<rot.size(); i++)
         target.addDouble(rot[i]);
 

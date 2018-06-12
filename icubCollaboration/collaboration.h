@@ -132,6 +132,11 @@ public:
 
         bool ok = moveReactPPS(_object, arm);
         ok = ok && takeARE(_object, arm);
+
+        Time::delay(1.0);
+        igaze -> lookAtAbsAnglesSync(homeAng);
+        igaze -> waitMotionDone(0.1,5.0);
+
         ok = ok && moveReactPPS(homePos, arm);
 //        ok = ok && move(basket, arm);
         running_mode = MODE_IDLE;
