@@ -4,6 +4,12 @@ bool    collaboration::configure(ResourceFinder &rf)
 {
     name=rf.check("name",Value("icubCollaboration")).asString().c_str();
     robot=rf.check("robot",Value("icub")).asString().c_str();
+    part=rf.check("part",Value("right_arm")).asString().c_str();
+    posTol=rf.check("period",Value(0.001)).asDouble();
+    if (part == "right_arm")
+        _arm = "right";
+    else if (part == "left_arm")
+        _arm = "left";
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     // Workspace
@@ -74,6 +80,19 @@ bool    collaboration::configure(ResourceFinder &rf)
         return false;
     }
 
+    // Arm Cartesian Controller: for current pose checking
+    Property optArm("(device cartesiancontrollerclient)");
+    optArm.put("remote",("/"+robot+"/cartesianController/" + part).c_str());
+    optArm.put("local",("/"+name+"/cart_ctrl/"+ part).c_str());
+
+    if ((!ddA.open(optArm)) || (!ddA.view(icartA)))
+    {
+        yError(" could not open the Arm Controller!");
+        return false;
+    }
+    icartA -> storeContext(&contextArm);
+
+    // Gaze controller
     Property OptGaze;
     OptGaze.put("device","gazecontrollerclient");
     OptGaze.put("remote","/iKinGazeCtrl");
@@ -173,7 +192,7 @@ bool    collaboration::updateModule()
     return true;
 }
 
-bool    collaboration::moveReactPPS(const string &target, const string &arm)
+bool    collaboration::moveReactPPS(const string &target, const string &arm, const double &timeout)
 {
     // get object pos with name <-- target
     Entity* e = opc->getEntity(target, true);
@@ -195,7 +214,7 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm)
 
     Vector targetPos = o->m_ego_position;
     if (checkPosReachable(targetPos+offset, arm))
-        return moveReactPPS(targetPos+offset, arm);
+        return moveReactPPS(targetPos+offset, arm, timeout);
     else
     {
         yDebug("%s is unreachable", (targetPos+offset).toString(3,3).c_str());
@@ -203,11 +222,12 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm)
     }
 }
 
-bool    collaboration::moveReactPPS(const Vector &pos, const string &arm)
+bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const double &timeout)
 {
     // TODO: arm to decide which hand
+    bool ok=false, done=false, completed=false;
 
-    yDebug () << "ReactCtrl::set_xd start";
+    yDebug () << "ReactCtrl::set_xd start with " << arm.c_str();
     Bottle cmd, bPos, rep;
     cmd.addString("set_xd");
     for (int8_t i=0; i<pos.size(); i++)
@@ -216,9 +236,26 @@ bool    collaboration::moveReactPPS(const Vector &pos, const string &arm)
 
     yDebug("Command sent to ReactCtrl: %s",cmd.toString().c_str());
     if (rpcReactCtrl.write(cmd, rep))
-        return rep.get(0).asBool();
-    else
-        return false;
+        ok = rep.get(0).asBool();
+
+    double checkTime, start=Time::now();
+    while (ok && !done)
+    {
+        Vector x_cur(3,0.0), o_cur(4,0.0);
+        icartA->getPose(x_cur, o_cur);
+        Time::delay(period);
+        checkTime = Time::now();
+        completed = (norm(x_cur-pos)<=posTol);
+        done =  completed || ((checkTime-start)>=timeout);
+        if (done)
+        {
+            yDebug("xf= %s; x_cur= %s",pos.toString(3,3).c_str(),x_cur.toString(3,3).c_str());
+            yDebug("checktime %f",checkTime-start);
+        }
+    }
+    stop_React();
+
+    return (ok);
 }
 
 bool    collaboration::homeARE()

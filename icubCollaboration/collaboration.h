@@ -36,6 +36,9 @@ protected:
     double      period;
     string      name;
     string      robot;
+    string      part;
+    string      _arm;
+    double      posTol;
 
     bool        connectedReactCtrl, connectedARE;
     int8_t      running_mode;
@@ -53,6 +56,7 @@ protected:
     // Interfaces for the torso
     yarp::dev::PolyDriver           ddT;
     yarp::dev::PolyDriver           ddG; // gaze  controller  driver
+    yarp::dev::PolyDriver           ddA; // arm  controller  driver
     yarp::dev::IEncoders            *iencsT;
     yarp::dev::IVelocityControl     *ivelT;
     yarp::dev::IPositionControl     *iposT;
@@ -61,10 +65,14 @@ protected:
     yarp::sig::Vector               *encsT;
     int jntsT;
 
+    // Arm interface
+    yarp::dev::ICartesianControl    *icartA;
+    int                             contextArm;
+
     // Gaze interface
     yarp::dev::IGazeControl         *igaze;
     yarp::dev::IPositionControl     *iposG;
-    int contextGaze;
+    int                             contextGaze;
     Vector                          homeAng;
 
     bool    configure(ResourceFinder &rf);
@@ -74,9 +82,9 @@ protected:
     double  getPeriod();
     bool    updateModule();
 
-    bool    moveReactPPS(const string &target, const string &arm);
+    bool    moveReactPPS(const string &target, const string &arm, const double &timeout=10.);
 
-    bool    moveReactPPS(const Vector &pos, const string &arm);
+    bool    moveReactPPS(const Vector &pos, const string &arm, const double &timeout=10.);
 
     bool    homeARE();
 
@@ -113,7 +121,7 @@ public:
     bool    receive_object(const string &_object)
     {
         running_mode = MODE_RECEIVE;
-        string arm = "right";
+        string arm = _arm;
         Vector homePos(3,0.0);
         if (arm=="left")
             homePos = homePosL;
@@ -130,9 +138,9 @@ public:
         return ok;
     }
 
-    bool    move_pos_React(const Vector &_pos)
+    bool    move_pos_React(const Vector &_pos, const double _timeout)
     {
-        return moveReactPPS(_pos,"left");
+        return moveReactPPS(_pos,_arm, _timeout);
     }
 
     /**
@@ -143,7 +151,7 @@ public:
     bool    hand_over_object(const string &_object)
     {
         running_mode = MODE_GIVE;
-        string arm = "right";
+        string arm = _arm;
         Vector homePos(3,0.0);
         if (arm=="left")
             homePos = homePosL;
@@ -199,6 +207,23 @@ public:
         for (int8_t i=0; i<3; i++)
             imodT->setControlMode(i, VOCAB_CM_POSITION);
         return iposT->positionMove(ang.data());
+    }
+
+    bool    set_posTol(const double _tol)
+    {
+        if (_tol>0.0)
+        {
+            posTol = _tol;
+            return true;
+        }
+        else
+            return false;
+
+    }
+
+    double    get_posTol()
+    {
+        return posTol;
     }
 };
 

@@ -36,9 +36,10 @@ service collaboration_IDL
   /**
   * Move arm to a pos, use to test connect with ReactCtrl.
   * @param _pos Vector of position.
+  * @param _timeout double of timeout
   * @return true/false on success/failure.
   */
-  bool move_pos_React(1:Vector _pos);
+  bool move_pos_React(1:Vector _pos, 2:double _timeout);
 
   /**
   * Take target at a position, use to test connect with ARE.
@@ -90,4 +91,17 @@ service collaboration_IDL
   * @return true/false on success/failure.
   */
   bool move_torso(1:Vector _ang);
+
+  /**
+  * Set posTol
+  * @param _tol double value of tolerence for position, used with ReactCtrl
+  * @return true/false on success/failure.
+  */
+  bool set_posTol(1:double _tol);
+
+  /**
+  * Get posTol
+  * @return double value of posTol
+  */
+  double get_posTol();
 }
