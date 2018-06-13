@@ -64,52 +64,57 @@ void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,ki
 bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
 {
     x.resize(3,0.0);
-    if (rpcGet3D.getOutputCount()>0)
+    if (point.x>=0 && point.x<imgIn.width() && point.y>=0 && point.y<imgIn.height())
     {
-        // thanks to SFM we are here
-        // safe against borders checking
-        // command format: Rect tlx tly w h step
-        Bottle cmd,reply;
-        cmd.addString("Rect");
-        cmd.addInt(point.x-3);
-        cmd.addInt(point.y-3);
-        cmd.addInt(7);
-        cmd.addInt(7);
-        cmd.addInt(2);
-
-        mutexResourcesSFM.lock();
-        rpcGet3D.write(cmd,reply);
-        mutexResourcesSFM.unlock();
-
-        int sz=reply.size();
-        if ((sz>0) && ((sz%3)==0))
+        if (rpcGet3D.getOutputCount()>0)
         {
-            Vector tmp(3);
-            int cnt=0;
+            // thanks to SFM we are here
+            // safe against borders checking
+            // command format: Rect tlx tly w h step
+            Bottle cmd,reply;
+            cmd.addString("Rect");
+            cmd.addInt(point.x-3);
+            cmd.addInt(point.y-3);
+            cmd.addInt(7);
+            cmd.addInt(7);
+            cmd.addInt(2);
 
-            for (int i=0; i<sz; i+=3)
+            mutexResourcesSFM.lock();
+            rpcGet3D.write(cmd,reply);
+            mutexResourcesSFM.unlock();
+
+            int sz=reply.size();
+            if ((sz>0) && ((sz%3)==0))
             {
-                tmp[0]=reply.get(i+0).asDouble();
-                tmp[1]=reply.get(i+1).asDouble();
-                tmp[2]=reply.get(i+2).asDouble();
+                Vector tmp(3);
+                int cnt=0;
 
-                if (norm(tmp)>0.0 & tmp[0]<0.0 & tmp[0]>=-5.0)
+                for (int i=0; i<sz; i+=3)
                 {
-                    x+=tmp;
-                    cnt++;
+                    tmp[0]=reply.get(i+0).asDouble();
+                    tmp[1]=reply.get(i+1).asDouble();
+                    tmp[2]=reply.get(i+2).asDouble();
+
+                    if (norm(tmp)>0.0 & tmp[0]<0.0 & tmp[0]>=-5.0)
+                    {
+                        x+=tmp;
+                        cnt++;
+                    }
                 }
+
+                if (cnt>0)
+                    x/=cnt;
+                else
+                    yWarning("[%s] get3DPosition failed",name.c_str());
             }
-
-            if (cnt>0)
-                x/=cnt;
             else
-                yWarning("[%s] get3DPosition failed",name.c_str());
+                yError("[%s] SFM replied with wrong size",name.c_str());
         }
-        else
-            yError("[%s] SFM replied with wrong size",name.c_str());
-    }
 
-    return (norm(x)>0.0);
+        return (norm(x)>0.0);
+    }
+    else
+        return false;
 }
 
 bool    skeleton3D::backproj2stereo(const Vector &x, CvPoint &point)
@@ -1037,6 +1042,13 @@ double  skeleton3D::getPeriod()
 
 bool    skeleton3D::updateModule()
 {
+    if (connectedCam)
+    {
+        ImageOf<PixelBgr> *tmp = imgInPort.read(false);
+        if (tmp!=NULL)
+            imgIn = *tmp;
+    }
+
     deque<CvPoint> bodyPartsCv;
     // Obtain body part from a Tensorflow-based module
     bool tracked = false;
@@ -1223,12 +1235,6 @@ bool    skeleton3D::updateModule()
         counterPolisher = 0;
     }
 
-    if (connectedCam)
-    {
-        ImageOf<PixelBgr> *tmp = imgInPort.read(false);
-        if (tmp!=NULL)
-            imgIn = *tmp;
-    }
     if (hasObjectL)
         updateObjectOPC(objectLabelL,blobL);
     if (hasObjectR)
