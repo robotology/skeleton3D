@@ -111,7 +111,7 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     homeAng.resize(3,0.0);
     homeAng[0]=+0.0;   // azimuth-relative component wrt the current configuration [deg]
-    homeAng[1]=-20.0;   // elevation-relative component wrt the current configuration [deg]
+    homeAng[1]=-25.0;   // elevation-relative component wrt the current configuration [deg]
     homeAng[2]=+0.0;   // vergence-relative component wrt the current configuration [deg]
 
     igaze -> lookAtAbsAnglesSync(homeAng);

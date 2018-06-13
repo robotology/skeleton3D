@@ -104,4 +104,11 @@ service collaboration_IDL
   * @return double value of posTol
   */
   double get_posTol();
+
+  /**
+  * Set homeAng
+  * @param _angs Vector value of homeAng
+  * @return true/false on success/failure.
+  */
+  bool set_homeAng(1:Vector _angs);
 }

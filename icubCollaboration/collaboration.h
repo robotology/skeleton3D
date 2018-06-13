@@ -238,6 +238,17 @@ public:
     {
         return posTol;
     }
+
+    bool    set_homeAng(const Vector &_angs)
+    {
+        if (_angs.size()==3)
+        {
+            homeAng = _angs;
+            return true;
+        }
+        else
+            return false;
+    }
 };
 
 #endif // COLLABORATION_H
