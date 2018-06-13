@@ -14,9 +14,9 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     // Workspace
     workspaceX=rf.check("workspaceX",Value(-0.4)).asDouble();
-    workspaceY=rf.check("workspaceY",Value(0.25)).asDouble();
+    workspaceY=rf.check("workspaceY",Value(0.3)).asDouble();
     workspaceZ_low=rf.check("workspaceZ_low",Value(-0.1)).asDouble();
-    workspaceZ_high=rf.check("workspaceZ_high",Value(0.2)).asDouble();
+    workspaceZ_high=rf.check("workspaceZ_high",Value(0.35)).asDouble();
 
     // OPC client
     partner_default_name=rf.check("partner_default_name",Value("partner")).asString().c_str();
@@ -135,6 +135,9 @@ bool    collaboration::configure(ResourceFinder &rf)
     homePosR[1] = +0.3;
 
     basket.resize(3, 0.0);
+    basket[0] = 0.2;
+    basket[1] = 0.4;
+    basket[2] = 0.05;
     // TODO set this
 
     return true;
@@ -411,8 +414,6 @@ bool    collaboration::giveARE(const string &target, const string &arm)
         return false;
     }
     Vector pos = a->m_body.m_parts[target.c_str()];
-    yDebug("targetPos = %s",pos.toString(3,3).c_str());
-    yDebug("workspace x= %f, y=%f, z=[%f, %f]", workspaceX, workspaceY, workspaceZ_low, workspaceZ_high);
 
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
@@ -479,13 +480,22 @@ bool    collaboration::checkPosReachable(const Vector &pos, const string &arm)
     ok = ok && (pos[2] <= workspaceZ_high) && (pos[2] >= workspaceZ_low);
     if (arm=="left")
     {
-        ok = ok && (pos[1] >= -workspaceY);
+        ok = ok && (pos[1] >= -workspaceY) && (pos[1] <=  0.5*workspaceY);
     }
     else if (arm=="right")
     {
-        ok = ok && (pos[1] <=  workspaceY);
+        ok = ok && (pos[1] >= -0.5*workspaceY) && (pos[1] <=  workspaceY);
     }
     else
         return false;
+    yDebug("targetPos = %s",pos.toString(3,3).c_str());
+    yDebug("workspace x= %f, y=%f, z=[%f, %f]", workspaceX, workspaceY, workspaceZ_low, workspaceZ_high);
     return ok;
+}
+
+bool    collaboration::lookAtHome(const Vector &ang, const double &timeout)
+{
+    igaze -> restoreContext(contextGaze);
+    igaze -> lookAtAbsAnglesSync(ang);
+    igaze -> waitMotionDone(0.1,timeout);
 }

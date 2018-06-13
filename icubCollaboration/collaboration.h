@@ -111,6 +111,8 @@ protected:
 
     bool    checkPosReachable(const Vector &pos, const string &arm);
 
+    bool    lookAtHome(const Vector &ang, const double &timeout);
+
 public:
 
     /**
@@ -133,12 +135,18 @@ public:
         bool ok = moveReactPPS(_object, arm);
         ok = ok && takeARE(_object, arm);
 
-        Time::delay(1.0);
-        igaze -> lookAtAbsAnglesSync(homeAng);
-        igaze -> waitMotionDone(0.1,5.0);
+        Time::delay(0.5);
+        lookAtHome(homeAng,5.0);
 
         ok = ok && moveReactPPS(homePos, arm);
-//        ok = ok && move(basket, arm);
+        lookAtHome(homeAng,5.0);
+
+        ok = ok && dropARE(basket, arm);
+
+        Time::delay(0.5);
+        ok = ok && home_ARE();
+
+        lookAtHome(homeAng,5.0);
         running_mode = MODE_IDLE;
         return ok;
     }
