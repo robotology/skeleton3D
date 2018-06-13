@@ -870,6 +870,15 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     filterOrder = rf.check("filter_order", Value(1)).asInt();
 
+    // Connect to /icub/camcalib/left/out
+    imgInPort.open(("/"+name+"/cam/left:i").c_str());
+    std::string camPortIn = "/icub/camcalib/left/out";
+    connectedCam = yarp::os::Network::connect(camPortIn,imgInPort.getName().c_str(),"fast_tcp");
+    if (!connectedCam)
+        yError("[%s] Unable to connect to cam port", name.c_str());
+    else
+        yInfo("[%s] Connected to cam port", name.c_str());
+
     // Connect to /SFM/rpc to obtain 3D estimation
     rpcGet3D.open(("/"+name+"/get3d:rpc").c_str());
 //    std::string SFMrpc = "/SFM/rpc";
@@ -1214,6 +1223,12 @@ bool    skeleton3D::updateModule()
         counterPolisher = 0;
     }
 
+    if (connectedCam)
+    {
+        ImageOf<PixelBgr> *tmp = imgInPort.read(false);
+        if (tmp!=NULL)
+            imgIn = *tmp;
+    }
     if (hasObjectL)
         updateObjectOPC(objectLabelL,blobL);
     if (hasObjectR)
@@ -1324,6 +1339,35 @@ bool    skeleton3D::askToolLabel(string &label)
 
 void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blob)
 {
+    yDebug("updateObjectOPC");
+    ImageOf<PixelBgr> imgTmp;
+    bool    hasCropImg = false;
+
+    // Copy image and crop it
+    if (connectedCam)
+    {
+        ImageOf<PixelBgr> imgPro = imgIn;
+        CvPoint tl,br;
+        tl.x=(int)blob[0];
+        tl.y=(int)blob[1];
+        br.x=(int)blob[2];
+        br.y=(int)blob[3];
+
+        tl.x=std::min((int)imgPro.width(),std::max(tl.x,0));
+        tl.y=std::min((int)imgPro.height(),std::max(tl.y,0));
+        br.x=std::min((int)imgPro.width(),std::max(br.x,0));
+        br.y=std::min((int)imgPro.height(),std::max(br.y,0));
+        yDebug ("blob = [%d, %d, %d, %d]",tl.x,tl.y,br.x,br.y);
+        CvRect bbox=cvRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+        if ((tl.x!=br.x) && (tl.y!=br.y))
+        {
+            imgTmp.resize(bbox.width, bbox.height);
+            cvSetImageROI((IplImage*)imgPro.getIplImage(),bbox);
+            cvCopy(imgPro.getIplImage(),imgTmp.getIplImage());
+            cvResetImageROI((IplImage*)imgPro.getIplImage());
+            hasCropImg = true;
+        }
+    }
     if (objectLabel.compare("?")!=0 && objectLabel.compare("")!=0 && objectLabel.compare("hand")!=0)
     {
         Object *obj=opc->addOrRetrieveEntity<Object>(objectLabel);
@@ -1337,8 +1381,17 @@ void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blo
             obj->m_present=1.0;
             obj->m_ego_position = objPos;
             obj->m_dimensions = part_dimension;
-            obj->m_color=Vector(3,0.0);
-            obj->m_color[1]=255.0;
+
+            // Extract mean color of blob for object color
+            if (connectedCam && hasCropImg)
+            {
+                // now get mean color of blob, and fill the OPC object with the information
+                // be careful: computation done in BGR => save in RGB for displaying purpose
+                CvScalar meanColor=cvAvg(imgTmp.getIplImage());
+                obj->m_color[0]=(int)meanColor.val[2];
+                obj->m_color[1]=(int)meanColor.val[1];
+                obj->m_color[2]=(int)meanColor.val[0];
+            }
 
             // TODO check this
             if (norm(obj->getSelfRelativePosition(Vector(3,0.0)))>0.45)

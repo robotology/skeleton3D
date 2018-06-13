@@ -57,6 +57,10 @@ protected:
     BufferedPort<Bottle>    handBlobPort_left;      //!< buffered port of output to send blob with @see hand_with_tool
     RpcClient               rpcAskTool;             //!< rpc client port to send requests to /onTheFlyRecognition/human:io
 
+    BufferedPort<ImageOf<PixelBgr> >    imgInPort;
+    ImageOf<PixelBgr>                   imgIn;
+    bool                                connectedCam;
+
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
     Mutex                   mutexResourcesTool;
