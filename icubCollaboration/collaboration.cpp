@@ -13,7 +13,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
 
     // Workspace
-    workspaceX=rf.check("workspaceX",Value(-0.4)).asDouble();
+    workspaceX=rf.check("workspaceX",Value(-0.5)).asDouble();
     workspaceY=rf.check("workspaceY",Value(0.3)).asDouble();
     workspaceZ_low=rf.check("workspaceZ_low",Value(-0.1)).asDouble();
     workspaceZ_high=rf.check("workspaceZ_high",Value(0.35)).asDouble();
