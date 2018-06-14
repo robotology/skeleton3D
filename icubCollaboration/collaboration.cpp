@@ -212,6 +212,9 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm, con
         return false;
     }
 
+    o->m_value = -1.0;
+
+
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
     if (arm=="right")
@@ -220,6 +223,7 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm, con
         offset[1] -=0.05;   //5cm on the left
 
     Vector targetPos = o->m_ego_position;
+    opc->commit(o);
     if (checkPosReachable(targetPos+offset, arm))
         return moveReactPPS(targetPos+offset, arm, timeout);
     else
