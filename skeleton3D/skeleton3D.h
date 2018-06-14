@@ -36,6 +36,7 @@ protected:
     double      body_valence;
     double      hand_valence;
     double      part_dimension;
+    double      obj_valence;
     bool        use_part_conf;
     bool        draw_lower;
 
@@ -271,6 +272,22 @@ public:
     double get_valence_hand()
     {
         return hand_valence;
+    }
+
+    bool set_valence_obj(const double _valence)
+    {
+        if (_valence<=1.0 && _valence>=-1.0)
+        {
+            obj_valence = _valence;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    double get_valence_obj()
+    {
+        return obj_valence;
     }
 
     bool set_filter_order(const int16_t _order)

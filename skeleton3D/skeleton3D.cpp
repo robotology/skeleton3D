@@ -387,8 +387,16 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
         part.addDouble(computeValence(partName));
     else
     {
-        if (partName == "handRight" | partName == "handLeft")
-            part.addDouble(hand_valence);
+        if (partName == "handRight")
+            if (!hasObjectR)
+                part.addDouble(hand_valence);
+            else
+                part.addDouble(-1.0);
+        else if (partName == "handLeft")
+            if (!hasObjectL)
+                part.addDouble(hand_valence);
+            else
+                part.addDouble(-1.0);
         else
             part.addDouble(body_valence);                           // Currently hardcoded threat. Make adaptive
     }
@@ -838,6 +846,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     hand_valence = body_valence;
+    obj_valence = rf.check("obj_valence",Value(0.0)).asDouble();      // max = 1.0, min = -1.0
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
     use_part_conf = rf.check("use_part_conf",Value(1)).asBool();
@@ -1387,6 +1396,7 @@ void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blo
             obj->m_present=1.0;
             obj->m_ego_position = objPos;
             obj->m_dimensions = part_dimension;
+            obj->m_value = obj_valence;
 
             // Extract mean color of blob for object color
             if (connectedCam && hasCropImg)
