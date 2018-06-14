@@ -52,6 +52,9 @@ protected:
     Vector      homePosL, homePosR, basket;
     double      workspaceX, workspaceY, workspaceZ_low, workspaceZ_high;
 
+    bool                    isHoldingObject;                    //!< bool variable to show if object is holding, assume that a sucessful grasp action means robot holding the object
+    icubclient::Object      *manipulatingObj;
+
 
     // Interfaces for the torso
     yarp::dev::PolyDriver           ddT;
@@ -113,6 +116,14 @@ protected:
 
     bool    lookAtHome(const Vector &ang, const double &timeout);
 
+    /**
+     * @brief updateHoldingObj update the position of the object hold by robot hand
+     * @param x_EE End-effector position
+     * @param o_EE End-effector orientation in axis-angle format
+     * @return True/False if completing action sucessfully or not
+     */
+    bool    updateHoldingObj(const Vector &x_EE, const Vector &o_EE);
+
 public:
 
     /**
@@ -133,7 +144,8 @@ public:
             return false;
 
         bool ok = moveReactPPS(_object, arm);
-        ok = ok && takeARE(_object, arm);
+        isHoldingObject = takeARE(_object, arm);
+        ok = ok && isHoldingObject;
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
@@ -142,6 +154,13 @@ public:
         lookAtHome(homeAng,5.0);
 
         ok = ok && dropARE(basket, arm);
+        if (ok)
+        {
+            manipulatingObj->m_ego_position = basket;
+            opc->commit(manipulatingObj);
+            isHoldingObject = false;
+        }
+
 
         Time::delay(0.5);
         ok = ok && home_ARE();

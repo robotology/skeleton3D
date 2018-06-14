@@ -138,7 +138,9 @@ bool    collaboration::configure(ResourceFinder &rf)
     basket[0] = 0.2;
     basket[1] = 0.4;
     basket[2] = 0.05;
-    // TODO set this
+    // TODO check this
+
+    isHoldingObject = false;
 
     return true;
 }
@@ -184,7 +186,6 @@ bool    collaboration::attach(RpcServer &source)
     return this->yarp().attachAsServer(source);
 //    return true;
 }
-
 double  collaboration::getPeriod()
 {
     return period;
@@ -194,6 +195,12 @@ bool    collaboration::updateModule()
 {
     // add update the object position when robot is holding it: after receiving from human and grasping from table
     // TODO: if (holdObject) opc->commit(obj);
+    if (isHoldingObject)
+    {
+        Vector x_cur(3,0.0), o_cur(4,0.0);
+        if (icartA->getPose(x_cur, o_cur))
+            updateHoldingObj(x_cur, o_cur);
+    }
     return true;
 }
 
@@ -255,7 +262,10 @@ bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const 
     while (ok && !done)
     {
         Vector x_cur(3,0.0), o_cur(4,0.0);
-        icartA->getPose(x_cur, o_cur);
+        if (icartA->getPose(x_cur, o_cur))
+            updateHoldingObj(x_cur, o_cur);
+        else
+            return false;
         Time::delay(period);
         checkTime = Time::now();
         completed = (norm(x_cur-pos)<=posTol);
@@ -323,6 +333,7 @@ bool    collaboration::takeARE(const string &target, const string &arm)
         yError() << "Could not cast" << e->name() << "to Object";
         return false;
     }
+    manipulatingObj = o;
 
     Vector targetPos = o->m_ego_position;
     // TODO: check if use takeARE or graspARE
@@ -504,4 +515,19 @@ bool    collaboration::lookAtHome(const Vector &ang, const double &timeout)
     igaze -> restoreContext(contextGaze);
     igaze -> lookAtAbsAnglesSync(ang);
     igaze -> waitMotionDone(0.1,timeout);
+}
+
+bool    collaboration::updateHoldingObj(const Vector &x_EE, const Vector &o_EE)
+{
+    Vector x_obj(3,0.0);
+    Matrix H_e0=zeros(4,4), H_oe=eye(4), H_o0(4,4);
+    H_e0 = axis2dcm(o_EE);
+    H_e0.setSubcol(x_EE,0,3);
+
+    H_oe(2,3) = manipulatingObj->m_dimensions[2];
+
+    H_o0 = H_oe*H_e0;
+    x_obj = H_o0.subcol(0,3,3);
+    manipulatingObj->m_ego_position = x_obj;
+    opc->commit(manipulatingObj);
 }
