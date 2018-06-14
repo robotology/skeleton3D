@@ -262,7 +262,7 @@ bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const 
     while (ok && !done)
     {
         Vector x_cur(3,0.0), o_cur(4,0.0);
-        if (icartA->getPose(x_cur, o_cur))
+        if (icartA->getPose(x_cur, o_cur) && isHoldingObject)
             updateHoldingObj(x_cur, o_cur);
         else
             return false;
