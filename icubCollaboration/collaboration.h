@@ -193,10 +193,15 @@ public:
             return false;
 
         // TODO grasp on table
-        // ok = graspOnTable(_object, arm);
+        // isHoldingObject = graspOnTable(_object, arm);
 
-        bool ok = moveReactPPS(_object, arm);   //move to near empty hand
+        Time::delay(0.5);
+        lookAtHome(homeAng,5.0);
+        bool ok = isHoldingObject && moveReactPPS(_object, arm);   //move to near empty hand
         ok = ok && giveARE(_object, arm);       //give to empty hand
+
+        if (ok)
+            isHoldingObject = false;
         ok = ok && moveReactPPS(homePos, arm);
 
         running_mode = MODE_IDLE;
