@@ -192,6 +192,8 @@ double  collaboration::getPeriod()
 
 bool    collaboration::updateModule()
 {
+    // add update the object position when robot is holding it: after receiving from human and grasping from table
+    // TODO: if (holdObject) opc->commit(obj);
     return true;
 }
 
