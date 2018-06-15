@@ -1396,7 +1396,7 @@ void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blo
             obj->m_present=1.0;
             obj->m_ego_position = objPos;
             obj->m_dimensions = part_dimension;
-            obj->m_value = obj_valence;
+//            obj->m_value = obj_valence;
 
             // Extract mean color of blob for object color
             if (connectedCam && hasCropImg)

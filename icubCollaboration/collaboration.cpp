@@ -195,33 +195,57 @@ bool    collaboration::updateModule()
 {
     // add update the object position when robot is holding it: after receiving from human and grasping from table
     // TODO: if (holdObject) opc->commit(obj);
-    if (isHoldingObject)
-    {
-        Vector x_cur(3,0.0), o_cur(4,0.0);
-        if (icartA->getPose(x_cur, o_cur))
-            updateHoldingObj(x_cur, o_cur);
-    }
+//    if (isHoldingObject)
+//    {
+//        Vector x_cur(3,0.0), o_cur(4,0.0);
+//        if (icartA->getPose(x_cur, o_cur))
+//            updateHoldingObj(x_cur, o_cur);
+//    }
     return true;
 }
 
-bool    collaboration::moveReactPPS(const string &target, const string &arm, const double &timeout)
+bool    collaboration::moveReactPPS(const string &target, const string &arm, const double &timeout,
+                                    const bool &isTargetHuman)
 {
+    Vector targetPos(3,0.0);
     // get object pos with name <-- target
-    Entity* e = opc->getEntity(target, true);
-    Object *o;
-    if(e) {
-        o = dynamic_cast<Object*>(e);
-    }
-    else {
-        yError() << target << " is not an Entity";
-        return false;
-    }
-    if(!o) {
-        yError() << "Could not cast" << e->name() << "to Object";
-        return false;
-    }
+    if (!isTargetHuman)
+    {
+        Entity* e = opc->getEntity(target, true);
+        Object *o;
+        if(e) {
+            o = dynamic_cast<Object*>(e);
+        }
+        else {
+            yError() << target << " is not an Entity";
+            return false;
+        }
+        if(!o) {
+            yError() << "Could not cast" << e->name() << "to Object";
+            return false;
+        }
 
-    o->m_value = -1.0;
+        o->m_value = -1.0;
+        targetPos = o->m_ego_position;
+        opc->commit(o);
+    }
+    else
+    {
+        Entity* e = opc->getEntity(partner_default_name, true);
+        Agent* a;
+        if(e) {
+            a = dynamic_cast<Agent*>(e);
+        }
+        else {
+            yError() << target << " is not an Entity";
+            return false;
+        }
+        if(!a) {
+            yError() << "Could not cast" << e->name() << "to Agent";
+            return false;
+        }
+        targetPos = a->m_body.m_parts[target.c_str()];
+    }
 
 
     Vector offset(3,0.0);
@@ -231,8 +255,6 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm, con
     else if (arm=="left")
         offset[1] -=0.05;   //5cm on the left
 
-    Vector targetPos = o->m_ego_position;
-    opc->commit(o);
     if (checkPosReachable(targetPos+offset, arm))
         return moveReactPPS(targetPos+offset, arm, timeout);
     else
@@ -264,8 +286,6 @@ bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const 
         Vector x_cur(3,0.0), o_cur(4,0.0);
         if (icartA->getPose(x_cur, o_cur) && isHoldingObject)
             updateHoldingObj(x_cur, o_cur);
-        else
-            return false;
         Time::delay(period);
         checkTime = Time::now();
         completed = (norm(x_cur-pos)<=posTol);
@@ -529,5 +549,6 @@ bool    collaboration::updateHoldingObj(const Vector &x_EE, const Vector &o_EE)
     H_o0 = H_oe*H_e0;
     x_obj = H_o0.subcol(0,3,3);
     manipulatingObj->m_ego_position = x_obj;
+    manipulatingObj->m_value = -1.0;
     opc->commit(manipulatingObj);
 }

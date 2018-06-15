@@ -85,7 +85,8 @@ protected:
     double  getPeriod();
     bool    updateModule();
 
-    bool    moveReactPPS(const string &target, const string &arm, const double &timeout=10.);
+    bool    moveReactPPS(const string &target, const string &arm, const double &timeout=10.,
+                         const bool &isTargetHuman = false);
 
     bool    moveReactPPS(const Vector &pos, const string &arm, const double &timeout=10.);
 
@@ -157,6 +158,7 @@ public:
         if (ok)
         {
             manipulatingObj->m_ego_position = basket;
+            manipulatingObj->m_value = 0.0;
             opc->commit(manipulatingObj);
             isHoldingObject = false;
         }
@@ -180,7 +182,7 @@ public:
      * @param _object
      * @return
      */
-    bool    hand_over_object(const string &_object)
+    bool    hand_over_object(const string &_object, const string &_human_part)
     {
         running_mode = MODE_GIVE;
         string arm = _arm;
@@ -197,8 +199,10 @@ public:
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
-        bool ok = isHoldingObject && moveReactPPS(_object, arm);   //move to near empty hand
-        ok = ok && giveARE(_object, arm);       //give to empty hand
+        // TODO: reduce the valence of _human_part to receive object
+
+        bool ok = isHoldingObject && moveReactPPS(_object, arm, 10.0, true);   //move to near empty hand
+        ok = ok && giveARE(_human_part, arm);       //give to empty hand
 
         if (ok)
             isHoldingObject = false;
