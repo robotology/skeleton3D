@@ -380,6 +380,7 @@ bool    collaboration::takeARE(const Vector &pos, const string &arm)
     cmd.addString(arm.c_str());
     cmd.addString("side");
     cmd.addString("still");
+    cmd.addString("no_head");
 
     yDebug("Command sent to ARE: %s",cmd.toString().c_str());
 
@@ -422,6 +423,7 @@ bool    collaboration::graspARE(const Vector &pos, const string &arm)
     cmd.addList() = target;
     cmd.addString(arm.c_str());
     cmd.addString("still");
+    cmd.addString("no_head");
 
     yDebug("Command sent to ARE: %s",cmd.toString().c_str());
     if (rpcARE.write(cmd, rep))
@@ -477,6 +479,7 @@ bool    collaboration::giveARE(const Vector &pos, const string &arm)
     cmd.addString(arm.c_str());
     cmd.addString("side");
     cmd.addString("still");
+    cmd.addString("no_head");
 
     yDebug("Command sent to ARE: %s",cmd.toString().c_str());
 
