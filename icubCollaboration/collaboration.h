@@ -206,6 +206,9 @@ public:
 
         if (ok)
             isHoldingObject = false;
+
+        Time::delay(0.5);
+        lookAtHome(homeAng,5.0);
         ok = ok && moveReactPPS(homePos, arm);
 
         running_mode = MODE_IDLE;

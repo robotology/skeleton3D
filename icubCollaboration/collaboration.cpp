@@ -117,6 +117,8 @@ bool    collaboration::configure(ResourceFinder &rf)
     igaze -> lookAtAbsAnglesSync(homeAng);
     igaze -> waitMotionDone(0.1,5.0);
 
+    igaze -> stopControl();
+
     Vector curAng(3,0.0);
     igaze->getAngles(curAng);
     yDebug("current angle %s",curAng.toString(3,3).c_str());
@@ -538,6 +540,8 @@ bool    collaboration::lookAtHome(const Vector &ang, const double &timeout)
     igaze -> restoreContext(contextGaze);
     igaze -> lookAtAbsAnglesSync(ang);
     igaze -> waitMotionDone(0.1,timeout);
+
+    igaze -> stopControl();
 }
 
 bool    collaboration::updateHoldingObj(const Vector &x_EE, const Vector &o_EE)
