@@ -61,7 +61,7 @@ void    skeleton3D::filt(map<string,kinectWrapper::Joint> &joints, map<string,ki
 }
 
 // Inspired from iol2opc
-bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
+bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x, const int &rectDim)
 {
     x.resize(3,0.0);
     if (point.x>=0 && point.x<imgIn.width() && point.y>=0 && point.y<imgIn.height())
@@ -72,12 +72,14 @@ bool    skeleton3D::get3DPosition(const CvPoint &point, Vector &x)
             // safe against borders checking
             // command format: Rect tlx tly w h step
             Bottle cmd,reply;
+            int r = (int)floor(rectDim/2.0);
+            int step = (rectDim>=7) ? 2:1;
             cmd.addString("Rect");
-            cmd.addInt(point.x-3);
-            cmd.addInt(point.y-3);
-            cmd.addInt(7);
-            cmd.addInt(7);
-            cmd.addInt(2);
+            cmd.addInt(point.x-r);
+            cmd.addInt(point.y-r);
+            cmd.addInt(rectDim);
+            cmd.addInt(rectDim);
+            cmd.addInt(step);
 
             mutexResourcesSFM.lock();
             rpcGet3D.write(cmd,reply);
@@ -180,7 +182,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         neckCv.y = (int)neck.get(2).asDouble();
                         if (get3DPosition(neckCv, neck3D))
                         {
-                            yDebug("found neck. neck3D = %s!!!", neck3D.toString(3,3).c_str());
+//                            yDebug("found neck. neck3D = %s!!!", neck3D.toString(3,3).c_str());
                             if (neck3D[0]<workspaceX_min || neck3D[0]>=workspaceX || neck3D[1]>=workspaceY_max || neck3D[1]<=-workspaceY ||
                                     (neck3D[0] == 0.0 && neck3D[1] == 0.0 && neck3D[2] == 0.0))
                             {
@@ -203,7 +205,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         shoulderCv.y = (int)shR.get(2).asDouble();
                         if (get3DPosition(shoulderCv, shoulder3D))
                         {
-                            yDebug("found shoulder. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
+//                            yDebug("found shoulder. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
                             if (shoulder3D[0]<workspaceX_min ||shoulder3D[0]>=workspaceX || shoulder3D[1]>=workspaceY_max || shoulder3D[1]<=-workspaceY ||
                                     (shoulder3D[0] == 0.0 && shoulder3D[1] == 0.0 && shoulder3D[2] == 0.0))
                             {
@@ -225,7 +227,7 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                             {
 //                                yInfo("part %s",part->toString().c_str());
                                 string partName = part->get(0).asString();
-                                yDebug("[%s] found part as %s",name.c_str(),partName.c_str());
+//                                yDebug("[%s] found part as %s",name.c_str(),partName.c_str());
                                 CvPoint partCv;
                                 double partConf = part->get(3).asDouble();
                                 partCv.x = (int)part->get(1).asDouble();
@@ -238,12 +240,20 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                         handCV = partCv;
                                     else if (hand_with_object=="left" && (partName =="LWrist" || partName =="Lwrist"))
                                         handCV = partCv;
+                                    else if (partName =="RElbow" || partName =="Relbow")
+                                        elbowCV_right = partCv;
+                                    else if (partName =="LElbow" || partName =="Lelbow")
+                                        elbowCV_left = partCv;
                                 }
 
                                 if (partName =="RWrist" || partName =="Rwrist")
                                     handCV_right = partCv;
                                 else if (partName =="LWrist" || partName =="Lwrist")
                                     handCV_left = partCv;
+                                else if (partName =="RElbow" || partName =="Relbow")
+                                    elbowCV_right = partCv;
+                                else if (partName =="LElbow" || partName =="Lelbow")
+                                    elbowCV_left = partCv;
 
                                 if (partConf>=0.0001)// && partName =="Lshoulder")
                                 {
@@ -362,7 +372,7 @@ void    skeleton3D::addJoint(map<string, kinectWrapper::Joint> &joints,
         kinectWrapper::Joint joint;
         joint.u = (int)point.x;
         joint.v = (int)point.y;
-        yInfo("joint 2D: %d, %d",joint.u, joint.v);
+//        yInfo("joint 2D: %d, %d",joint.u, joint.v);
         joint.x = pos[0];
         joint.y = pos[1];
         joint.z = pos[2];
@@ -438,7 +448,7 @@ double  skeleton3D::computeValence(const string &partName)
     double conf = confJoints[partName.c_str()];
 //    return conf*2.0 - 1.0;
     double threat = body_valence + body_valence*(1-conf) - 1.0;
-    yDebug("[%s] %s\t body_valence: %3.3f\t conf: %3.3f\t threat: %3.3f",name.c_str(), partName.c_str(), body_valence, conf, threat);
+//    yDebug("[%s] %s\t body_valence: %3.3f\t conf: %3.3f\t threat: %3.3f",name.c_str(), partName.c_str(), body_valence, conf, threat);
     return threat;
 }
 
@@ -508,9 +518,9 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
             jnts.at("handLeft").y = handL_new[1];
             jnts.at("handLeft").z = handL_new[2];
 
-            CvPoint temp;
-            if (backproj2stereo(handL_new,temp))
-                handCV_left = temp;
+//            CvPoint temp;
+//            if (backproj2stereo(handL_new,temp))
+//                handCV_left = temp;
         }
         if (extrapolatePoint(elbowR,handR,handR_new))
         {
@@ -518,9 +528,9 @@ void    skeleton3D::extrapolateHand(map<string, kinectWrapper::Joint> &jnts)
             jnts.at("handRight").y = handR_new[1];
             jnts.at("handRight").z = handR_new[2];
 
-            CvPoint temp;
-            if (backproj2stereo(handR_new,temp))
-                handCV_right = temp;
+//            CvPoint temp;
+//            if (backproj2stereo(handR_new,temp))
+//                handCV_right = temp;
         }
     }
     else
@@ -543,8 +553,8 @@ bool    skeleton3D::extrapolatePoint(const Vector &p1, const Vector &p2, Vector 
         }
         else
             result = p1 + dir*(0.0001+ handDim)/0.0001;
-        yDebug("extrapolatePoint: result = %s",result.toString(3,3).c_str());
-        yDebug("forearm = %0.3f, forearm+hand = %0.3f", segL, norm(result-p1));
+//        yDebug("extrapolatePoint: result = %s",result.toString(3,3).c_str());
+//        yDebug("forearm = %0.3f, forearm+hand = %0.3f", segL, norm(result-p1));
         return true;
     }
     else
@@ -570,7 +580,7 @@ bool    skeleton3D::constraintLink(const Vector &p1, const Vector &p2, Vector &r
         }
         else
             result = p1 + dir*(0.0001)/0.0001;
-        yDebug("constraintLink: result = %s",result.toString(3,3).c_str());
+//        yDebug("constraintLink: result = %s",result.toString(3,3).c_str());
         return true;
     }
     else
@@ -681,10 +691,13 @@ bool    skeleton3D::streamPartsToPPS()
         if (use_mid_arms)
             addMidArmsToStream(objects);
 
-        if (hasObjectL)
-            addObjectToStream(objectLabelL,objects);
-        if (hasObjectR)
-            addObjectToStream(objectLabelR,objects);
+        if (!object_training)
+        {
+            if (hasObjectL)
+                addObjectToStream(objectLabelL,objects);
+            if (hasObjectR)
+                addObjectToStream(objectLabelR,objects);
+        }
 
         Bottle& output=ppsOutPort.prepare();
         output.clear();
@@ -776,7 +789,7 @@ bool    skeleton3D::drawBodyGui(Agent *a)
         vector<Vector> segmentUpper, segmentSpine, segmentLower;
         for (int i=0; i<7; i++)
         {
-            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
+//            yDebug("[%s] part name %d: %s",name.c_str(),i,mapPartsGui[i].c_str());
             if (getPartPose(a,mapPartsGui[i].c_str(),partPos))
                 segmentUpper.push_back(partPos);
         }
@@ -1064,16 +1077,16 @@ bool    skeleton3D::updateModule()
     tracked = obtainBodyParts(bodyPartsCv);
 
     // Get the 3D pose of CvPoint of body parts
-    if (bodyPartsCv.size()>=0 && connected3D)
-    {
-        for (int8_t i=0; i<bodyPartsCv.size(); i++)
-        {
-            Vector pos(3,0.0);
-            get3DPosition(bodyPartsCv[i], pos);
-            yInfo("[%s] 3D pose of CvPoint [%d, %d] from SFM is: %s",
-                  name.c_str(), bodyPartsCv[i].x, bodyPartsCv[i].y, pos.toString(3,3).c_str());
-        }
-    }
+//    if (bodyPartsCv.size()>=0 && connected3D)
+//    {
+//        for (int8_t i=0; i<bodyPartsCv.size(); i++)
+//        {
+//            Vector pos(3,0.0);
+//            get3DPosition(bodyPartsCv[i], pos);
+//            yInfo("[%s] 3D pose of CvPoint [%d, %d] from SFM is: %s",
+//                  name.c_str(), bodyPartsCv[i].x, bodyPartsCv[i].y, pos.toString(3,3).c_str());
+//        }
+//    }
 
     // Update OPC or conduct actions
     // check if this skeletton is really tracked
@@ -1267,42 +1280,92 @@ Vector  skeleton3D::joint2Vector(const kinectWrapper::Joint &joint)
     return jnt;
 }
 
+Vector  skeleton3D::computeAdaptiveBlobCoffs(const Vector &x1, const Vector &x2)
+{
+    double alpha = atan2(x2[1]-x1[1],x2[0]-x1[0])*CTRL_RAD2DEG;
+    Vector k(4,0.0);
+    yDebug("hand [%f,%f], elbow [%f,%f], %f", x2[0], x2[1], x1[0], x1[1], alpha);
+
+    if (alpha>=-22.5 && alpha <22.5)
+    {
+        k[0] = 0.5; k[1] = 1.0 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=22.5 && alpha <67.5)
+    {
+        k[0] = 0.5; k[1] = 0.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=-67.5 && alpha <-22.5)
+    {
+        k[0] = 0.5; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=67.5 && alpha <112.5)
+    {
+        k[0] = 1.0; k[1] = 0.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=-112.5 && alpha <-67.5)
+    {
+        k[0] = 1.0; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=112.5 && alpha <157.5)
+    {
+        k[0] = 1.5; k[1] = 0.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=-157.5 && alpha <-112.5)
+    {
+        k[0] = 1.5; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else
+    {
+        k[0] = 1.5; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    return k;
+
+}
+
 bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
 {
     if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
     {
-        Vector pose2d(2,0.0);
+        Vector pose2d(2,0.0), elbow(2,0.0);
         double d;
-//        kinectWrapper::Joint jnt= player.skeleton.at(hand.c_str());
-//        pose2d[0] = (double)jnt.u;
-//        pose2d[1] = (double)jnt.v;
-        // use for training tool
-//        pose2d[0] = handCV.x;
-//        pose2d[1] = handCV.y;
 
         if (hand == "handRight")
         {
             pose2d[0] = handCV_right.x;
             pose2d[1] = handCV_right.y;
+
+            elbow[0] = elbowCV_right.x;
+            elbow[1] = elbowCV_right.y;
         }
         else if (hand == "handLeft")
         {
             pose2d[0] = handCV_left.x;
-            pose2d[1] = handCV_left.y;            
+            pose2d[1] = handCV_left.y;
+
+            elbow[0] = elbowCV_left.x;
+            elbow[1] = elbowCV_left.y;
         }
 
         d = player.skeleton.at(hand.c_str()).x;
 //        double radius_t = radius + (fabs(d)-0.3)*(-45+radius)/(1.3-0.3);
-        double r_max = 50, d_radius=1.1;
+        double r_max = 70, d_radius=1.1;
         double radius_t = r_max*(1.0-fabs(d)/(d_radius*radius/(r_max-radius)+d_radius));
+        radius_t = std::max(radius_t, 20.);
         yInfo("d = %f, fabs(d) = %f, radius_t = %f", d, fabs(d), radius_t);
-//        yDebug("cropHandBlob: pose 2d is %s", pose2d.toString(3,1).c_str());
+
+
+        Vector k = computeAdaptiveBlobCoffs(elbow,pose2d);
 
         // This will be sent to onTheFlyRecognition/roi:i
-        blob[0] = pose2d[0] - radius_t;   //top-left.x
-        blob[1] = pose2d[1] - radius_t;   //top-left.y
-        blob[2] = pose2d[0] + radius_t;   //bottom-right.x
-        blob[3] = pose2d[1] + radius_t;   //bottom-right.y
+//        blob[0] = pose2d[0] - 0.5*radius_t;   //top-left.x
+//        blob[1] = pose2d[1] - 0.5*radius_t;   //top-left.y
+//        blob[2] = pose2d[0] + 1.5*radius_t;   //bottom-right.x
+//        blob[3] = pose2d[1] + 1.5*radius_t;   //bottom-right.y
+
+        blob[0] = pose2d[0] - k[0]*radius_t;   //top-left.x
+        blob[1] = pose2d[1] - k[1]*radius_t;   //top-left.y
+        blob[2] = pose2d[0] + k[2]*radius_t;   //bottom-right.x
+        blob[3] = pose2d[1] + k[3]*radius_t;   //bottom-right.y
 
         // This will be sent to onTheFlyRecognition/blobs:i
 //        blob[0] = pose2d[0];   //centroid.x
@@ -1310,8 +1373,8 @@ bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
 //        blob[2] = radius_t*radius_t;   //pixelCount
 
 
-
-//        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
+        yDebug("k are: %s",k.toString(3,3).c_str());
+        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
         return true;
     }
     else
@@ -1391,7 +1454,7 @@ void    skeleton3D::updateObjectOPC(const string &objectLabel, const Vector &blo
         cogBlob.x=(int)(blob[0]+blob[2])/2.0;
         cogBlob.y=(int)(blob[1]+blob[3])/2.0;
         Vector objPos(3,0.0);
-        if (get3DPosition(cogBlob,objPos))
+        if (get3DPosition(cogBlob,objPos,3))    // Rect dimension is 3 due to object is close to robot
         {
             obj->m_present=1.0;
             obj->m_ego_position = objPos;

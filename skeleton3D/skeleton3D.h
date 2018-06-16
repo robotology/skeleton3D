@@ -95,7 +95,7 @@ protected:
     double                      segLMax, segLMin;   //!< threshold for arm constraint
     double                              radius;     //!< hand blob radius
     string                              hand_with_object;
-    CvPoint                             handCV, handCV_right, handCV_left;
+    CvPoint                             handCV, handCV_right, handCV_left, elbowCV_left, elbowCV_right;
     float                               tool_code[3];
     double                              object_timer;
     unsigned long                       object_lastClock;
@@ -115,9 +115,10 @@ protected:
      * @brief get3DPosition Get the 3D point coordinate in Root frame through SFM
      * @param point A CvPoint for the estimated coordinate of an image pixel.
      * @param x Vector for 3D point coordinate. If SFM return more than one 3D point as result, the coordinate is average of all result
+     * @param reactDim integer for Rectangle dimension of adjected points to CvPoint
      * @return True if can get 3D point from SFM, False otherwise
      */
-    bool    get3DPosition(const CvPoint &point, Vector &x);
+    bool    get3DPosition(const CvPoint &point, Vector &x, const int &rectDim=7);
 
     /**
      * @brief backproj2stereo
@@ -225,6 +226,7 @@ protected:
 
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
+    Vector  computeAdaptiveBlobCoffs(const Vector &x1, const Vector &x2);
     bool    cropHandBlob(const string &hand, Vector &blob);
     bool    askToolLabel(string &label);
 
