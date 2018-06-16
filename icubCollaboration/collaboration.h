@@ -245,6 +245,14 @@ public:
         return homeARE();
     }
 
+    bool    home_all()
+    {
+        if (homeARE())
+            return lookAtHome(homeAng, 5.0);
+        else
+            return false;
+    }
+
     bool    move_torso(const Vector &_ang)
     {
         Vector ang = _ang;

@@ -87,6 +87,12 @@ service collaboration_IDL
   bool home_ARE();
 
   /**
+  * Move hands to ARE home position & look at home position
+  * @return true/false on success/failure.
+  */
+  bool home_all();
+
+  /**
   * move torso
   * @param _ang Vector of angle.
   * @return true/false on success/failure.

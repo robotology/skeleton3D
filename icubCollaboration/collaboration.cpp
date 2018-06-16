@@ -488,7 +488,7 @@ bool    collaboration::giveARE(const Vector &pos, const string &arm)
     if (rpcARE.write(cmd, rep))
         ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
 
-    yDebug() << "[takeARE] Reply from ARE: " << rep.toString();
+    yDebug() << "[giveARE] Reply from ARE: " << rep.toString();
     return ret;
 }
 
