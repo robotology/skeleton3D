@@ -23,6 +23,9 @@
 #define MODE_GIVE       2
 #define MODE_IDLE       0
 
+#define OPENHAND        0
+#define CLOSEHAND       1
+
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -58,8 +61,9 @@ protected:
 
     // Interfaces for the torso
     yarp::dev::PolyDriver           ddT;
-    yarp::dev::PolyDriver           ddG; // gaze  controller  driver
-    yarp::dev::PolyDriver           ddA; // arm  controller  driver
+    yarp::dev::PolyDriver           ddG; //!< gaze  controller  driver
+    yarp::dev::PolyDriver           ddA; //!< arm  controller  driver
+    yarp::dev::PolyDriver           ddA_joint;
     yarp::dev::IEncoders            *iencsT;
     yarp::dev::IVelocityControl     *ivelT;
     yarp::dev::IPositionControl     *iposT;
@@ -71,6 +75,16 @@ protected:
     // Arm interface
     yarp::dev::ICartesianControl    *icartA;
     int                             contextArm;
+
+    // Arm joint controller for grasping
+    yarp::dev::IControlMode         *imodA;
+    yarp::dev::IPositionControl     *iposA;
+    yarp::dev::IEncoders            *iencsA;
+    yarp::dev::IControlLimits       *ilimA;
+    yarp::sig::Vector               *encsA;
+    Vector                          closedHandPos, openHandPos;
+    Vector                          handVels;
+    int jntsA;
 
     // Gaze interface
     yarp::dev::IGazeControl         *igaze;
@@ -99,6 +113,18 @@ protected:
     bool    takeARE(const Vector &pos, const string &arm);
 
     bool    graspARE(const Vector &pos, const string &arm);
+
+    bool    closeHand(const string &arm, const double &timeout=10.0);
+
+    bool    openHand(const string &arm, const double &timeout=10.0);
+
+    bool    moveHand(const int &action, const string &arm, const double &timeout=10.0);
+
+    bool    moveArm(const Vector &pos, const string &arm);
+
+    bool    graspRaw(const Vector &pos, const string &arm);
+
+    bool    getGraspConfig(const Bottle &b, Vector &openPos, Vector &closedPos, Vector &vels);
 
     /**
      * @brief move move a robot arm with simple cartesian controller
@@ -230,6 +256,11 @@ public:
         return graspARE(_pos, _arm);
     }
 
+    bool    grasp_pos_Raw(const Vector &_pos, const string &_arm)
+    {
+        return graspRaw(_pos, _arm);
+    }
+
     bool    give_human_ARE(const string &_partH, const string &_armR)
     {
         return giveARE(_partH, _armR);
@@ -287,6 +318,16 @@ public:
         }
         else
             return false;
+    }
+
+    bool    close_hand(const string &_arm)
+    {
+        return closeHand(_arm);
+    }
+
+    bool    open_hand(const string &_arm)
+    {
+        return openHand(_arm);
     }
 };
 

@@ -5,7 +5,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     name=rf.check("name",Value("icubCollaboration")).asString().c_str();
     robot=rf.check("robot",Value("icub")).asString().c_str();
     part=rf.check("part",Value("right_arm")).asString().c_str();
-    posTol=rf.check("period",Value(0.001)).asDouble();
+    posTol=rf.check("position_tolerance",Value(0.001)).asDouble();
     if (part == "right_arm")
         _arm = "right";
     else if (part == "left_arm")
@@ -46,7 +46,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     std::string actionsRenderingEngineRPC = "/actionsRenderingEngine/cmd:io";
     connectedARE = yarp::os::Network::connect(rpcARE.getName().c_str(), actionsRenderingEngineRPC);
 
-    // TODO: Cartesian Controller
+    // Torso Cartesian Controller
 
     yarp::os::Property OptT;
     OptT.put("robot",  robot);
@@ -56,7 +56,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     OptT.put("local",  "/"+name +"/torso");
     if (!ddT.open(OptT))
     {
-        yError("[reactCtrlThread]Could not open torso PolyDriver!");
+        yError("[collaboration]Could not open torso PolyDriver!");
         return false;
     }
 
@@ -76,7 +76,7 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     if (!okT)
     {
-        yError("[reactCtrlThread]Problems acquiring torso interfaces!!!!");
+        yError("[collaboration]Problems acquiring torso interfaces!!!!");
         return false;
     }
 
@@ -87,10 +87,53 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     if ((!ddA.open(optArm)) || (!ddA.view(icartA)))
     {
-        yError(" could not open the Arm Controller!");
+        yError(" [collaboration]could not open the Arm Cartesian Controller!");
         return false;
     }
     icartA -> storeContext(&contextArm);
+
+    // Arm joint Controller: for grasping
+    closedHandPos.resize(9,0.0);
+    openHandPos.resize(9,0.0);
+    handVels.resize(9,0.0);
+
+    Property optArm_joint("(device remote_controlboard)");
+    optArm_joint.put("remote",("/"+robot+"/"+part).c_str());
+    optArm_joint.put("local",("/"+name+"/arm/"+part).c_str());
+
+    if ((!ddA_joint.open(optArm_joint)))
+    {
+        yError(" [collaboration]could not open the Arm Joints Controller!");
+        return false;
+    }
+
+    bool okA = 1;
+
+    if (ddA_joint.isValid())
+    {
+        okA = okA && ddA_joint.view(iencsA);
+//        okA = okA && ddA_joint.view(ivelA);
+        okA = okA && ddA_joint.view(iposA);
+        okA = okA && ddA_joint.view(imodA);
+        okA = okA && ddA_joint.view(ilimA);
+
+    }
+    iencsA->getAxes(&jntsA);
+    encsA = new yarp::sig::Vector(jntsA,0.0);
+
+    if (!okA)
+    {
+        yError("[collaboration]Problems acquiring Arm joint interfaces!!!!");
+        return false;
+    }
+
+    Bottle &bGrasp=rf.findGroup("grasp");
+    bGrasp.setMonitor(rf.getMonitor());
+    if (!getGraspConfig(bGrasp,openHandPos, closedHandPos, handVels))
+    {
+        yError ("Error in parameters section 'grasp'");
+        return false;
+    }
 
     // Gaze controller
     Property OptGaze;
@@ -179,6 +222,10 @@ bool    collaboration::close()
 
     delete encsT; encsT = NULL;
     ddT.close();
+
+    delete encsA; encsA = NULL;
+    ddA.close();
+    ddA_joint.close();
 
     return true;
 }
@@ -434,6 +481,122 @@ bool    collaboration::graspARE(const Vector &pos, const string &arm)
     yDebug() << "[graspARE] Reply from ARE: " << rep.toString();
     return ret;
 
+}
+
+bool    collaboration::graspRaw(const Vector &pos, const string &arm)
+{
+    return (moveArm(pos,arm) && (closeHand(arm,10.0)));
+}
+
+bool    collaboration::moveArm(const Vector &pos, const string &arm)
+{
+    Matrix R(3,3);
+    // pose x-axis y-axis z-axis: palm inward, pointing forward
+    R(0,0)=-1.0; R(0,1)= 0.0; R(0,2)= 0.0; // x-coordinate
+    R(1,0)= 0.0; R(1,1)= 0.0; R(1,2)=-1.0; // y-coordinate
+    R(2,0)= 0.0; R(2,1)=-1.0; R(2,2)= 0.0; // z-coordinate
+
+    if (arm=="left")
+        R(1,2) = 1.0;
+
+    Vector rot = dcm2axis(R);
+    icartA->goToPoseSync(pos,rot);
+    return icartA->waitMotionDone(0.1,3.0);
+}
+
+bool    collaboration::moveHand(const int &action, const string &arm, const double &timeout)
+{
+    Vector *pos=NULL;
+
+    switch (action)
+    {
+    case OPENHAND:
+        pos = &openHandPos;
+        break;
+    case CLOSEHAND:
+        pos = &closedHandPos;
+        break;
+    default:
+        return false;
+    }
+    for (size_t j=0; j<handVels.length(); j++)
+        imodA->setControlMode(7+j,VOCAB_CM_POSITION);
+
+    for (size_t j=0; j<handVels.length(); j++)
+    {
+        int k=7+j;
+        iposA->setRefSpeed(k,handVels[j]);
+        iposA->positionMove(k,(*pos)[j]);
+    }
+    bool done = false;
+//    iposA->checkMotionDone(&done);
+
+    double t0=Time::now();
+    while (!done && (Time::now()-t0<timeout))
+    {
+        iposA->checkMotionDone(&done);
+        Time::delay(0.1);
+    }
+    return done;
+}
+
+bool    collaboration::closeHand(const string &arm, const double &timeout)
+{
+    return moveHand(CLOSEHAND, arm, timeout);
+}
+
+bool    collaboration::openHand(const string &arm, const double &timeout)
+{
+    return moveHand(OPENHAND, arm, timeout);
+}
+
+bool    collaboration::getGraspConfig(const Bottle &b, Vector &openPos, Vector &closedPos, Vector &vels)
+{
+    bool ret = true;
+
+    if (b.check("open_hand","Getting openHand pos"))
+    {
+        Bottle &grp=b.findGroup("open_hand");
+        int sz=grp.size()-1;
+        int len=sz>9?9:sz;
+
+        for (int i=0; i<len; i++)
+            openPos[i]=grp.get(1+i).asDouble();
+    }
+    else
+    {
+        yError("Missing 'open_hand' parameter");
+        ret = false;
+    }
+    if (b.check("close_hand","Getting closeHand pos"))
+    {
+        Bottle &grp=b.findGroup("close_hand");
+        int sz=grp.size()-1;
+        int len=sz>9?9:sz;
+
+        for (int i=0; i<len; i++)
+            closedPos[i]=grp.get(1+i).asDouble();
+    }
+    else
+    {
+        yError("Missing 'close_hand' parameter");
+        ret = false;
+    }
+    if (b.check("vels_hand","Getting hand vels"))
+    {
+        Bottle &grp=b.findGroup("vels_hand");
+        int sz=grp.size()-1;
+        int len=sz>9?9:sz;
+
+        for (int i=0; i<len; i++)
+            vels[i]=grp.get(1+i).asDouble();
+    }
+    else
+    {
+        yError("Missing 'vels_hand' parameter");
+        ret = false;
+    }
+    return ret;
 }
 
 bool    collaboration::giveARE(const string &target, const string &arm)

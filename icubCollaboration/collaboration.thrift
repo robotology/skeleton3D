@@ -67,6 +67,14 @@ service collaboration_IDL
   bool grasp_pos_ARE(1:Vector _pos, 2:string _arm);
 
   /**
+  * Grasp target at a position, use to test connect with pure Cartesian and Joint controller.
+  * @param _pos Vector of position.
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool grasp_pos_Raw(1:Vector _pos, 2:string _arm);
+
+  /**
   * Give object to a person, use to test connect with ARE.
   * @param _partH name of human part in string.
   * @param _armR left/right arm in string
@@ -118,4 +126,18 @@ service collaboration_IDL
   * @return true/false on success/failure.
   */
   bool set_homeAng(1:Vector _angs);
+
+  /**
+  * Close robot hand
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool close_hand(1:string _arm);
+
+  /**
+  * Open robot hand
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool open_hand(1:string _arm);
 }
