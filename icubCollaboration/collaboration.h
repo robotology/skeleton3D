@@ -120,7 +120,7 @@ protected:
 
     bool    moveHand(const int &action, const string &arm, const double &timeout=10.0);
 
-    bool    moveArm(const Vector &pos, const string &arm);
+    bool    reachArm(const Vector &pos, const string &arm, const double &timeout=3.0);
 
     bool    graspRaw(const Vector &pos, const string &arm);
 

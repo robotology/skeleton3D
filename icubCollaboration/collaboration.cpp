@@ -408,7 +408,8 @@ bool    collaboration::takeARE(const string &target, const string &arm)
     // TODO: check if use takeARE or graspARE
     if (checkPosReachable(targetPos, arm))
 //        return takeARE(targetPos, arm);
-        return graspARE(targetPos, arm);
+//        return graspARE(targetPos, arm);
+        return graspRaw(targetPos, arm);
     else
     {
         yDebug("%s is unreachable", targetPos.toString(3,3).c_str());
@@ -485,10 +486,21 @@ bool    collaboration::graspARE(const Vector &pos, const string &arm)
 
 bool    collaboration::graspRaw(const Vector &pos, const string &arm)
 {
-    return (moveArm(pos,arm) && (closeHand(arm,10.0)));
+//    return (reachArm(pos,arm) && (closeHand(arm,10.0)));
+    bool ok = reachArm(pos, arm);
+    if (ok)
+    {
+        yDebug("[graspRaw] Done reaching");
+        return closeHand(arm,10.0);
+    }
+    else
+    {
+        yError("[graspRaw] Failed in reaching");
+        return ok;
+    }
 }
 
-bool    collaboration::moveArm(const Vector &pos, const string &arm)
+bool    collaboration::reachArm(const Vector &pos, const string &arm, const double &timeout)
 {
     Matrix R(3,3);
     // pose x-axis y-axis z-axis: palm inward, pointing forward
@@ -500,8 +512,21 @@ bool    collaboration::moveArm(const Vector &pos, const string &arm)
         R(1,2) = 1.0;
 
     Vector rot = dcm2axis(R);
-    icartA->goToPoseSync(pos,rot);
-    return icartA->waitMotionDone(0.1,3.0);
+    icartA->restoreContext(contextArm);
+    icartA->setTrajTime(0.5);
+    icartA->setInTargetTol(0.01);
+    icartA->goToPose(pos,rot);
+    return icartA->waitMotionDone(0.1,timeout);
+//    icartA->ch
+//    bool done = false;
+
+//    double t0=Time::now();
+//    while (!done && (Time::now()-t0<timeout))
+//    {
+//        icartA->checkMotionDone(&done);
+//        Time::delay(0.1);
+//    }
+//    return done;
 }
 
 bool    collaboration::moveHand(const int &action, const string &arm, const double &timeout)
