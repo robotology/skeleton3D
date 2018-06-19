@@ -488,16 +488,20 @@ bool    collaboration::graspARE(const Vector &pos, const string &arm)
 bool    collaboration::graspRaw(const Vector &pos, const string &arm)
 {
 //    return (reachArm(pos,arm) && (closeHand(arm,10.0)));
-    bool ok = reachArm(pos, arm);
+    icartA->storeContext(&contextReactCtrl);
+    bool ok = reachArm(pos, arm, 5.0);
     if (ok)
     {
         yDebug("[graspRaw] Done reaching. Let wait for 1s...");
         Time::delay(1.0);
-        return closeHand(arm,6.0);
+        ok = closeHand(arm,6.0);
+        icartA->restoreContext(contextReactCtrl);
+        return ok;
     }
     else
     {
         yError("[graspRaw] Failed in reaching");
+        icartA->restoreContext(contextReactCtrl);
         return ok;
     }
 }
@@ -516,10 +520,21 @@ bool    collaboration::reachArm(const Vector &pos, const string &arm, const doub
 
     Vector rot = dcm2axis(R);
     icartA->restoreContext(contextArm);
-    icartA->setTrajTime(0.5);
+    icartA->setTrajTime(1.0);
     icartA->setInTargetTol(0.01);
     icartA->goToPose(pos,rot);
-    return icartA->waitMotionDone(0.1,timeout);
+//    icartA->waitMotionDone(0.1,timeout);
+
+    bool done = false;
+
+    double t0=Time::now();
+    while (!done && (Time::now()-t0<timeout))
+    {
+        icartA->checkMotionDone(&done);
+        Time::delay(0.1);
+    }
+    icartA->stopControl();
+    return done;
 }
 
 bool    collaboration::moveFingers(const int &action, const string &arm, const double &timeout)

@@ -75,6 +75,7 @@ protected:
     // Arm interface
     yarp::dev::ICartesianControl    *icartA;
     int                             contextArm;
+    int                             contextReactCtrl;
 
     // Arm joint controller for grasping
     yarp::dev::IControlMode         *imodA;
@@ -177,7 +178,7 @@ public:
         isHoldingObject = takeARE(_object, arm);
         ok = ok && isHoldingObject;
 
-        Time::delay(0.5);
+        Time::delay(2.0);
         lookAtHome(homeAng,5.0);
 
         ok = ok && moveReactPPS(homePos, arm);
