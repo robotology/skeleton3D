@@ -490,7 +490,8 @@ bool    collaboration::graspRaw(const Vector &pos, const string &arm)
     bool ok = reachArm(pos, arm);
     if (ok)
     {
-        yDebug("[graspRaw] Done reaching");
+        yDebug("[graspRaw] Done reaching. Let wait for 1s...");
+        Time::delay(1.0);
         return closeHand(arm,10.0);
     }
     else
@@ -502,6 +503,7 @@ bool    collaboration::graspRaw(const Vector &pos, const string &arm)
 
 bool    collaboration::reachArm(const Vector &pos, const string &arm, const double &timeout)
 {
+    // TODO: use param arm
     Matrix R(3,3);
     // pose x-axis y-axis z-axis: palm inward, pointing forward
     R(0,0)=-1.0; R(0,1)= 0.0; R(0,2)= 0.0; // x-coordinate
@@ -531,6 +533,7 @@ bool    collaboration::reachArm(const Vector &pos, const string &arm, const doub
 
 bool    collaboration::moveHand(const int &action, const string &arm, const double &timeout)
 {
+    // TODO: use param arm
     Vector *pos=NULL;
 
     switch (action)
@@ -554,7 +557,6 @@ bool    collaboration::moveHand(const int &action, const string &arm, const doub
         iposA->positionMove(k,(*pos)[j]);
     }
     bool done = false;
-//    iposA->checkMotionDone(&done);
 
     double t0=Time::now();
     while (!done && (Time::now()-t0<timeout))
@@ -567,11 +569,13 @@ bool    collaboration::moveHand(const int &action, const string &arm, const doub
 
 bool    collaboration::closeHand(const string &arm, const double &timeout)
 {
+    yDebug("Closing hand!!");
     return moveHand(CLOSEHAND, arm, timeout);
 }
 
 bool    collaboration::openHand(const string &arm, const double &timeout)
 {
+    yDebug("Opening hand!!");
     return moveHand(OPENHAND, arm, timeout);
 }
 
