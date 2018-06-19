@@ -95,6 +95,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     // Arm joint Controller: for grasping
     closedHandPos.resize(9,0.0);
     openHandPos.resize(9,0.0);
+    midHandPos.resize(9,0.0);
     handVels.resize(9,0.0);
 
     Property optArm_joint("(device remote_controlboard)");
@@ -129,7 +130,7 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     Bottle &bGrasp=rf.findGroup("grasp");
     bGrasp.setMonitor(rf.getMonitor());
-    if (!getGraspConfig(bGrasp,openHandPos, closedHandPos, handVels))
+    if (!getGraspConfig(bGrasp,openHandPos, midHandPos, closedHandPos, handVels))
     {
         yError ("Error in parameters section 'grasp'");
         return false;
@@ -492,7 +493,7 @@ bool    collaboration::graspRaw(const Vector &pos, const string &arm)
     {
         yDebug("[graspRaw] Done reaching. Let wait for 1s...");
         Time::delay(1.0);
-        return closeHand(arm,10.0);
+        return closeHand(arm,6.0);
     }
     else
     {
@@ -519,19 +520,9 @@ bool    collaboration::reachArm(const Vector &pos, const string &arm, const doub
     icartA->setInTargetTol(0.01);
     icartA->goToPose(pos,rot);
     return icartA->waitMotionDone(0.1,timeout);
-//    icartA->ch
-//    bool done = false;
-
-//    double t0=Time::now();
-//    while (!done && (Time::now()-t0<timeout))
-//    {
-//        icartA->checkMotionDone(&done);
-//        Time::delay(0.1);
-//    }
-//    return done;
 }
 
-bool    collaboration::moveHand(const int &action, const string &arm, const double &timeout)
+bool    collaboration::moveFingers(const int &action, const string &arm, const double &timeout)
 {
     // TODO: use param arm
     Vector *pos=NULL;
@@ -550,36 +541,55 @@ bool    collaboration::moveHand(const int &action, const string &arm, const doub
     for (size_t j=0; j<handVels.length(); j++)
         imodA->setControlMode(7+j,VOCAB_CM_POSITION);
 
-    for (size_t j=0; j<handVels.length(); j++)
+    bool done = moveFingersToWp(midHandPos, timeout/2.0);
+    if (!done)
     {
-        int k=7+j;
-        iposA->setRefSpeed(k,handVels[j]);
-        iposA->positionMove(k,(*pos)[j]);
+        yError("Cannot finish move fingers to mid position!");
+//        return false;
     }
-    bool done = false;
+    Time::delay(0.5);
+    return moveFingersToWp(*pos, timeout/2.0);
+}
 
-    double t0=Time::now();
-    while (!done && (Time::now()-t0<timeout))
+bool    collaboration::moveFingersToWp(const Vector &Wp, const double &timeout)
+{
+    yDebug("Move fingers to [%s]!!",Wp.toString(3,1).c_str());
+    if (Wp.size()==handVels.size())
     {
-        iposA->checkMotionDone(&done);
-        Time::delay(0.1);
-    }
-    return done;
+        for (size_t j=0; j<handVels.length(); j++)
+        {
+            int k=7+j;
+            iposA->setRefSpeed(k,handVels[j]);
+            iposA->positionMove(k,Wp[j]);
+        }
+        bool done = false;
+
+        double t0=Time::now();
+        while (!done && (Time::now()-t0<timeout))
+        {
+            iposA->checkMotionDone(&done);
+            Time::delay(0.1);
+        }
+        return done;
+        }
+    else
+        return false;
 }
 
 bool    collaboration::closeHand(const string &arm, const double &timeout)
 {
     yDebug("Closing hand!!");
-    return moveHand(CLOSEHAND, arm, timeout);
+    return moveFingers(CLOSEHAND, arm, timeout);
 }
 
 bool    collaboration::openHand(const string &arm, const double &timeout)
 {
     yDebug("Opening hand!!");
-    return moveHand(OPENHAND, arm, timeout);
+    return moveFingers(OPENHAND, arm, timeout);
 }
 
-bool    collaboration::getGraspConfig(const Bottle &b, Vector &openPos, Vector &closedPos, Vector &vels)
+bool    collaboration::getGraspConfig(const Bottle &b, Vector &openPos, Vector &midPos,
+                                      Vector &closedPos, Vector &vels)
 {
     bool ret = true;
 
@@ -597,6 +607,22 @@ bool    collaboration::getGraspConfig(const Bottle &b, Vector &openPos, Vector &
         yError("Missing 'open_hand' parameter");
         ret = false;
     }
+
+    if (b.check("mid_hand","Getting midHand pos"))
+    {
+        Bottle &grp=b.findGroup("mid_hand");
+        int sz=grp.size()-1;
+        int len=sz>9?9:sz;
+
+        for (int i=0; i<len; i++)
+            midPos[i]=grp.get(1+i).asDouble();
+    }
+    else
+    {
+        yError("Missing 'mid_hand' parameter");
+        ret = false;
+    }
+
     if (b.check("close_hand","Getting closeHand pos"))
     {
         Bottle &grp=b.findGroup("close_hand");

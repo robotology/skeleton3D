@@ -82,7 +82,7 @@ protected:
     yarp::dev::IEncoders            *iencsA;
     yarp::dev::IControlLimits       *ilimA;
     yarp::sig::Vector               *encsA;
-    Vector                          closedHandPos, openHandPos;
+    Vector                          closedHandPos, openHandPos, midHandPos;
     Vector                          handVels;
     int jntsA;
 
@@ -118,13 +118,16 @@ protected:
 
     bool    openHand(const string &arm, const double &timeout=10.0);
 
-    bool    moveHand(const int &action, const string &arm, const double &timeout=10.0);
+    bool    moveFingers(const int &action, const string &arm, const double &timeout=10.0);
+
+    bool    moveFingersToWp(const Vector &Wp, const double &timeout=10.0);
 
     bool    reachArm(const Vector &pos, const string &arm, const double &timeout=3.0);
 
     bool    graspRaw(const Vector &pos, const string &arm);
 
-    bool    getGraspConfig(const Bottle &b, Vector &openPos, Vector &closedPos, Vector &vels);
+    bool    getGraspConfig(const Bottle &b, Vector &openPos, Vector &midPos,
+                           Vector &closedPos, Vector &vels);
 
     /**
      * @brief move move a robot arm with simple cartesian controller
