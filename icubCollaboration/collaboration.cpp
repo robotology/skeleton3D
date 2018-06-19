@@ -520,6 +520,7 @@ bool    collaboration::reachArm(const Vector &pos, const string &arm, const doub
 
     Vector rot = dcm2axis(R);
     icartA->restoreContext(contextArm);
+    icartA->setTrackingMode(false);
     icartA->setTrajTime(1.0);
     icartA->setInTargetTol(0.01);
     icartA->goToPose(pos,rot);
