@@ -43,13 +43,14 @@ protected:
     string      _arm;
     double      posTol;
 
-    bool        connectedReactCtrl, connectedARE;
+    bool        connectedReactCtrl, connectedARE, connectedSQR;
     int8_t      running_mode;
 
     RpcServer   rpcPort;                            //!< rpc server to receive user request
     OPCClient   *opc;                               //!< OPC client object
     RpcClient   rpcReactCtrl;                       //!< rpc client port to send requests to /reactController/rpc
     RpcClient   rpcARE;                             //!< rpc client port to send requests to /actionsRenderingEngine/cmd:io
+    RpcClient   rpcGraspSQR;                        //!< rpc client port to send requests to /graspProcessor/rpc
     string      partner_default_name;
 
     Vector      homePosL, homePosR, basket;
@@ -129,6 +130,8 @@ protected:
 
     bool    getGraspConfig(const Bottle &b, Vector &openPos, Vector &midPos,
                            Vector &closedPos, Vector &vels);
+
+    bool    graspOnTable(const string &target, const string &arm);
 
     /**
      * @brief move move a robot arm with simple cartesian controller
@@ -225,7 +228,7 @@ public:
             return false;
 
         // TODO grasp on table
-        // isHoldingObject = graspOnTable(_object, arm);
+         isHoldingObject = graspOnTable(_object, arm);
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
@@ -263,6 +266,11 @@ public:
     bool    grasp_pos_Raw(const Vector &_pos, const string &_arm)
     {
         return graspRaw(_pos, _arm);
+    }
+
+    bool    grasp_on_table(const string &_target, const string &_arm)
+    {
+        return graspOnTable(_target,_arm);
     }
 
     bool    give_human_ARE(const string &_partH, const string &_armR)

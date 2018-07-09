@@ -46,6 +46,11 @@ bool    collaboration::configure(ResourceFinder &rf)
     std::string actionsRenderingEngineRPC = "/actionsRenderingEngine/cmd:io";
     connectedARE = yarp::os::Network::connect(rpcARE.getName().c_str(), actionsRenderingEngineRPC);
 
+    // grasping with superquadric
+    rpcGraspSQR.open(("/"+name+"/graspProcessor/rpc").c_str());
+    std::string graspProcessorRPC = "/graspProcessor/rpc";
+    connectedSQR = yarp::os::Network::connect(rpcGraspSQR.getName().c_str(), graspProcessorRPC);
+
     // Torso Cartesian Controller
 
     yarp::os::Property OptT;
@@ -669,6 +674,30 @@ bool    collaboration::getGraspConfig(const Bottle &b, Vector &openPos, Vector &
     }
     return ret;
 }
+
+bool    collaboration::graspOnTable(const string &target, const string &arm)
+{
+    if (connectedSQR)
+    {
+        Bottle cmd, rep;
+        bool ret = false;
+
+        cmd.addString("grasp_pose");
+        cmd.addString(target.c_str());
+        cmd.addString(arm.c_str());
+
+        yDebug("Command sent to graspProcessor: %s",cmd.toString().c_str());
+
+        if (rpcGraspSQR.write(cmd, rep))
+            ret = (rep.get(0).asVocab()==Vocab::encode("ack"));
+
+        yDebug() << "[graspOnTable] Reply from graspProcessor: " << rep.toString();
+        return ret;
+    }
+    else
+        return false;
+}
+
 
 bool    collaboration::giveARE(const string &target, const string &arm)
 {

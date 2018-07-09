@@ -75,6 +75,14 @@ service collaboration_IDL
   bool grasp_pos_Raw(1:Vector _pos, 2:string _arm);
 
   /**
+  * Grasp target on the table, use to test connect with graspProcessor (using superquadric).
+  * @param _target string of target name.
+  * @param _arm left/right arm in string
+  * @return true/false on success/failure.
+  */
+  bool grasp_on_table(1:string _target, 2:string _arm);
+
+  /**
   * Give object to a person, use to test connect with ARE.
   * @param _partH name of human part in string.
   * @param _armR left/right arm in string
