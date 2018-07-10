@@ -848,13 +848,13 @@ bool    collaboration::updateHoldingObj(const Vector &x_EE, const Vector &o_EE)
     opc->commit(manipulatingObj);
 }
 
-bool    collaboration::reduceHumanValence(const string &_human_part)
+bool    collaboration::setHumanValence(const double &valence, const string &_human_part)
 {
     Bottle cmd, rep;
     bool ret = false;
 
     cmd.addString("set_valence_hand");
-    cmd.addDouble(-1.0);
+    cmd.addDouble(valence);
     cmd.addString(_human_part.c_str());
 
     yDebug("Command sent to skeleton3D: %s",cmd.toString().c_str());

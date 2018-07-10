@@ -159,7 +159,7 @@ protected:
      */
     bool    updateHoldingObj(const Vector &x_EE, const Vector &o_EE);
 
-    bool    reduceHumanValence(const string &_human_part);
+    bool    setHumanValence(const double &valence,const string &_human_part);
 
 public:
 
@@ -236,7 +236,7 @@ public:
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
         // TODO: reduce the valence of _human_part to receive object
-        reduceHumanValence(_human_part);
+        setHumanValence(-1.0,_human_part);
 
         bool ok = isHoldingObject && moveReactPPS(_object, arm, 10.0, true);   //move to near empty hand
         ok = ok && giveARE(_human_part, arm);       //give to empty hand
@@ -246,6 +246,8 @@ public:
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
+        setHumanValence(0.0,_human_part);
+
         ok = ok && moveReactPPS(homePos, arm);
 
         running_mode = MODE_IDLE;
@@ -348,7 +350,7 @@ public:
 
     bool    reduce_human_valence(const string &_human_part)
     {
-        return reduceHumanValence(_human_part);
+        return setHumanValence(-1.0,_human_part);
     }
 };
 
