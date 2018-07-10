@@ -41,12 +41,12 @@
     <!-- Tool connection-->
     <connection>
         <from>/skeleton3D/askTool:rpc</from>
-        <to>/onTheFlyRecognition/human:io</to>
+        <to>/onTheFlyRecognition_right/human:io</to>
         <protocol>tcp</protocol>
     </connection>
 
     <connection>
-        <from>/onTheFlyRecognition/class:o</from>
+        <from>/onTheFlyRecognition_right/class:o</from>
         <to>/skeleton3D/toolClass:i</to>
         <protocol>tcp</protocol>
     </connection>
@@ -60,7 +60,7 @@
     <!-- On the fly connection-->
     <connection>
         <from>/skeleton3D/handBlobs:o</from>
-        <to>/onTheFlyRecognition/roi:i</to>
+        <to>/onTheFlyRecognition_right/roi:i</to>
         <protocol>tcp</protocol>
     </connection>
 
