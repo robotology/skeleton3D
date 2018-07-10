@@ -34,7 +34,7 @@ protected:
     double      period;
     string      name;
     double      body_valence;
-    double      hand_valence;
+    double      hand_valence, handRight_valence, handLeft_valence;
     double      part_dimension;
     double      obj_valence;
     bool        use_part_conf;
@@ -249,6 +249,7 @@ public:
         {
             body_valence = _valence;
             hand_valence = _valence;
+            handRight_valence = handLeft_valence = hand_valence;
             return true;
         }
         else
@@ -260,20 +261,37 @@ public:
         return body_valence;
     }
 
-    bool set_valence_hand(const double _valence)
+    bool set_valence_hand(const double _valence, const string &_hand)
     {
         if (_valence<=1.0 && _valence>=-1.0)
         {
-            hand_valence = _valence;
+            if (_hand=="both")
+            {
+                hand_valence = _valence;
+                handRight_valence = handLeft_valence = hand_valence;
+            }
+            else if (_hand=="right")
+                handRight_valence = _valence;
+            else if (_hand=="left")
+                handLeft_valence = _valence;
+            else
+                return false;
             return true;
         }
         else
             return false;
     }
 
-    double get_valence_hand()
+    double get_valence_hand(const string &_hand)
     {
-        return hand_valence;
+        if (_hand=="both")
+            return hand_valence;
+        else if (_hand=="right")
+            return handRight_valence;
+        else if (_hand=="left")
+            return handLeft_valence;
+        else
+            return false;
     }
 
     bool set_valence_obj(const double _valence)

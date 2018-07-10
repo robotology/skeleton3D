@@ -399,12 +399,12 @@ void    skeleton3D::addPartToStream(Agent* a, const string &partName, Bottle &st
     {
         if (partName == "handRight")
             if (!hasObjectR)
-                part.addDouble(hand_valence);
+                part.addDouble(handRight_valence);
             else
                 part.addDouble(-1.0);
         else if (partName == "handLeft")
             if (!hasObjectL)
-                part.addDouble(hand_valence);
+                part.addDouble(handLeft_valence);
             else
                 part.addDouble(-1.0);
         else
@@ -859,6 +859,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
 
     body_valence = rf.check("body_valence",Value(1.0)).asDouble();      // max = 1.0, min = -1.0
     hand_valence = body_valence;
+    handRight_valence = handLeft_valence = hand_valence;
     obj_valence = rf.check("obj_valence",Value(0.0)).asDouble();      // max = 1.0, min = -1.0
     part_dimension = rf.check("part_dimension",Value(0.07)).asDouble(); // hard-coded body part dimension
 
