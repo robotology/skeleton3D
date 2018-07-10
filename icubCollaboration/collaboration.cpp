@@ -51,8 +51,8 @@ bool    collaboration::configure(ResourceFinder &rf)
         yError() <<"Cannot connect to ARE!";
 
     // grasping with superquadric
-    rpcGraspSQR.open(("/"+name+"/graspProcessor/rpc").c_str());
-    std::string graspProcessorRPC = "/graspProcessor/rpc";
+    rpcGraspSQR.open(("/"+name+"/graspProcessor/cmd:rpc").c_str());
+    std::string graspProcessorRPC = "/graspProcessor/cmd:rpc";
     connectedSQR = yarp::os::Network::connect(rpcGraspSQR.getName().c_str(), graspProcessorRPC);
     if (connectedSQR)
         yInfo()<<"Connected to Superquadric!";
