@@ -148,4 +148,11 @@ service collaboration_IDL
   * @return true/false on success/failure.
   */
   bool open_hand(1:string _arm);
+
+  /**
+  * Reduce human valence, use to test communication with skeleton3D
+  * @param _human_part left/right/both hand in string
+  * @return true/false on success/failure.
+  */
+  bool reduce_human_valence(1:string _human_part);
 }

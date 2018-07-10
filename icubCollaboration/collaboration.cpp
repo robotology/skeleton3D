@@ -45,11 +45,27 @@ bool    collaboration::configure(ResourceFinder &rf)
     rpcARE.open(("/"+name+"/ARE/cmd:io").c_str());
     std::string actionsRenderingEngineRPC = "/actionsRenderingEngine/cmd:io";
     connectedARE = yarp::os::Network::connect(rpcARE.getName().c_str(), actionsRenderingEngineRPC);
+    if (connectedARE)
+        yInfo()<<"Connected to ARE!";
+    else
+        yError() <<"Cannot connect to ARE!";
 
     // grasping with superquadric
     rpcGraspSQR.open(("/"+name+"/graspProcessor/rpc").c_str());
     std::string graspProcessorRPC = "/graspProcessor/rpc";
     connectedSQR = yarp::os::Network::connect(rpcGraspSQR.getName().c_str(), graspProcessorRPC);
+    if (connectedSQR)
+        yInfo()<<"Connected to Superquadric!";
+    else
+        yError() <<"Cannot connect to Superquadric!";
+
+    // grasping with skeleton3D
+    rpcSkeleton3D.open(("/"+name+"/skeleton3D/rpc").c_str());
+    std::string skeleton3DRPC = "/skeleton3D/rpc";
+    if (yarp::os::Network::connect(rpcSkeleton3D.getName().c_str(), skeleton3DRPC))
+        yInfo()<<"Connected to skeleton3D!";
+    else
+        yError() <<"Cannot connect to skeleton3D!";
 
     // Torso Cartesian Controller
 
@@ -501,12 +517,14 @@ bool    collaboration::graspRaw(const Vector &pos, const string &arm)
         Time::delay(1.0);
         ok = closeHand(arm,6.0);
         icartA->restoreContext(contextReactCtrl);
+        icartA->deleteContext(contextReactCtrl);
         return ok;
     }
     else
     {
         yError("[graspRaw] Failed in reaching");
         icartA->restoreContext(contextReactCtrl);
+        icartA->deleteContext(contextReactCtrl);
         return ok;
     }
 }
@@ -718,6 +736,13 @@ bool    collaboration::giveARE(const string &target, const string &arm)
         return false;
     }
     Vector pos = a->m_body.m_parts[target.c_str()];
+    pos[0] = max(pos[0], -0.35);
+    pos[2] = 0.2;
+    if (pos[1]>=0)
+        pos[1] = min(pos[1], 0.1);
+    else
+        pos[1] = max(pos[1], -0.3);
+
 
     Vector offset(3,0.0);
     offset[0] += 0.05; // 5cm closer to robot
@@ -821,4 +846,22 @@ bool    collaboration::updateHoldingObj(const Vector &x_EE, const Vector &o_EE)
     manipulatingObj->m_ego_position = x_obj;
     manipulatingObj->m_value = -1.0;
     opc->commit(manipulatingObj);
+}
+
+bool    collaboration::reduceHumanValence(const string &_human_part)
+{
+    Bottle cmd, rep;
+    bool ret = false;
+
+    cmd.addString("set_valence_hand");
+    cmd.addDouble(-1.0);
+    cmd.addString(_human_part.c_str());
+
+    yDebug("Command sent to skeleton3D: %s",cmd.toString().c_str());
+
+    if (rpcSkeleton3D.write(cmd, rep))
+        ret = (rep.get(0).asBool());
+
+    yDebug() << "[reduceHumanValence] Reply from skeleton3D: " << rep.toString();
+    return ret;
 }

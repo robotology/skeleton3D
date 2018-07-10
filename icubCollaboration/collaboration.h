@@ -51,6 +51,7 @@ protected:
     RpcClient   rpcReactCtrl;                       //!< rpc client port to send requests to /reactController/rpc
     RpcClient   rpcARE;                             //!< rpc client port to send requests to /actionsRenderingEngine/cmd:io
     RpcClient   rpcGraspSQR;                        //!< rpc client port to send requests to /graspProcessor/rpc
+    RpcClient   rpcSkeleton3D;
     string      partner_default_name;
 
     Vector      homePosL, homePosR, basket;
@@ -158,6 +159,8 @@ protected:
      */
     bool    updateHoldingObj(const Vector &x_EE, const Vector &o_EE);
 
+    bool    reduceHumanValence(const string &_human_part);
+
 public:
 
     /**
@@ -233,6 +236,7 @@ public:
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
         // TODO: reduce the valence of _human_part to receive object
+        reduceHumanValence(_human_part);
 
         bool ok = isHoldingObject && moveReactPPS(_object, arm, 10.0, true);   //move to near empty hand
         ok = ok && giveARE(_human_part, arm);       //give to empty hand
@@ -340,6 +344,11 @@ public:
     bool    open_hand(const string &_arm)
     {
         return openHand(_arm);
+    }
+
+    bool    reduce_human_valence(const string &_human_part)
+    {
+        return reduceHumanValence(_human_part);
     }
 };
 
