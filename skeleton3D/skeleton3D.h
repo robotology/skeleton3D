@@ -286,9 +286,9 @@ public:
     {
         if (_hand=="both")
             return hand_valence;
-        else if (_hand=="right")
+        else if (_hand=="handRight")
             return handRight_valence;
-        else if (_hand=="left")
+        else if (_hand=="handLeft")
             return handLeft_valence;
         else
             return false;
