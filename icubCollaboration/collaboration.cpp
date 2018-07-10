@@ -700,7 +700,7 @@ bool    collaboration::graspOnTable(const string &target, const string &arm)
         Bottle cmd, rep;
         bool ret = false;
 
-        cmd.addString("grasp_pose");
+        cmd.addString("grasp");
         cmd.addString(target.c_str());
         cmd.addString(arm.c_str());
 
