@@ -54,7 +54,7 @@ protected:
     RpcClient   rpcSkeleton3D;
     string      partner_default_name;
 
-    Vector      homePosL, homePosR, basket;
+    Vector      homePosL, homePosR, basket, graspTorso, graspGaze;
     double      workspaceX, workspaceY, workspaceZ_low, workspaceZ_high;
 
     bool                    isHoldingObject;                    //!< bool variable to show if object is holding, assume that a sucessful grasp action means robot holding the object
@@ -231,14 +231,15 @@ public:
             return false;
 
         // TODO grasp on table
-         isHoldingObject = graspOnTable(_object, arm);
+        bool ok = pre_grasp_pos();
+        isHoldingObject = graspOnTable(_object, arm);
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
         // TODO: reduce the valence of _human_part to receive object
         setHumanValence(-1.0,_human_part);
 
-        bool ok = isHoldingObject && moveReactPPS(_object, arm, 10.0, true);   //move to near empty hand
+        ok = ok && isHoldingObject && moveReactPPS(_object, arm, 10.0, true);   //move to near empty hand
         ok = ok && giveARE(_human_part, arm);       //give to empty hand
 
         if (ok)
@@ -302,12 +303,24 @@ public:
             return false;
     }
 
+    bool    pre_grasp_pos()
+    {
+        bool ok= move_torso(graspTorso);
+        Time::delay(0.5);
+        return ok && lookAtHome(graspGaze, 5.0);
+    }
+
     bool    move_torso(const Vector &_ang)
     {
         Vector ang = _ang;
         for (int8_t i=0; i<3; i++)
             imodT->setControlMode(i, VOCAB_CM_POSITION);
         return iposT->positionMove(ang.data());
+    }
+
+    bool    move_neck(const Vector &_ang)
+    {
+        return lookAtHome(_ang,5.0);
     }
 
     bool    set_posTol(const double _tol)

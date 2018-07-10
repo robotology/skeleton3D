@@ -270,9 +270,9 @@ public:
                 hand_valence = _valence;
                 handRight_valence = handLeft_valence = hand_valence;
             }
-            else if (_hand=="right")
+            else if (_hand=="handRight")
                 handRight_valence = _valence;
-            else if (_hand=="left")
+            else if (_hand=="handLeft")
                 handLeft_valence = _valence;
             else
                 return false;

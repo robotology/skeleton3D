@@ -109,11 +109,24 @@ service collaboration_IDL
   bool home_all();
 
   /**
+  * Move torso and neck to grasp pose, to see objects on table
+  * @return true/false on success/failure.
+  */
+  bool pre_grasp_pos();
+
+  /**
   * move torso
   * @param _ang Vector of angle.
   * @return true/false on success/failure.
   */
   bool move_torso(1:Vector _ang);
+
+  /**
+  * move neck
+  * @param _ang Vector of angle.
+  * @return true/false on success/failure.
+  */
+  bool move_neck(1:Vector _ang);
 
   /**
   * Set posTol

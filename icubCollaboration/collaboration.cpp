@@ -205,6 +205,14 @@ bool    collaboration::configure(ResourceFinder &rf)
     basket[0] = 0.2;
     basket[1] = 0.4;
     basket[2] = 0.05;
+
+    // grasp position
+    graspTorso.resize(3, 0.0);
+    graspTorso[0] = 43.0;
+
+    graspGaze.resize(3,0.0);
+    graspGaze[0] = 65.0;
+    graspGaze[1] =-35.0;
     // TODO check this
 
     isHoldingObject = false;
