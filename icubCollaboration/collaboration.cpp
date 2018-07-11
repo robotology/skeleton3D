@@ -67,6 +67,26 @@ bool    collaboration::configure(ResourceFinder &rf)
     else
         yError() <<"Cannot connect to skeleton3D!";
 
+    // grasping with iolStateMachineHandler/human:rpc
+    rpcIOLSMH.open(("/"+name+"/iolSMH/rpc").c_str());
+    std::string iolSMH_RPC = "/iolStateMachineHandler/human:rpc";
+    if (yarp::os::Network::connect(rpcIOLSMH.getName().c_str(), iolSMH_RPC))
+        yInfo()<<"Connected to iolStateMachineHandler!";
+    else
+        yError() <<"Cannot connect to iolStateMachineHandler!";
+
+    Bottle cmd, rep;
+    bool ret = false;
+
+    cmd.addString("attention");
+    cmd.addString("stop");
+
+    yDebug("Command sent to iolStateMachineHandler: %s",cmd.toString().c_str());
+
+    if (rpcIOLSMH.write(cmd, rep))
+        ret = (rep.get(0).asBool());
+
+
     // Torso Cartesian Controller
 
     yarp::os::Property OptT;
@@ -324,6 +344,13 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm, con
             return false;
         }
         targetPos = a->m_body.m_parts[target.c_str()];
+
+        targetPos[0] = -0.4;
+        targetPos[2] = 0.2;
+        if (targetPos[1]>=0)
+            targetPos[1] = min(targetPos[1], 0.1);
+        else
+            targetPos[1] = max(targetPos[1], -0.3);
     }
 
 
@@ -744,7 +771,7 @@ bool    collaboration::giveARE(const string &target, const string &arm)
         return false;
     }
     Vector pos = a->m_body.m_parts[target.c_str()];
-    pos[0] = max(pos[0], -0.35);
+    pos[0] = -0.4;
     pos[2] = 0.2;
     if (pos[1]>=0)
         pos[1] = min(pos[1], 0.1);

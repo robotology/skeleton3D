@@ -52,6 +52,7 @@ protected:
     RpcClient   rpcARE;                             //!< rpc client port to send requests to /actionsRenderingEngine/cmd:io
     RpcClient   rpcGraspSQR;                        //!< rpc client port to send requests to /graspProcessor/rpc
     RpcClient   rpcSkeleton3D;
+    RpcClient   rpcIOLSMH;
     string      partner_default_name;
 
     Vector      homePosL, homePosR, basket, graspTorso, graspGaze;
@@ -232,14 +233,27 @@ public:
 
         // TODO grasp on table
         bool ok = pre_grasp_pos();
+        Time::delay(5.0);
         isHoldingObject = graspOnTable(_object, arm);
+
+        if (isHoldingObject)
+        {
+            Object *obj=opc->addOrRetrieveEntity<Object>(_object);
+            obj->m_value=-1.0;
+            obj->m_present=1.0;
+            manipulatingObj = obj;
+            Vector x_cur(3,0.0), o_cur(4,0.0);
+            if (icartA->getPose(x_cur, o_cur))
+                updateHoldingObj(x_cur, o_cur);
+        }
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
         // TODO: reduce the valence of _human_part to receive object
         setHumanValence(-1.0,_human_part);
 
-        ok = ok && isHoldingObject && moveReactPPS(_object, arm, 10.0, true);   //move to near empty hand
+        ok = ok && isHoldingObject;
+        ok = ok && moveReactPPS(_human_part, arm, 10.0, true);   //move to near empty hand
         ok = ok && giveARE(_human_part, arm);       //give to empty hand
 
         if (ok)
