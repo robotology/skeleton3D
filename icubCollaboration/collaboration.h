@@ -106,6 +106,8 @@ protected:
     bool    moveReactPPS(const string &target, const string &arm, const double &timeout=10.,
                          const bool &isTargetHuman = false);
 
+    bool    moveReactThenGrasp(const string &target, const string &arm, const double &timeout=10.);
+
     bool    moveReactPPS(const Vector &pos, const string &arm, const double &timeout=10.);
 
     bool    homeARE();
@@ -181,9 +183,11 @@ public:
         else
             return false;
 
-        bool ok = moveReactPPS(_object, arm);
-        isHoldingObject = takeARE(_object, arm);
-        ok = ok && isHoldingObject;
+//        bool ok = moveReactPPS(_object, arm);
+//        isHoldingObject = takeARE(_object, arm);
+//        ok = ok && isHoldingObject;
+        isHoldingObject = moveReactThenGrasp(_object,arm);
+        bool ok = isHoldingObject;
 
         Time::delay(2.0);
         lookAtHome(homeAng,5.0);
@@ -233,7 +237,7 @@ public:
 
         // TODO grasp on table
         bool ok = pre_grasp_pos();
-        Time::delay(5.0);
+        Time::delay(10.0);
         isHoldingObject = graspOnTable(_object, arm);
 
         if (isHoldingObject)

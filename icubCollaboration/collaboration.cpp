@@ -370,6 +370,54 @@ bool    collaboration::moveReactPPS(const string &target, const string &arm, con
     }
 }
 
+bool    collaboration::moveReactThenGrasp(const string &target, const string &arm, const double &timeout)
+{
+    Vector targetPos(3,0.0);
+    // get object pos with name <-- target
+
+    Entity* e = opc->getEntity(target, true);
+    Object *o;
+    if(e) {
+        o = dynamic_cast<Object*>(e);
+    }
+    else {
+        yError() << target << " is not an Entity";
+        return false;
+    }
+    if(!o) {
+        yError() << "Could not cast" << e->name() << "to Object";
+        return false;
+    }
+
+    o->m_value = -1.0;
+    targetPos = o->m_ego_position;
+    manipulatingObj = o;
+    opc->commit(o);
+
+    Vector offset(3,0.0);
+    offset[0] += 0.05; // 5cm closer to robot
+    if (arm=="right")
+        offset[1] +=0.05;   //5cm on the right
+    else if (arm=="left")
+        offset[1] -=0.05;   //5cm on the left
+
+    if (checkPosReachable(targetPos+offset, arm))
+    {
+        if (moveReactPPS(targetPos+offset, arm, timeout))
+            return graspRaw(targetPos, arm);
+        else
+        {
+            yError("moveReactPPS get error");
+            return false;
+        }
+    }
+    else
+    {
+        yDebug("%s is unreachable", (targetPos+offset).toString(3,3).c_str());
+        return false;
+    }
+}
+
 bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const double &timeout)
 {
     // TODO: arm to decide which hand
