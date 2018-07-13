@@ -200,6 +200,12 @@
     </connection>
 
     <connection>
+        <from>/skeleton3D/visuoTactileWrapper/objects:o</from>
+        <to>/visuoTactileWrapper/sensManager:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+
+    <connection>
         <from>/visuoTactileWrapper/events:o</from>
         <to>/visuoTactileRF/events:i</to>
         <protocol>tcp</protocol>
