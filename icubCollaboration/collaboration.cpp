@@ -391,7 +391,6 @@ bool    collaboration::moveReactThenGrasp(const string &target, const string &ar
 
     o->m_value = -1.0;
     targetPos = o->m_ego_position;
-    manipulatingObj = o;
     opc->commit(o);
 
     Vector offset(3,0.0);
@@ -404,7 +403,10 @@ bool    collaboration::moveReactThenGrasp(const string &target, const string &ar
     if (checkPosReachable(targetPos+offset, arm))
     {
         if (moveReactPPS(targetPos+offset, arm, timeout))
+        {
+            manipulatingObj = o;
             return graspRaw(targetPos, arm);
+        }
         else
         {
             yError("moveReactPPS get error");
@@ -416,6 +418,59 @@ bool    collaboration::moveReactThenGrasp(const string &target, const string &ar
         yDebug("%s is unreachable", (targetPos+offset).toString(3,3).c_str());
         return false;
     }
+}
+
+bool    collaboration::moveReactThenGive(const string &target, const string &arm, const double &timeout)
+{
+    Vector targetPos(3,0.0);
+    // get object pos with name <-- target
+    Entity* e = opc->getEntity(partner_default_name, true);
+    Agent* a;
+    if(e) {
+        a = dynamic_cast<Agent*>(e);
+    }
+    else {
+        yError() << target << " is not an Entity";
+        return false;
+    }
+    if(!a) {
+        yError() << "Could not cast" << e->name() << "to Agent";
+        return false;
+    }
+    targetPos = a->m_body.m_parts[target.c_str()];
+
+    targetPos[0] = -0.4;
+    targetPos[2] = 0.2;
+    if (targetPos[1]>=0)
+        targetPos[1] = min(targetPos[1], 0.1);
+    else
+        targetPos[1] = max(targetPos[1], -0.3);
+
+    Vector offset(3,0.0);
+    offset[0] += 0.05; // 5cm closer to robot
+    if (arm=="right")
+        offset[1] +=0.05;   //5cm on the right
+    else if (arm=="left")
+        offset[1] -=0.05;   //5cm on the left
+
+    if (checkPosReachable(targetPos+offset, arm))
+    {
+        if (moveReactPPS(targetPos+offset, arm, timeout))
+        {
+            return giveARE(targetPos, arm);
+        }
+        else
+        {
+            yError("moveReactPPS get error");
+            return false;
+        }
+    }
+    else
+    {
+        yDebug("%s is unreachable", (targetPos+offset).toString(3,3).c_str());
+        return false;
+    }
+
 }
 
 bool    collaboration::moveReactPPS(const Vector &pos, const string &arm, const double &timeout)

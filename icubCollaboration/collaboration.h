@@ -108,6 +108,8 @@ protected:
 
     bool    moveReactThenGrasp(const string &target, const string &arm, const double &timeout=10.);
 
+    bool    moveReactThenGive(const string &target, const string &arm, const double &timeout=10.);
+
     bool    moveReactPPS(const Vector &pos, const string &arm, const double &timeout=10.);
 
     bool    homeARE();
@@ -257,8 +259,10 @@ public:
         setHumanValence(-1.0,_human_part);
 
         ok = ok && isHoldingObject;
-        ok = ok && moveReactPPS(_human_part, arm, 10.0, true);   //move to near empty hand
-        ok = ok && giveARE(_human_part, arm);       //give to empty hand
+//        ok = ok && moveReactPPS(_human_part, arm, 10.0, true);   //move to near empty hand
+//        ok = ok && giveARE(_human_part, arm);       //give to empty hand
+
+        ok = ok && moveReactThenGive(_human_part,arm, 10.0);
 
         if (ok)
             isHoldingObject = false;
