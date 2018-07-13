@@ -24,7 +24,7 @@
 
     <module>
         <name>linearClassifierModule</name>
-        <parameters>--name linearClassifier_right --BufferSize 10 --CSVM 1.0 --databaseFolder OTFDatabase --WeightedSVM 1</parameters>
+        <parameters>--name linearClassifier_right --BufferSize 10 --CSVM 1.0 --databaseFolder HRI --WeightedSVM 1</parameters>
         <node>icub-cuda</node>
     </module>
 
@@ -58,7 +58,7 @@
 
     <module>
         <name>linearClassifierModule</name>
-	    <parameters>--name linearClassifier_left --BufferSize 10 --CSVM 1.0 --databaseFolder OTFDatabase --WeightedSVM 1</parameters>
+	    <parameters>--name linearClassifier_left --BufferSize 10 --CSVM 1.0 --databaseFolder HRI --WeightedSVM 1</parameters>
         <node>icub-cuda</node>
     </module>
 
