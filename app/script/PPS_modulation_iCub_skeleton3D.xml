@@ -15,17 +15,7 @@
        <node>icub21</node>
     </module>
 
-    <module>
-        <name>opcPopulater</name>
-        <node>icub21</node>
-    </module>
-
      <!--SFM modules-->
-    <module>
-        <name>skeleton2D.py</name>
-        <parameters>--des /skeleton2D</parameters>
-        <node>icub-cuda</node>
-    </module>
     <module>
         <name>SFM</name>
         <parameters></parameters>
@@ -76,6 +66,12 @@
         <parameters>--name /dispSkeleton:i --x 960 --y 370 --p 50 --compact</parameters>
         <node>icub22</node>
     </module>
+
+    <module>
+        <name>skeleton2D.py</name>
+        <parameters>--des /skeleton2D</parameters>
+        <node>icub-cuda</node>
+    </module>
     <module>
         <name>skeleton3D</name>
         <parameters>--dThresholdDisparition 10.0 --part_dimension 0.07 --filter_order 9 --use_part_conf 0 --period 0.01 --body_valence 0.0</parameters>
@@ -123,13 +119,6 @@
         <stdio></stdio>
     </module>
     
-    <module>
-        <name>visuoTactileCalib</name>
-        <parameters>--robot icub --taxelsFile taxelsFiles/taxels1D_45cmRF_skinV2_perfect_all.ini --rate 20</parameters>
-        <node>icub21</node>
-        <stdio></stdio>
-    </module>
-
     <!--GUI modules-->
     <module>
         <name>guiUpdater</name>
@@ -182,6 +171,11 @@
         <tag>skinGuiRH</tag>
     </module>
 
+    <module>
+        <name>opcPopulater</name>
+        <node>icub21</node>
+    </module>
+
 	<ensure>
 		<wait>5.0</wait>
 	</ensure>
@@ -212,12 +206,6 @@
     </connection>
     
     <connection>
-        <from>/visuoTactileWrapper/events:o</from>
-        <to>/visuoTactileCalib/events:i</to>
-        <protocol>tcp</protocol>
-    </connection>
-
-    <connection>
         <from>/visuoTactileWrapper/gui:o</from>
         <to>/iCubGui/objects</to>
         <protocol>tcp</protocol>
@@ -235,18 +223,6 @@
        <protocol>udp</protocol>
     </connection>
     
-    <connection>
-        <from>/visuoTactileCalib/pps_events_aggreg:o</from>
-        <to>/ppsAggregEventsForiCubGui/pps_events_aggreg:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-       <from>/visuoTactileCalib/pps_events_aggreg:o</from>
-       <to>/reactController/pps_events_aggreg:i</to>
-       <protocol>udp</protocol>
-    </connection>
-
     <connection>
         <from>/ppsAggregEventsForiCubGui/contacts:o</from>
         <to>/iCubGui/forces</to>
@@ -383,30 +359,6 @@
         <protocol>udp</protocol>
     </connection>
     
-        <connection>
-        <from>/visuoTactileCalib/skinGuiForearmL:o</from>
-        <to>/skinGui/left_forearm_virtual:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/visuoTactileCalib/skinGuiForearmR:o</from>
-        <to>/skinGui/right_forearm_virtual:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/visuoTactileCalib/skinGuiHandL:o</from>
-        <to>/skinGui/left_hand_virtual:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
-    <connection>
-        <from>/visuoTactileCalib/skinGuiHandR:o</from>
-        <to>/skinGui/right_hand_virtual:i</to>
-        <protocol>udp</protocol>
-    </connection>
-
     <connection>
         <from>/icub/skin/left_hand_comp</from>
         <to>/skinGui/left_hand:i</to>
