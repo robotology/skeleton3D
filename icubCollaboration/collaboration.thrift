@@ -22,9 +22,10 @@ service collaboration_IDL
   /**
   * Receive object with name from human.
   * @param _object name of object.
+  * @param _wait waiting for some second before running, default is -1.0
   * @return true/false on success/failure.
   */
-  bool receive_object(1:string _object);
+  bool receive_object(1:string _object, 2:double _wait);
 
   /**
   * Hand-over object with name to human.
@@ -140,6 +141,19 @@ service collaboration_IDL
   * @return double value of posTol
   */
   double get_posTol();
+
+  /**
+  * Set moveDuration
+  * @param _time double value of time for moving
+  * @return true/false on success/failure.
+  */
+  bool set_moveDuration(1:double _time);
+
+  /**
+  * Get moveDuration
+  * @return double value of moveDuration
+  */
+  double get_moveDuration();
 
   /**
   * Set homeAng

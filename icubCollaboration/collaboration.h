@@ -42,6 +42,7 @@ protected:
     string      part;
     string      _arm;
     double      posTol;
+    double      moveDuration;                       //!< moving time for reactCtrl
 
     bool        connectedReactCtrl, connectedARE, connectedSQR;
     int8_t      running_mode;
@@ -172,9 +173,11 @@ public:
      * @brief receive_object whole procedure to receive an object from human
      * @param _object
      * @return
-     */
-    bool    receive_object(const string &_object)
+     */   
+    bool    receive_object(const string &_object, const double _wait=-1.0)
     {
+        if (_wait>=0.0)
+            Time::delay(_wait);
         running_mode = MODE_RECEIVE;
         string arm = _arm;
         Vector homePos(3,0.0);
@@ -188,13 +191,13 @@ public:
 //        bool ok = moveReactPPS(_object, arm);
 //        isHoldingObject = takeARE(_object, arm);
 //        ok = ok && isHoldingObject;
-        isHoldingObject = moveReactThenGrasp(_object,arm);
+        isHoldingObject = moveReactThenGrasp(_object,arm,moveDuration);
         bool ok = isHoldingObject;
 
         Time::delay(2.0);
         lookAtHome(homeAng,5.0);
 
-        ok = ok && moveReactPPS(homePos, arm);
+        ok = ok && moveReactPPS(homePos, arm,moveDuration);
         lookAtHome(homeAng,5.0);
 
         ok = ok && dropARE(basket, arm);
@@ -262,7 +265,7 @@ public:
 //        ok = ok && moveReactPPS(_human_part, arm, 10.0, true);   //move to near empty hand
 //        ok = ok && giveARE(_human_part, arm);       //give to empty hand
 
-        ok = ok && moveReactThenGive(_human_part,arm, 10.0);
+        ok = ok && moveReactThenGive(_human_part,arm, moveDuration);
 
         if (ok)
             isHoldingObject = false;
@@ -271,7 +274,7 @@ public:
         lookAtHome(homeAng,5.0);
         setHumanValence(0.0,_human_part);
 
-        ok = ok && moveReactPPS(homePos, arm);
+        ok = ok && moveReactPPS(homePos, arm, moveDuration);
 
         running_mode = MODE_IDLE;
         return ok;
@@ -360,6 +363,23 @@ public:
     double    get_posTol()
     {
         return posTol;
+    }
+
+    bool    set_moveDuration(const double _time)
+    {
+        if (_time>0.0)
+        {
+            moveDuration = _time;
+            return true;
+        }
+        else
+            return false;
+
+    }
+
+    double    get_moveDuration()
+    {
+        return moveDuration;
     }
 
     bool    set_homeAng(const Vector &_angs)

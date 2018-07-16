@@ -11,6 +11,7 @@ bool    collaboration::configure(ResourceFinder &rf)
     else if (part == "left_arm")
         _arm = "left";
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
+    moveDuration=rf.check("moveDuration",Value(10.0)).asDouble();
 
     // Workspace
     workspaceX=rf.check("workspaceX",Value(-0.5)).asDouble();
@@ -648,7 +649,7 @@ bool    collaboration::graspRaw(const Vector &pos, const string &arm)
 {
 //    return (reachArm(pos,arm) && (closeHand(arm,10.0)));
     icartA->storeContext(&contextReactCtrl);
-    bool ok = reachArm(pos, arm, 5.0);
+    bool ok = reachArm(pos, arm, 3.0);
     if (ok)
     {
         yDebug("[graspRaw] Done reaching. Let wait for 1s...");
@@ -696,7 +697,7 @@ bool    collaboration::reachArm(const Vector &pos, const string &arm, const doub
         Time::delay(0.1);
     }
     icartA->stopControl();
-    return done;
+    return true;
 }
 
 bool    collaboration::moveFingers(const int &action, const string &arm, const double &timeout)
