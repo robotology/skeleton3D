@@ -31,6 +31,9 @@ if PLOT_JOINT==1
         out_pos = [0 0 12 31];
         FontSZ = 8;
     end
+elseif plot_dist_elbow==0
+        nb_subplot = 2;
+        out_pos = [0 0 17 14];
 else
     nb_subplot = 3;
     out_pos = [0 0 15 15];
@@ -49,8 +52,11 @@ velLimColor = hex2rgb('#97c4e7');
 fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
 
     sp_handle1 = subplot(nb_subplot,1,1); hold on
-        area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor',ppsColor,'FaceColor',ppsColor,'FaceAlpha',0.7);
-        plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_head_EE, 'LineWidth',LineSZ);
+%         area(time_rel_pps, part1(:,idx_ppsEv_on_skin_act),'EdgeColor',ppsColor,'FaceColor',ppsColor,'FaceAlpha',0.7); % HRI2018
+          area(time_rel_pps, part4(:,idx_ppsEv_on_skin_act),'EdgeColor',ppsColor,'FaceColor',ppsColor,'FaceAlpha',0.7); % Humanoids2018
+%         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl,
+%         dist_head_EE, 'LineWidth',LineSZ);   % HRI2018
+        plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, 'LineWidth',LineSZ); % Humanoids2018
 %         plot(time_rel_pps, dist_l_locus(:,1),'m.');   // distance to
 %         locus
 
@@ -67,8 +73,8 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
           
 %         ylabel({'distance to', 'end-eff. (m)'},'FontSize',FontSZ);  
         title('distance to end-effector (m)','FontSize',FontSZ)
-        yticks(0:0.2:1); 
-        xlim([tmin tmax]); ylim([0 1]); 
+        yticks(0:0.2:1.2); 
+        xlim([tmin tmax]); ylim([0 ylim_distEE]); 
         grid on
         
         set(gca, 'XTickLabel', [])
@@ -81,11 +87,15 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
        
         hold off
         ax = gca;
+        ax0 = ax;
         ax = set_tight_border(ax);
         
+    if plot_dist_elbow
     sp_handle2 = subplot(nb_subplot,1,2); hold on
         area(time_rel_pps, part2(:,idx_ppsEv_on_skin_act),'EdgeColor',ppsColor,'FaceColor',ppsColor,'FaceAlpha',0.7); 
-        plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl, dist_head_EB, 'LineWidth',LineSZ);
+%         plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl,
+%         dist_head_EB, 'LineWidth',LineSZ); % HRI2018
+        plot(time_rel_reactCtrl, dist_hL_EB, time_rel_reactCtrl, dist_hR_EB, 'LineWidth',LineSZ);   % Humanoids2018
 %         plot(time_rel_pps, dist_l_locus(:,2),'m.');   // distance to
 %         locus
         
@@ -116,7 +126,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         ax = gca;
         ax0 = ax;
         ax = set_tight_border(ax);
-    
+    end
     if PLOT_JOINT==1    
     for j=jnts_plot
         if plot_2_joint==1
@@ -184,7 +194,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         ylim([0 ylimEE]); %0.03 0.08 0.12
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
         xt_new = xt-tmin;
-        xticklabels({string(xt_new)})
+%         xticklabels({string(xt_new)})
         yt = get(gca, 'YTick');    set(gca, 'FontSize', FontSZ);
         grid on;
         
