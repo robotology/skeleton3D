@@ -25,7 +25,7 @@ service collaboration_IDL
   * @param _wait waiting for some second before running, default is -1.0
   * @return true/false on success/failure.
   */
-  bool receive_object(1:string _object, 2:double _wait);
+  bool receive_object(1:string _object, 2:double _wait=-1.0);
 
   /**
   * Hand-over object with name to human.
