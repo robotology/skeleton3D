@@ -14,6 +14,9 @@ h_new_sp = 0.02;
 if PLOT_JOINT==1
     if plot_2_joint==1      % plot 2 joints
         nb_subplot = 5;
+        if plot_dist_elbow==0
+            nb_subplot = 4;
+        end
         nb_jnts_plot = 2;
     %     jnts_plot = 8:2:chainActiveDOF;
         jnts_plot = chainActiveDOF:-2:8;
@@ -46,6 +49,8 @@ ppsColor = hex2rgb('bbf0a8');
 green = hex2rgb('#2f786e');
 eeColor = hex2rgb('#2f786e ');
 velLimColor = hex2rgb('#97c4e7');
+skinColor4 = hex2rgb('#ff8ce2');%('#f7cb2c');   % r_hand
+skinColor5 = hex2rgb('#f7ed6a');                % r_forearm
 
 %% Plot
 % fig_all_in_once = figure('units','normalized','outerposition',[0 0 0.5 1]);
@@ -56,7 +61,21 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
           area(time_rel_pps, part4(:,idx_ppsEv_on_skin_act),'EdgeColor',ppsColor,'FaceColor',ppsColor,'FaceAlpha',0.7); % Humanoids2018
 %         plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl,
 %         dist_head_EE, 'LineWidth',LineSZ);   % HRI2018
-        plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, 'LineWidth',LineSZ); % Humanoids2018
+        
+        if plot_pps==1
+            if plot_skin==0
+                plot(time_rel_reactCtrl, dist_hL_EE, time_rel_reactCtrl, dist_hR_EE, 'LineWidth',LineSZ); % Humanoids2018
+            else
+                plot(time_rel_reactCtrl, dist_hL_EE, 'LineWidth',LineSZ); % Humanoids2018
+            end
+        end
+
+        if plot_skin==1
+%             plot(time_rel_skin,0.2*skin_Ev4,'LineWidth',LineSZ,'Color',skinColor4);
+%             plot(time_rel_skin,0.2*skin_Ev5,'LineWidth',LineSZ,'Color',skinColor5);
+            area(time_rel_skin, 0.2*skin_Ev4,'EdgeColor',skinColor4,'FaceColor',skinColor4,'FaceAlpha',0.7); % Humanoids2018
+            area(time_rel_skin, 0.2*skin_Ev5,'EdgeColor',skinColor5,'FaceColor',skinColor5,'FaceAlpha',0.7); % Humanoids2018
+        end
 %         plot(time_rel_pps, dist_l_locus(:,1),'m.');   // distance to
 %         locus
 
@@ -72,7 +91,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
         end
           
 %         ylabel({'distance to', 'end-eff. (m)'},'FontSize',FontSZ);  
-        title('distance to end-effector (m)','FontSize',FontSZ)
+        title('distance to iCub hand (m) & PPS activation','FontSize',FontSZ)
         yticks(0:0.2:1.2); 
         xlim([tmin tmax]); ylim([0 ylim_distEE]); 
         grid on
@@ -135,6 +154,13 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
             elseif j==10
                 k = 3;
             end
+            if plot_dist_elbow==0
+                if j==8
+                    k = 1;
+                elseif j==10
+                    k = 4;
+                end
+            end
         elseif plot_2_joint==0
             switch j
                 case {7 , 8}
@@ -189,7 +215,7 @@ fig_all_in_once = figure('units','centimeters','outerposition',out_pos);
     subplot(nb_subplot,1,nb_subplot);
         plot(time_rel_reactCtrl,dist,'LineWidth',LineSZ,'color',eeColor);
 %         ylabel({'end-eff.','error (m)'},'FontSize',FontSZ);
-        title({'end-effector error (m)'},'FontSize',FontSZ);
+        title({'Error between end-effector and target (m)'},'FontSize',FontSZ);
         xlim([tmin tmax]); xlabel('time (s)', 'FontSize',FontSZ);
         ylim([0 ylimEE]); %0.03 0.08 0.12
         xt = get(gca, 'XTick');    set(gca, 'FontSize', FontSZ);
