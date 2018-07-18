@@ -70,14 +70,17 @@ addpath(genpath('./reactController/'));
 analyze;
 
 EB_t  = d(:,elbow_x.column:elbow_z.column); % with modified reactCtrl dummping from 1400 19/09/2017
+%% skin
+process_skinEvents
 
 %% Convert time variables to the same reference
-time0 = min([time0_kp,time0_pps, time0_jnts_torso, time0_jnts_lA, time0_reactCtrl]);
+time0 = min([time0_kp,time0_pps, time0_jnts_torso, time0_jnts_lA, time0_reactCtrl, time0_skin]);
 time_rel_kp = time_kp-time0;
 time_rel_pps = time_pps-time0;
 time_rel_jnts_torso = time_jnts_torso-time0;
 time_rel_jnts_lA = time_jnts_lA-time0;
 time_rel_reactCtrl = time_reactCtrl - time0;
+time_rel_skin = time_skin-time0;
 
 time_rel_kp_valence_0 = [time_rel_kp(min(hL_valence0)) time_rel_kp(max(hL_valence0))];
 time_rel_kp_valence_1 = [time_rel_kp(min(hL_valence1)) time_rel_kp(max(hL_valence1))];
