@@ -223,9 +223,9 @@ bool    collaboration::configure(ResourceFinder &rf)
     homePosR[1] = +0.3;
 
     basket.resize(3, 0.0);
-    basket[0] = 0.2;
+    basket[0] = -0.1;
     basket[1] = 0.4;
-    basket[2] = 0.05;
+    basket[2] = -0.05;
 
     // grasp position
     graspTorso.resize(3, 0.0);
@@ -233,7 +233,7 @@ bool    collaboration::configure(ResourceFinder &rf)
 
     graspGaze.resize(3,0.0);
     graspGaze[0] = 65.0;
-    graspGaze[1] =-35.0;
+    graspGaze[1] =-45.0;
     // TODO check this
 
     isHoldingObject = false;
@@ -395,11 +395,11 @@ bool    collaboration::moveReactThenGrasp(const string &target, const string &ar
     opc->commit(o);
 
     Vector offset(3,0.0);
-    offset[0] += 0.05; // 5cm closer to robot
+    offset[0] += 0.02; // 5cm closer to robot
     if (arm=="right")
-        offset[1] +=0.05;   //5cm on the right
+        offset[1] +=0.03;   //5cm on the right
     else if (arm=="left")
-        offset[1] -=0.05;   //5cm on the left
+        offset[1] -=0.03;   //5cm on the left
 
     if (checkPosReachable(targetPos+offset, arm))
     {
@@ -441,7 +441,7 @@ bool    collaboration::moveReactThenGive(const string &target, const string &arm
     targetPos = a->m_body.m_parts[target.c_str()];
 
     targetPos[0] = -0.4;
-    targetPos[2] = 0.2;
+    targetPos[2] = 0.15;
     if (targetPos[1]>=0)
         targetPos[1] = min(targetPos[1], 0.1);
     else
@@ -458,7 +458,8 @@ bool    collaboration::moveReactThenGive(const string &target, const string &arm
     {
         if (moveReactPPS(targetPos+offset, arm, timeout))
         {
-            return giveARE(targetPos, arm);
+//            return giveARE(targetPos+offset, arm);
+            return openHand(arm, 6.0);
         }
         else
         {
@@ -649,11 +650,11 @@ bool    collaboration::graspRaw(const Vector &pos, const string &arm)
 {
 //    return (reachArm(pos,arm) && (closeHand(arm,10.0)));
     icartA->storeContext(&contextReactCtrl);
-    bool ok = reachArm(pos, arm, 3.0);
+    bool ok = reachArm(pos, arm, 2.0);
     if (ok)
     {
         yDebug("[graspRaw] Done reaching. Let wait for 1s...");
-        Time::delay(1.0);
+        Time::delay(0.2);
         ok = closeHand(arm,6.0);
         icartA->restoreContext(contextReactCtrl);
         icartA->deleteContext(contextReactCtrl);
@@ -932,6 +933,7 @@ bool    collaboration::dropARE(const Vector &pos, const string &arm)
     cmd.addList() = target;
     cmd.addString(arm.c_str());
     cmd.addString("still");
+//    cmd.addString("no_head");
 
 
     yDebug("Command sent to ARE: %s",cmd.toString().c_str());
