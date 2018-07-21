@@ -522,7 +522,7 @@ bool    collaboration::homeARE()
     bool ret = false;
 
     cmd.addVocab(Vocab::encode("home"));
-    cmd.addString("all");
+    cmd.addString("arms");
 
     yDebug("Command sent to ARE: %s",cmd.toString().c_str());
 
@@ -989,7 +989,7 @@ bool    collaboration::updateHoldingObj(const Vector &x_EE, const Vector &o_EE)
     opc->commit(manipulatingObj);
 }
 
-bool    collaboration::setHumanValence(const double &valence, const string &_human_part)
+bool    collaboration::setHumanHandValence(const double &valence, const string &_human_part)
 {
     Bottle cmd, rep;
     bool ret = false;
@@ -1003,6 +1003,42 @@ bool    collaboration::setHumanValence(const double &valence, const string &_hum
     if (rpcSkeleton3D.write(cmd, rep))
         ret = (rep.get(0).asBool());
 
-    yDebug() << "[reduceHumanValence] Reply from skeleton3D: " << rep.toString();
+    yDebug() << "[setHumanHandValence] Reply from skeleton3D: " << rep.toString();
+    return ret;
+}
+
+bool    collaboration::setHumanValence(const double &valence)
+{
+    Bottle cmd, rep;
+    bool ret = false;
+
+    cmd.addString("set_valence");
+    cmd.addDouble(valence);
+
+    yDebug("Command sent to skeleton3D: %s",cmd.toString().c_str());
+
+    if (rpcSkeleton3D.write(cmd, rep))
+        ret = (rep.get(0).asBool());
+
+    yDebug() << "[setHumanValence] Reply from skeleton3D: " << rep.toString();
+    return ret;
+}
+
+bool    collaboration::getHumanValence(double &valence)
+{
+    Bottle cmd, rep;
+    bool ret = false;
+
+    cmd.addString("get_valence");
+
+    yDebug("Command sent to skeleton3D: %s",cmd.toString().c_str());
+
+    if (rpcSkeleton3D.write(cmd, rep))
+        ret = (rep.get(0).asBool());
+
+    if (ret)
+        valence = rep.get(1).asDouble();
+
+    yDebug() << "[setHumanValence] Reply from skeleton3D: " << rep.toString();
     return ret;
 }

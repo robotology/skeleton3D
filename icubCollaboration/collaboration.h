@@ -165,7 +165,11 @@ protected:
      */
     bool    updateHoldingObj(const Vector &x_EE, const Vector &o_EE);
 
-    bool    setHumanValence(const double &valence,const string &_human_part);
+    bool    setHumanHandValence(const double &valence,const string &_human_part);
+
+    bool    setHumanValence(const double &valence);
+
+    bool    getHumanValence(double &valence);
 
 public:
 
@@ -194,11 +198,16 @@ public:
         isHoldingObject = moveReactThenGrasp(_object,arm,moveDuration);
         bool ok = isHoldingObject;
 
-        Time::delay(2.0);
+        Time::delay(0.5);
         lookAtHome(homeAng,5.0);
 
-        ok = ok && moveReactPPS(homePos, arm,moveDuration);
-        lookAtHome(homeAng,5.0);
+//        ok = ok && moveReactPPS(homePos, arm,moveDuration);
+//        lookAtHome(homeAng,5.0);
+        ok = ok && home_ARE();
+
+        double humanValence=0.0;
+        if (getHumanValence(humanValence))
+            setHumanValence(-1.0);
 
         ok = ok && pre_grasp_pos();
         Time::delay(1.0);
@@ -220,6 +229,7 @@ public:
         ok = ok && home_ARE();
 
         lookAtHome(homeAng,5.0);
+        setHumanValence(humanValence);
         running_mode = MODE_IDLE;
         return ok;
     }
@@ -249,6 +259,11 @@ public:
         // TODO grasp on table
 //        bool ok = pre_grasp_pos();    // deactivate for the expriments
 //        Time::delay(5.0);
+
+        double humanValence=0.0;
+        if (getHumanValence(humanValence))
+            setHumanValence(-1.0);
+
         bool ok = true;
         isHoldingObject = graspOnTable(_object, arm);
 
@@ -266,7 +281,8 @@ public:
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
         // TODO: reduce the valence of _human_part to receive object
-        setHumanValence(-1.0,_human_part);
+        setHumanValence(humanValence);
+        setHumanHandValence(-1.0,_human_part);
 
         ok = ok && isHoldingObject;
 //        ok = ok && moveReactPPS(_human_part, arm, 10.0, true);   //move to near empty hand
@@ -279,10 +295,10 @@ public:
 
         Time::delay(0.5);
         lookAtHome(homeAng,5.0);
-        setHumanValence(0.0,_human_part);
+        setHumanHandValence(0.0,_human_part);
 
-        ok = ok && moveReactPPS(homePos, arm, moveDuration);
-        Time::delay(0.5);
+//        ok = ok && moveReactPPS(homePos, arm, moveDuration);
+//        Time::delay(0.5);
         home_all();
 
         running_mode = MODE_IDLE;
@@ -414,7 +430,7 @@ public:
 
     bool    reduce_human_valence(const string &_human_part)
     {
-        return setHumanValence(-1.0,_human_part);
+        return setHumanHandValence(-1.0,_human_part);
     }
 };
 
