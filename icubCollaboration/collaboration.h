@@ -200,6 +200,8 @@ public:
         ok = ok && moveReactPPS(homePos, arm,moveDuration);
         lookAtHome(homeAng,5.0);
 
+        ok = ok && pre_grasp_pos();
+        Time::delay(1.0);
         ok = ok && dropARE(basket, arm);
         if (ok)
         {
@@ -211,6 +213,10 @@ public:
 
 
         Time::delay(0.5);
+        Vector homeTorso(3,0.0);
+        ok = ok && move_torso(homeTorso);
+
+        Time::delay(2.);
         ok = ok && home_ARE();
 
         lookAtHome(homeAng,5.0);
@@ -241,8 +247,9 @@ public:
             return false;
 
         // TODO grasp on table
-        bool ok = pre_grasp_pos();
-        Time::delay(10.0);
+//        bool ok = pre_grasp_pos();    // deactivate for the expriments
+//        Time::delay(5.0);
+        bool ok = true;
         isHoldingObject = graspOnTable(_object, arm);
 
         if (isHoldingObject)
@@ -275,6 +282,8 @@ public:
         setHumanValence(0.0,_human_part);
 
         ok = ok && moveReactPPS(homePos, arm, moveDuration);
+        Time::delay(0.5);
+        home_all();
 
         running_mode = MODE_IDLE;
         return ok;
