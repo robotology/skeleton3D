@@ -81,12 +81,28 @@
         </module>
         <module>
                 <name>yarpview</name>
-                <parameters>--name /iolViewer/disparity --x 0 --y 0 --p 50 --compact</parameters>
+                <parameters>--name /iolViewer/disparity --x 700 --y 0 --p 50 --compact</parameters>
                 <node>icub22</node>
         </module>
         <module>
                 <name>yarpview</name>
-                <parameters>--name /iolViewer/lbpSegmented --x 370 --y 0 --p 50 --compact</parameters>
+                <parameters>--name /iolViewer/lbpSegmented --x 1005 --y 0 --p 50 --compact</parameters>
+                <node>icub22</node>
+        </module>
+        <module>
+                <name>yarpview</name>
+                <parameters>--name /iolViewer/manager/histogram --x 1615 --y 0 --p 50 --compact</parameters>
+                <node>icub22</node>
+        </module>
+
+        <module>
+                <name>yarpview</name>
+                <parameters>--name /iolViewer/manager/localizer --x 1310 --y 0 --out /iolViewer/manager/localizer/out --p 50 --compact</parameters>
+                <node>icub22</node>
+        </module>
+        <module>
+                <name>yarpview</name>
+                <parameters>--name /iolViewer/manager/tracker --x 0 --y 370 --p 50 --compact</parameters>
                 <node>icub22</node>
         </module>
         <module>
@@ -99,21 +115,8 @@
                 <parameters>--name /iolViewer/pointedBlobs --x 0 --y 720 --p 50 --compact</parameters>
                 <node>icub22</node>
         </module>
-        <module>
-                <name>yarpview</name>
-                <parameters>--name /iolViewer/manager/tracker --x 0 --y 370 --p 50 --compact</parameters>
-                <node>icub22</node>
-        </module>
-        <module>
-                <name>yarpview</name>
-                <parameters>--name /iolViewer/manager/localizer --x 370 --y 370 --out /iolViewer/manager/localizer/out --p 50 --compact</parameters>
-                <node>icub22</node>
-        </module>
-        <module>
-                <name>yarpview</name>
-                <parameters>--name /iolViewer/manager/histogram --x 680 --y 220 --w 600 --h 600 --p 50 --compact</parameters>
-                <node>icub22</node>
-        </module>
+
+
 
         <!--
         <module>
