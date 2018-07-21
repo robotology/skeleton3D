@@ -255,14 +255,14 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                 else if (partName =="LElbow" || partName =="Lelbow")
                                     elbowCV_left = partCv;
 
-                                if (partConf>=0.0001)// && partName =="Lshoulder")
+                                if (partConf>=partConfThres)// && partName =="Lshoulder")
                                 {
                                     partsCV.push_back(partCv);
                                     addJoint(jnts,partCv,mapPartsKinect[partId].c_str());
                                     addConf(part->get(3).asDouble(),mapPartsKinect[partId].c_str());
                                 }
                                 else
-                                    yDebug("[%s] ignore part with confidence lower than 0.0001%%",name.c_str());
+                                    yDebug("[%s] ignore part with confidence lower than %f%%",name.c_str(),partConfThres*100.0);
                             }
                         }
 //                        else
@@ -853,6 +853,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     std::string SFMrpc = rf.check("depth_rpc",Value("/SFM/rpc")).asString().c_str();
     yDebug("SFMrpc is %s", SFMrpc.c_str());
     period=rf.check("period",Value(0.0)).asDouble();    // as default, update module as soon as receiving new parts from skeleton2D
+    partConfThres=rf.check("part_conf_thres",Value(0.7)).asDouble();
 
     radius=rf.check("radius",Value(30.0)).asDouble();
     hand_with_object=rf.check("hand_with_object",Value("right")).asString().c_str();
