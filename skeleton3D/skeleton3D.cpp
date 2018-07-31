@@ -1056,7 +1056,6 @@ bool    skeleton3D::close()
 bool    skeleton3D::attach(RpcServer &source)
 {
     return this->yarp().attachAsServer(source);
-//    return true;
 }
 
 double  skeleton3D::getPeriod()
@@ -1077,18 +1076,6 @@ bool    skeleton3D::updateModule()
     // Obtain body part from a Tensorflow-based module
     bool tracked = false;
     tracked = obtainBodyParts(bodyPartsCv);
-
-    // Get the 3D pose of CvPoint of body parts
-//    if (bodyPartsCv.size()>=0 && connected3D)
-//    {
-//        for (int8_t i=0; i<bodyPartsCv.size(); i++)
-//        {
-//            Vector pos(3,0.0);
-//            get3DPosition(bodyPartsCv[i], pos);
-//            yInfo("[%s] 3D pose of CvPoint [%d, %d] from SFM is: %s",
-//                  name.c_str(), bodyPartsCv[i].x, bodyPartsCv[i].y, pos.toString(3,3).c_str());
-//        }
-//    }
 
     // Update OPC or conduct actions
     // check if this skeletton is really tracked
@@ -1159,21 +1146,6 @@ bool    skeleton3D::updateModule()
         hasObjectR = objectRecognition("handRight", objectLabelR, blobR);
         hasObjectL = objectRecognition("handLeft", objectLabelL, blobL);
 
-        if (objectLabelL=="drill" || objectLabelR=="drill") // drill is 2
-        {
-            counterDrill++;
-        }
-        else if(objectLabelL=="polisher" || objectLabelR=="polisher") //polisher is 1
-        {
-            counterPolisher++;
-        }
-        else if(objectLabelL=="hand" || objectLabelR=="hand") //hand is 0
-        {
-            counterHand++;
-        }
-        else
-        {
-        }
         yDebug("Recognize object label is: right - %s, left - %s",objectLabelR.c_str(), objectLabelL.c_str());
     }
     else
@@ -1254,9 +1226,6 @@ bool    skeleton3D::updateModule()
         object_lastClock = clock();
         counterObjectL = 0;
         counterObjectR = 0;
-        counterHand = 0;
-        counterDrill = 0;
-        counterPolisher = 0;
     }
 
     if (hasObjectL)
