@@ -31,7 +31,6 @@ include(ICUBcontribHelpers)
 include(ICUBcontribOptions)
 icubcontrib_set_default_prefix()
 
-add_definitions(${YARP_DEFINES})   # add yarp definitions - this contains also -D_REENTRANT
 include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 
 set(main_project_path ${CMAKE_CURRENT_SOURCE_DIR})
@@ -46,31 +45,5 @@ add_subdirectory(yetAnotherAvoidance)
 add_subdirectory(skeleton3D)
 add_subdirectory(icubCollaboration)
 
-#set (lib_files          ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF/vtMappingTF.h
-#                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/vtMappingTF.cpp)
-
-
-#set(idl_files    skeleton3D.thrift)
-
-#yarp_add_idl(IDL_GEN_FILES skeleton3D.thrift)
-
-#source_group("IDL Files" FILES ${idl_files})
-
-#include_directories(    ${YARP_INCLUDE_DIRS}
-#                        ${ICUB_INCLUDE_DIRS}
-#                        ${kinectWrapper_INCLUDE_DIRS}
-#                        ${CMAKE_CURRENT_SOURCE_DIR}
-#                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/include
-#                        ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/iCub/vtMappingTF
-#                        ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-#add_definitions(-D_USE_MATH_DEFINES)
-
-#add_executable(${PROJECTNAME} ${SRC_LIST} ${source_files} ${include_files} ${IDL_GEN_FILES} ${idl_files} ${lib_files})
-#target_link_libraries(${PROJECTNAME} ${YARP_LIBRARIES} ctrlLib ${icubclient_LIBRARIES} TensorflowCC::Shared)
-
-#install (TARGETS ${PROJECTNAME} DESTINATION bin)
-
-#icubcontrib_finalize_export(${PROJECTNAME})
 icubcontrib_add_uninstall_target()
 

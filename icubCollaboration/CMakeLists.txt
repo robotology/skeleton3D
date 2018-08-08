@@ -18,8 +18,7 @@ set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/collaboration.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${YARP_INCLUDE_DIRS}
-                    ${ICUB_INCLUDE_DIRS}
+include_directories(${ICUB_INCLUDE_DIRS}
                     ${kinectWrapper_INCLUDE_DIRS})
 include_directories(${main_project_path}/lib/include)
 #                    ${main_project_path}/lib/include/iCub/vtMappingTF)

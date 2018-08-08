@@ -5,7 +5,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(yetAnotherAvoidance)
 
-include_directories(${YARP_INCLUDE_DIRS})
 include_directories(${ICUB_INCLUDE_DIRS})
 
 set(sources yetAnotherAvoidance.cpp)
