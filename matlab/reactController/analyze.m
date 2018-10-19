@@ -263,7 +263,8 @@ time0_reactCtrl = time_reactCtrl(1);
 EEd_f = d(:,target_x.column:target_z.column);
 EE_t  = d(:,EE_x.column:EE_z.column);
 EEd_t = d(:,targetEE_x.column:targetEE_z.column);
-% EB_t  = d(:,elbow_x.column:elbow_z.column);
+EB_t  = d(:,elbow_x.column:elbow_z.column);
+EBd_t  = d(:,target_elbow_x.column:target_elbow_z.column);
 %% plot time diagnostics
 
 if visualize_time_stats
