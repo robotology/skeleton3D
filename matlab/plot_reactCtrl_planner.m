@@ -43,7 +43,29 @@ LineSZ = 2;
  path = 'datasets/planner/data_planner_reactCtrl_20181019_1720/';   % good      0.0142 +- 0.0075, 0.0124 +- 0.0074
  path = 'datasets/planner/data_planner_reactCtrl_20181019_1730/';   % good      0.0107 +- 0.0074, 0.0229 +- 0.0162
  path = 'datasets/planner/data_planner_reactCtrl_20181019_1755/';   % bad       0.0107 +- 0.0062, 0.0186 +- 0.0183
-
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_0950/';   % bad       0.0083 +- 0.0059, 0.0246 +- 0.0216  vMax = 90,  speedEE = 0.005, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1005/';   % bad       0.0142 +- 0.0103, 0.0110 +- 0.0082  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1010/';   % bad       0.0145 +- 0.0072, 0.0309 +- 0.0225  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1025/';   % bad       0.0132 +- 0.0092, 0.0196 +- 0.0182  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1030/';   % bad       0.0152 +- 0.0067, 0.0181 +- 0.0103  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1040/';   % good      0.0086 +- 0.0069, 0.0080 +- 0.0065  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1045/';   % bad       0.0200 +- 0.0071, 0.0215 +- 0.0107  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1050/';   % good      0.0136 +- 0.0095, 0.0212 +- 0.0195  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1052/';   % very good 0.0070 +- 0.0047, 0.0062 +- 0.0037  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1054/';   % bad EB    0.0083 +- 0.0060, 0.0267 +- 0.0197  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1056/';   % bad       0.0158 +- 0.0071, 0.0259 +- 0.0158  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1058/';   % bad       0.0147 +- 0.0088, 0.0209 +- 0.0149  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1100/';   % mi-bad EE 0.0110 +- 0.0098, 0.0068 +- 0.0051  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1107/';   % bad       0.0265 +- 0.0144, 0.0221 +- 0.0120  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1108/';   % bad EB    0.0108 +- 0.0092, 0.0184 +- 0.0189  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1110/';   % mi-bad EE 0.0131 +- 0.0090, 0.0103 +- 0.0076  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1111/';   % bad EB    0.0109 +- 0.0083, 0.0176 +- 0.0162  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1120/';   % OK        0.0124 +- 0.0074, 0.0124 +- 0.0053  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1123/';   % bad EB    0.0149 +- 0.0114, 0.0171 +- 0.0142  vMax = 90,  speedEE = 0.01, tol = 0.005
+ path = 'datasets/planner/data_planner_reactCtrl_20181022_1125/';   % mi-bad EE 0.0111 +- 0.0101, 0.0083 +- 0.0074  vMax = 90,  speedEE = 0.01, tol = 0.005
+ 
+  path = 'datasets/planner/data_planner_reactCtrl_20181022_1040/';
+  path = 'datasets/planner/data_planner_reactCtrl_20181022_1107/';
 %% react-ctrl
 addpath(genpath('./reactController/'));
 analyze;
@@ -54,7 +76,7 @@ time_rel_reactCtrl = time_reactCtrl - time0;
 
 %% Plot
 
-figure; 
+figEE = figure; 
 title('End-effector evolution');
 % plot3(EE_t(:,1),EE_t(:,2),EE_t(:,3),'b', posEB(:,1),posEB(:,2),posEB(:,3),'r', hL(:,1), hL(:,2), hL(:,3), '*--'); 
 % plot3(EE_t(:,1),EE_t(:,2),EE_t(:,3),'b', EB_t(:,1),EB_t(:,2),EB_t(:,3),'r'); % with modified reactCtrl dumping from 1400 19/09/2017
@@ -105,7 +127,7 @@ for i=1:3
 end
 
 
-figure;
+figEB = figure;
 title('Elbow evolution');
 for i=1:3
     subplot(3,1,i)
@@ -131,3 +153,20 @@ figure;
 subplot(2,1,1); plot(time_rel_reactCtrl, lArm_d,'b','LineWidth',LineSZ); ylabel('Arm length desire (m)','FontSize',FontSZ);
 subplot(2,1,2); plot(time_rel_reactCtrl, lArm_t,'b','LineWidth',LineSZ); ylabel('Arm length measure (m)','FontSize',FontSZ);
 xlabel('time (s)', 'FontSize',FontSZ);
+
+has_results = exist(results_path);
+switch has_results
+    case 0
+        mkdir(results_path);
+        cd(results_path);
+    case 7
+        cd(results_path);
+end
+mkdir(path);
+cd ..
+
+filename_EE = strcat(results_path,'/',path,'/reactCtrl_planner_EE_tracking.eps');
+print(figEE,'-depsc',filename_EE);
+
+filename_EB = strcat(results_path,'/',path,'/reactCtrl_planner_EB_tracking.eps');
+print(figEB,'-depsc',filename_EB);
