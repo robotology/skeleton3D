@@ -105,7 +105,7 @@ protected:
 
     double                              radius;     //!< hand blob radius
     string                              hand_with_tool;
-    CvPoint                             handCV, handCV_right, handCV_left;
+    CvPoint                             handCV, handCV_right, handCV_left, elbowCV_left, elbowCV_right;
     float                               tool_code[3];
     double                              tool_timer;
     unsigned long                       tool_lastClock;
@@ -255,6 +255,7 @@ protected:
 
     Vector  joint2Vector(const kinectWrapper::Joint &joint);
 
+    Vector  computeAdaptiveBlobCoffs(const Vector &x1, const Vector &x2);
     bool    cropHandBlob(const string &hand, Vector &blob);
     bool    askToolLabel(string &label);
 

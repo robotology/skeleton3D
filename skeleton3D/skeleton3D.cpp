@@ -210,12 +210,20 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                                         handCV = partCv;
                                     else if (hand_with_tool=="left" && (partName =="LWrist" || partName =="Lwrist"))
                                         handCV = partCv;
+                                    else if (partName =="RElbow" || partName =="Relbow")
+                                        elbowCV_right = partCv;
+                                    else if (partName =="LElbow" || partName =="Lelbow")
+                                        elbowCV_left = partCv;
                                 }
 
                                 if (partName =="RWrist" || partName =="Rwrist")
                                     handCV_right = partCv;
                                 else if (partName =="LWrist" || partName =="Lwrist")
                                     handCV_left = partCv;
+                                else if (partName =="RElbow" || partName =="Relbow")
+                                    elbowCV_right = partCv;
+                                else if (partName =="LElbow" || partName =="Lelbow")
+                                    elbowCV_left = partCv;
 
                                 if (partConf>=partConfThres)// && partName =="Lshoulder")
                                 {
@@ -1349,32 +1357,133 @@ Vector  skeleton3D::joint2Vector(const kinectWrapper::Joint &joint)
     return jnt;
 }
 
+Vector  skeleton3D::computeAdaptiveBlobCoffs(const Vector &x1, const Vector &x2)
+{
+    double alpha = atan2(x2[1]-x1[1],x2[0]-x1[0])*CTRL_RAD2DEG;
+    Vector k(4,0.0);
+    yDebug("hand [%f,%f], elbow [%f,%f], %f", x2[0], x2[1], x1[0], x1[1], alpha);
+
+    if (alpha>=-22.5 && alpha <22.5)
+    {
+        k[0] = 0.5; k[1] = 1.0 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=22.5 && alpha <67.5)
+    {
+        k[0] = 0.5; k[1] = 0.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=-67.5 && alpha <-22.5)
+    {
+        k[0] = 0.5; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=67.5 && alpha <112.5)
+    {
+        k[0] = 1.0; k[1] = 0.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=-112.5 && alpha <-67.5)
+    {
+        k[0] = 1.0; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=112.5 && alpha <157.5)
+    {
+        k[0] = 1.5; k[1] = 0.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else if (alpha>=-157.5 && alpha <-112.5)
+    {
+        k[0] = 1.5; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    else
+    {
+        k[0] = 1.5; k[1] = 1.5 ; k[2] = 2.-k[0]; k[3] = 2.-k[1];
+    }
+    return k;
+
+}
+
 bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
 {
     if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
     {
-        Vector pose2d(2,0.0);
+        Vector pose2d(2,0.0), elbow(2,0.0);
+        double d;
+
         if (hand == "handRight")
         {
             pose2d[0] = handCV_right.x;
             pose2d[1] = handCV_right.y;
+
+            elbow[0] = elbowCV_right.x;
+            elbow[1] = elbowCV_right.y;
         }
         else if (hand == "handLeft")
         {
             pose2d[0] = handCV_left.x;
             pose2d[1] = handCV_left.y;
+
+            elbow[0] = elbowCV_left.x;
+            elbow[1] = elbowCV_left.y;
         }
 
-        blob[0] = pose2d[0] - radius;   //top-left.x
-        blob[1] = pose2d[1] - radius;   //top-left.y
-        blob[2] = pose2d[0] + radius;   //bottom-right.x
-        blob[3] = pose2d[1] + radius;   //bottom-right.y
+        d = player.skeleton.at(hand.c_str()).x;
+//        double radius_t = radius + (fabs(d)-0.3)*(-45+radius)/(1.3-0.3);
+        double r_max = 70, d_radius=1.1;
+        double radius_t = r_max*(1.0-fabs(d)/(d_radius*radius/(r_max-radius)+d_radius));
+        radius_t = std::max(radius_t, 20.);
+        yInfo("d = %f, fabs(d) = %f, radius_t = %f", d, fabs(d), radius_t);
+
+
+        Vector k = computeAdaptiveBlobCoffs(elbow,pose2d);
+
+        // This will be sent to onTheFlyRecognition/roi:i
+//        blob[0] = pose2d[0] - 0.5*radius_t;   //top-left.x
+//        blob[1] = pose2d[1] - 0.5*radius_t;   //top-left.y
+//        blob[2] = pose2d[0] + 1.5*radius_t;   //bottom-right.x
+//        blob[3] = pose2d[1] + 1.5*radius_t;   //bottom-right.y
+
+        blob[0] = pose2d[0] - k[0]*radius_t;   //top-left.x
+        blob[1] = pose2d[1] - k[1]*radius_t;   //top-left.y
+        blob[2] = pose2d[0] + k[2]*radius_t;   //bottom-right.x
+        blob[3] = pose2d[1] + k[3]*radius_t;   //bottom-right.y
+
+        // This will be sent to onTheFlyRecognition/blobs:i
+//        blob[0] = pose2d[0];   //centroid.x
+//        blob[1] = pose2d[1];   //centroid.y
+//        blob[2] = radius_t*radius_t;   //pixelCount
+
+
+        yDebug("k are: %s",k.toString(3,3).c_str());
+        yDebug("blob is: [%s]",blob.toString(3,1).c_str());
         return true;
     }
     else
         return false;
 
 }
+//bool    skeleton3D::cropHandBlob(const string &hand, Vector &blob)
+//{
+//    if (player.skeleton.find(hand.c_str())!=player.skeleton.end())
+//    {
+//        Vector pose2d(2,0.0);
+//        if (hand == "handRight")
+//        {
+//            pose2d[0] = handCV_right.x;
+//            pose2d[1] = handCV_right.y;
+//        }
+//        else if (hand == "handLeft")
+//        {
+//            pose2d[0] = handCV_left.x;
+//            pose2d[1] = handCV_left.y;
+//        }
+
+//        blob[0] = pose2d[0] - radius;   //top-left.x
+//        blob[1] = pose2d[1] - radius;   //top-left.y
+//        blob[2] = pose2d[0] + radius;   //bottom-right.x
+//        blob[3] = pose2d[1] + radius;   //bottom-right.y
+//        return true;
+//    }
+//    else
+//        return false;
+
+//}
 
 bool    skeleton3D::askToolLabel(string &label)
 {
