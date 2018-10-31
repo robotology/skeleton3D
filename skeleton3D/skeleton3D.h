@@ -65,6 +65,10 @@ protected:
     BufferedPort<Bottle>    handBlobPort_left;      //!< buffered port of output to send blob with @see hand_with_tool
     RpcClient               rpcAskTool;             //!< rpc client port to send requests to /onTheFlyRecognition/human:io
 
+    BufferedPort<Bottle>    toolClassOutPort_right; //!< buffered port of output of tool
+    BufferedPort<Bottle>    toolClassOutPort_left;  //!< buffered port of output of tool
+    BufferedPort<Bottle>    headPosOutPort;
+
     Mutex                   mutexResourcesSkeleton;
     Mutex                   mutexResourcesSFM;
     Mutex                   mutexResourcesTool;

@@ -142,15 +142,15 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                 confJoints.clear();
                 if (Bottle *bodyParts=allBodyParts->get(0).asList())
                 {
-                    Bottle neck = bodyParts->findGroup("Neck");
-                    Bottle shR = bodyParts->findGroup("RShoulder");
+                    Bottle nose = bodyParts->findGroup("Nose");
+                    Bottle shL = bodyParts->findGroup("LShoulder");
                     // first check to make make sure the skeleton is the one working with robot
-                    if (!neck.isNull())
+                    if (!nose.isNull())
                     {
                         CvPoint neckCv;
                         Vector neck3D(3,0.0);
-                        neckCv.x = (int)neck.get(1).asDouble();
-                        neckCv.y = (int)neck.get(2).asDouble();
+                        neckCv.x = (int)nose.get(1).asDouble();
+                        neckCv.y = (int)nose.get(2).asDouble();
                         if (get3DPosition(neckCv, neck3D))
                         {
                             yDebug("found neck. neck3D = %s!!!", neck3D.toString(3,3).c_str());
@@ -168,12 +168,12 @@ bool    skeleton3D::obtainBodyParts(deque<CvPoint> &partsCV)
                         }
                     }
                     // double check
-                    if (!shR.isNull())
+                    if (!shL.isNull())
                     {
                         CvPoint shoulderCv;
                         Vector shoulder3D(3,0.0);
-                        shoulderCv.x = (int)shR.get(1).asDouble();
-                        shoulderCv.y = (int)shR.get(2).asDouble();
+                        shoulderCv.x = (int)shL.get(1).asDouble();
+                        shoulderCv.y = (int)shL.get(2).asDouble();
                         if (get3DPosition(shoulderCv, shoulder3D))
                         {
                             yDebug("found shoulder. shoulder3D = %s!!!", shoulder3D.toString(3,3).c_str());
@@ -935,7 +935,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     portToGui.write(cmdGui);
 
     // UDP port to communicate with Ergonometric module
-    std::string addr_udp=rf.check("address_udp",Value("192.168.0.62")).asString().c_str();
+    std::string addr_udp=rf.check("address_udp",Value("192.168.2.62")).asString().c_str();
     int port_udp=rf.check("port_udp",Value(44000)).asInt();
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -950,7 +950,7 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
 
     // UDP port to communicate with KUKA module
-    std::string addr_udp_kuka=rf.check("address_udp",Value("192.168.0.96")).asString().c_str();
+    std::string addr_udp_kuka=rf.check("address_udp",Value("192.168.2.96")).asString().c_str();
     int port_udp_kuka=rf.check("port_udp",Value(60000)).asInt();
 
     sockTool = socket(AF_INET, SOCK_DGRAM, 0);
@@ -974,6 +974,10 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     counterHand = 0, counterDrill = 0; counterPolisher = 0;
     sendData49 = 0.0;   sendData51 = 0.0;
     tool_training = false;
+
+    toolClassOutPort_right.open(("/"+name+"/tool_right:o").c_str());
+    toolClassOutPort_left.open(("/"+name+"/tool_left:o").c_str());
+    headPosOutPort.open(("/"+name+"/head_pos:o").c_str());
 
     return true;
 }
@@ -1236,6 +1240,16 @@ bool    skeleton3D::updateModule()
             posHead = joint2Vector(player.skeleton.at("head"));
             tool_code[1] = posHead[1];
 
+//            Bottle headBottle;
+//            for (int8_t i=0; i<posHead.size(); i++)
+//                headBottle.addDouble(posHead[i]);
+
+            Bottle& output = headPosOutPort.prepare();
+            output.clear();
+            for (int8_t i=0; i<posHead.size(); i++)
+                output.addDouble(posHead[i]);
+//            output.add(headBottle);
+            headPosOutPort.write();
         }
 
         // tool in which hand
@@ -1303,9 +1317,9 @@ bool    skeleton3D::updateModule()
         if (retval<0)
             yError("problem in sending UDP!!!");
 
-//        else
-//                    yDebug("tool content to Ergo (size %d) sent: %lf %lf %lf", retval,
-//                           SendData[49], SendData[50], SendData[51]);
+        else
+            yDebug("tool content to Ergo (size %d) sent: %lf %lf %lf", retval,
+                    SendData[49], SendData[50], SendData[51]);
 
         // sendUDP to KUKA
         int retval_tool = sendto(sockTool,tool_code,sizeof(tool_code),0,(sockaddr*)&serveraddrTool,sizeof(serveraddrTool));
