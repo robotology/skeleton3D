@@ -935,8 +935,11 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     portToGui.write(cmdGui);
 
     // UDP port to communicate with Ergonometric module
-    std::string addr_udp=rf.check("address_udp",Value("192.168.2.62")).asString().c_str();
-    int port_udp=rf.check("port_udp",Value(44000)).asInt();
+    std::string addr_udp=rf.check("address_udp_viz",Value("192.168.2.62")).asString().c_str();
+    int port_udp=rf.check("port_udp_viz",Value(44000)).asInt();
+    yInfo("address udp viz %s",addr_udp.c_str());
+    yInfo("port udp viz %d",port_udp);
+
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock==-1)
@@ -950,8 +953,10 @@ bool    skeleton3D::configure(ResourceFinder &rf)
     serveraddr.sin_addr.s_addr = inet_addr(addr_udp.c_str()); // Linux PC
 
     // UDP port to communicate with KUKA module
-    std::string addr_udp_kuka=rf.check("address_udp",Value("192.168.2.96")).asString().c_str();
-    int port_udp_kuka=rf.check("port_udp",Value(60000)).asInt();
+    std::string addr_udp_kuka=rf.check("address_udp_kuka",Value("192.168.2.96")).asString().c_str();
+    int port_udp_kuka=rf.check("port_udp_kuka",Value(60000)).asInt();
+    yInfo("address udp kuka %s",addr_udp_kuka.c_str());
+    yInfo("port udp viz %d",port_udp_kuka);
 
     sockTool = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockTool==-1)

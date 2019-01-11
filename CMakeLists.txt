@@ -32,7 +32,7 @@ include(ICUBcontribOptions)
 icubcontrib_set_default_prefix()
 
 add_definitions(${YARP_DEFINES})   # add yarp definitions - this contains also -D_REENTRANT
-include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
+#include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 
 set(main_project_path ${CMAKE_CURRENT_SOURCE_DIR})
 #set(main_project_name ${PROJECTNAME})
