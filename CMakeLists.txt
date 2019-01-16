@@ -11,7 +11,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 aux_source_directory(. SRC_LIST)
 
-find_package(YARP REQUIRED)
+#find_package(YARP REQUIRED)
+find_package(YARP REQUIRED COMPONENTS OS dev sig math cv gsl idl_tools)
 find_package(ICUB REQUIRED)
 find_package(ICUBcontrib REQUIRED)
 find_package(icubclient)
