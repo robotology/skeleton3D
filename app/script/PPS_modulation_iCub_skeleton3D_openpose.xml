@@ -67,12 +67,6 @@
         <node>icub22</node>
     </module>
 
-    <module>
-        <name>skeleton2D.py</name>
-        <parameters>--des /skeleton2D</parameters>
-        <node>icub-cuda</node>
-    </module>
-
      <module>
         <name>yarpOpenPose</name>
         <node>icub-cuda</node>
@@ -80,7 +74,7 @@
 
     <module>
         <name>skeleton3D</name>
-        <parameters>--dThresholdDisparition 10.0 --part_dimension 0.07 --filter_order 9 --use_part_conf 0 --period 0.01 --body_valence 0.0</parameters>
+        <parameters>--dThresholdDisparition 10.0 --part_dimension 0.07 --filter_order 9 --use_part_conf 0 --period 0.01 --body_valence 1.0 --part_conf_thres 0.2</parameters>
         <dependencies>
             <port timeout="10">/OPC/rpc</port>
             <port timeout="10">/SFM/rpc</port>
