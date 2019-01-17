@@ -1,5 +1,5 @@
 <application>
-<name>PPS Modulation icub with Skeleton3D </name>
+<name>PPS Modulation icub with Skeleton3D and OpenPose</name>
 
     <module>
         <name>iCubGui</name>
