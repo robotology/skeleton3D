@@ -13,17 +13,14 @@ file(GLOB source *.cpp)
 file(GLOB header *.h)
 
 set (include_files	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.h)
-#                        ${main_project_path}/lib/include/iCub/vtMappingTF/vtMappingTF.h)
 
 set (source_files 	${CMAKE_CURRENT_SOURCE_DIR}/skeleton3D.cpp
-#                        ${main_project_path}/lib/src/vtMappingTF.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ICUB_INCLUDE_DIRS}
                     ${kinectWrapper_INCLUDE_DIRS})
 include_directories(${main_project_path}/lib/include)
-#                    ${main_project_path}/lib/include/iCub/vtMappingTF)
 
 source_group("Source Files" FILES ${source})
 source_group("Header Files" FILES ${header})
