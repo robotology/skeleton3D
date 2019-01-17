@@ -129,6 +129,15 @@
         <node>icub21</node>
     </module>
 
+    <!--react-ctrl modules-->
+    <module>
+        <name>reactController</name>
+        <parameters>--referenceGen minJerk --additionalControlPoints off --stiff off</parameters>
+        <node>icub22</node>
+        <stdio></stdio>
+        <tag>reactController</tag>
+    </module>
+
     <!--skinGui modules-->
     <module>
         <name>skinManager</name>
@@ -169,11 +178,6 @@
         <parameters>--from right_hand_V2_1.ini --useCalibration --xpos 960 --ypos 0 --width 300 --height 300</parameters>
         <node>icub22</node>
         <tag>skinGuiRH</tag>
-    </module>
-
-    <module>
-        <name>opcPopulater</name>
-        <node>icub21</node>
     </module>
 
 	<ensure>
