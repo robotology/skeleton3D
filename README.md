@@ -27,7 +27,13 @@ make install
 
 # Launch
 - Open the [application with openpose](https://github.com/robotology/skeleton3D/blob/master/app/script/PPS_modulation_iCub_skeleton3D_openpose.xml) or [application with deepcut](https://github.com/robotology/skeleton3D/blob/master/app/script/PPS_modulation_iCub_skeleton3D.xml) in yarpmanager. Note that application with deeperCut provides more responsive robot's actions. 
-- Launch all module and connect
+- Launch all module and connect. 
+- (Optional) If you want to use application with deeperCut, you have to run **skeleton2D.py** in terminal rather than yarpmanager. The possibility to run python script from yarp manager is broken now.
+	```
+	# Open a terminal and ssh to machine with GPU, e.g. `icub-cuda`
+	ssh icub-cuda
+	skeleton2D.py --des /skeleton2D --gpu 0.7
+	```
 - Users can log into *rpc service* of the module to set the parameters by:
 	```
 	yarp rpc /skeleton3D/rpc
@@ -40,11 +46,17 @@ make install
 	```
 	yarp rpc /reactController/rpc:i  
 	set_xd (-0.3 -0.15 0.1)
+
+	# to stop typing:
+	stop
 	```
 	- In a circle: in this mode, robot moves its end-effector along a circle trajectory in the y and z axes, relative to the current end-effector position, while avoiding human's body parts. The first command moves robot's arm to a tested *safe* initial position for the circle trajectory.
 	```
 	set_xd (-0.3 -0.15 0.1)
 	set_relative_circular_xd 0.08 0.27
+
+	# to stop typing:
+	stop
 	```
 
 - Note: users can tune the workspace parameters in [configuration file](https://github.com/robotology/skeleton3D/blob/master/app/conf/skeleton3D.ini) to constrain the robot's partner. The module currently works with only one partner at a time.
