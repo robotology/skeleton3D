@@ -28,7 +28,7 @@ include(ICUBcontribHelpers)
 include(ICUBcontribOptions)
 icubcontrib_set_default_prefix()
 
-include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
+#include(YarpInstallationHelpers)   # pick up yarp's cmake scripts
 
 set(main_project_path ${CMAKE_CURRENT_SOURCE_DIR})
 #set(main_project_name ${PROJECTNAME})
