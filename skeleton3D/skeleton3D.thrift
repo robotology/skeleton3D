@@ -35,14 +35,14 @@ service skeleton3D_IDL
   /**
   * Sets hand valence (threat).
   * @param _valence thread value for both hands only.
-  * @param _hand string value of hand left/right/both.
+  * @param _hand string value of handLeft/handRight/both.
   * @return true/false on success/failure.
   */
   bool set_valence_hand(1:double _valence, 2:string _hand);
 
   /**
   * Gets the hand valence.
-  * @param _hand string value of hand left/right/both.
+  * @param _hand string value of handLeft/handRight/both.
   * @return the current hand_valence value.
   */
   double get_valence_hand(1:string _hand);
