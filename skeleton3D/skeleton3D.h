@@ -74,7 +74,7 @@ protected:
     kinectWrapper::Player   player;
     map<string,double>      confJoints;             //!< confidence of identified skeleton
     double                  partConfThres;          //!< threshold value of identified confidence
-    double                  workspaceX, workspaceY; //!< threshold value for 3D skeleton, ignore skeleton outside this range
+    double                  workspaceX_max, workspaceY_min; //!< threshold value for 3D skeleton, ignore skeleton outside this range
     double                  workspaceX_min;
     double                  workspaceY_max;
 
@@ -408,20 +408,15 @@ public:
         return true;
     }
 
-    bool set_workspace_x(const double &workspace_x)
+    bool set_workspace_x_max(const double &workspace_x_max)
     {
-        if (workspace_x>=0)
-        {
-            workspaceX = workspace_x;
-            return true;
-        }
-        else
-            return false;
+        workspaceX_max = workspace_x_max;
+        return true;
     }
 
-    double get_workspace_x()
+    double get_workspace_x_max()
     {
-        return workspaceX;
+        return workspaceX_max;
     }
 
     bool set_workspace_x_min(const double workspace_x_min)
@@ -435,31 +430,21 @@ public:
         return workspaceX_min;
     }
 
-    bool set_workspace_y(const double workspace_y)
+    bool set_workspace_y_min(const double workspace_y_min)
     {
-        if (workspace_y>=0)
-        {
-            workspaceY = workspace_y;
-            return true;
-        }
-        else
-            return false;
+        workspaceY_min = workspace_y_min;
+        return true;
     }
 
-    double get_workspace_y()
+    double get_workspace_y_min()
     {
-        return workspaceY;
+        return workspaceY_min;
     }
 
     bool set_workspace_y_max(const double workspace_y_max)
     {
-        if (workspace_y_max>=0)
-        {
-            workspaceY_max = workspace_y_max;
-            return true;
-        }
-        else
-            return false;
+        workspaceY_max = workspace_y_max;
+        return true;
     }
 
     double get_workspace_y_max()
