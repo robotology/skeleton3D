@@ -137,6 +137,7 @@ service skeleton3D_IDL
 
   /**
   * Enables the function to train the tool
+  * @param hand is human's hand holding object (left/right)
   * @return true/false on success/failure.
   */
   bool enable_tool_training(1:string hand);

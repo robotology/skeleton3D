@@ -30,7 +30,7 @@ service collaboration_IDL
   /**
   * Hand-over object with name to human.
   * @param _object name of object.
-  * @param _human_part name of human body part, should be a hand.
+  * @param _human_part name of human body part, should be a hand, e.g. handRight/handLeft. This one can be checked by rpc to OPC module
   * @return true/false on success/failure
   */
   bool hand_over_object(1:string _object, 2:string _human_part);
