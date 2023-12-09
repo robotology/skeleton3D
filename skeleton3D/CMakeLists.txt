@@ -35,7 +35,7 @@ add_definitions(-D_USE_MATH_DEFINES)
 
 add_executable(skeleton3D ${source} ${header} ${source_files} ${include_files} ${IDL_GEN_FILES} ${idl_files}) #${lib_files})# ${source_files} ${include_files} )
 
-target_link_libraries(skeleton3D ${YARP_LIBRARIES} ${icubclient_LIBRARIES} ${OpenCV_LIBRARIES} ctrlLib)# TensorflowCC::Shared)
+target_link_libraries(skeleton3D ${YARP_LIBRARIES} ${icubclient_LIBRARIES} ${OpenCV_LIBS} ctrlLib)# TensorflowCC::Shared)
 
 install(TARGETS skeleton3D DESTINATION bin)
 
