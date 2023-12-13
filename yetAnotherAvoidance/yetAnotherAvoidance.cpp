@@ -106,7 +106,7 @@ protected:
             if (input.size()>=7)
             {
                 yDebug("[%s] got command (%s)",name.c_str(),input.toString().c_str());
-                string arm=iCub::skinDynLib::SkinPart_s[input.get(0).asInt()];
+                string arm=iCub::skinDynLib::SkinPart_s[input.get(0).asInt32()];
 
                 if (arm == "r_hand" || arm == "r_forearm")
                 {
@@ -123,13 +123,13 @@ protected:
                 if (it!=data.end())
                 {
                     Data &d=it->second;
-                    d.point[0]=input.get(7).asDouble();
-                    d.point[1]=input.get(8).asDouble();
-                    d.point[2]=input.get(9).asDouble();
-                    d.dir[0]=input.get(10).asDouble();
-                    d.dir[1]=input.get(11).asDouble();
-                    d.dir[2]=input.get(12).asDouble();
-                    d.mag = input.get(13).asDouble();
+                    d.point[0]=input.get(7).asFloat64();
+                    d.point[1]=input.get(8).asFloat64();
+                    d.point[2]=input.get(9).asFloat64();
+                    d.dir[0]=input.get(10).asFloat64();
+                    d.dir[1]=input.get(11).asFloat64();
+                    d.dir[2]=input.get(12).asFloat64();
+                    d.mag = input.get(13).asFloat64();
                     d.persistence=PPS_AVOIDANCE_PERSISTENCE;
                     d.timeout=PPS_AVOIDANCE_TIMEOUT;
                 }
@@ -175,15 +175,15 @@ protected:
             Bottle &optTask2=tweakOptions.addList();
             optTask2.addString("task_2");
             Bottle &plTask2=optTask2.addList();
-            plTask2.addInt(6);
+            plTask2.addInt32(6);
             Bottle &posPart=plTask2.addList();
-            posPart.addDouble(0.0);
-            posPart.addDouble(0.0);
-            posPart.addDouble(elbow_height);
+            posPart.addFloat64(0.0);
+            posPart.addFloat64(0.0);
+            posPart.addFloat64(elbow_height);
             Bottle &weightsPart=plTask2.addList();
-            weightsPart.addDouble(0.0);
-            weightsPart.addDouble(0.0);
-            weightsPart.addDouble(elbow_weight);
+            weightsPart.addFloat64(0.0);
+            weightsPart.addFloat64(0.0);
+            weightsPart.addFloat64(elbow_weight);
             iCartCtrl->tweakSet(tweakOptions);
         }
     }
@@ -234,8 +234,8 @@ protected:
 public:
     bool respond(const Bottle &command, Bottle &reply)
     {
-        int ack =Vocab::encode("ack");
-        int nack=Vocab::encode("nack");
+        int ack =Vocab32::encode("ack");
+        int nack=Vocab32::encode("nack");
 
         if (command.size()>0)
         {
@@ -243,17 +243,17 @@ public:
             {
                 if (command.get(1).asString() == "motionGain")
                 {
-                    reply.addVocab(ack);
-                    reply.addDouble(motionGain);
+                    reply.addVocab32(ack);
+                    reply.addFloat64(motionGain);
                 }
                 if (command.get(1).asString() == "body_valence")
                 {
-                    reply.addVocab(ack);
-                    reply.addDouble(valence);
+                    reply.addVocab32(ack);
+                    reply.addFloat64(valence);
                 }
                 else if (command.get(1).asString() == "home")
                 {
-                    reply.addVocab(ack);
+                    reply.addVocab32(ack);
                     reply.addString("left: ");
                     reply.addString(data["left"].home_x.toString(3,3).c_str());
                     reply.addString("right: ");
@@ -261,45 +261,45 @@ public:
                 }
                 else
                 {
-                    reply.addVocab(nack);
+                    reply.addVocab32(nack);
                 }
             }
             else if (command.get(0).asString() == "set")
             {
                 if (command.get(1).asString() == "motionGain")
                 {
-                    reply.addVocab(ack);
-                    motionGain = command.get(2).asDouble();
-                    reply.addDouble(motionGain);
+                    reply.addVocab32(ack);
+                    motionGain = command.get(2).asFloat64();
+                    reply.addFloat64(motionGain);
                 }
                 else if (command.get(1).asString() == "body_valence")
                 {
-                    reply.addVocab(ack);
-                    valence = command.get(2).asDouble();
-                    reply.addDouble(valence);
+                    reply.addVocab32(ack);
+                    valence = command.get(2).asFloat64();
+                    reply.addFloat64(valence);
                 }
                 else if (command.get(1).asString() == "behavior")
                 {
                     if (command.get(2).asString() == "avoidance")
                     {
-                        reply.addVocab(ack);
+                        reply.addVocab32(ack);
                         motionGain = -1.0;
-                        reply.addDouble(motionGain);
+                        reply.addFloat64(motionGain);
                     }
                     else if (command.get(2).asString() == "catching")
                     {
-                        reply.addVocab(ack);
+                        reply.addVocab32(ack);
                         motionGain = 1.0;
-                        reply.addDouble(motionGain);
+                        reply.addFloat64(motionGain);
                     }
                     else
                     {
-                        reply.addVocab(nack);
+                        reply.addVocab32(nack);
                     }
                 }
                 else
                 {
-                    reply.addVocab(nack);
+                    reply.addVocab32(nack);
                 }
             }
             else if (command.get(0).asString() == "reach")
@@ -310,19 +310,19 @@ public:
                     if (armReach == "left" || armReach == "right")
                     {
                         for (uint8_t i=0; i<xReach.size(); i++)
-                            xReach[i] = command.get(i+2).asDouble();
+                            xReach[i] = command.get(i+2).asFloat64();
                         data[armReach.c_str()].home_x = xReach;
 //                        data[armReach.c_str()].persistence=PPS_AVOIDANCE_PERSISTENCE;
 //                        data[armReach.c_str()].timeout=PPS_AVOIDANCE_TIMEOUT;
                         askedReach = true;
                         yDebug("[%s] REACH (%s) by %s arm",name.c_str(), xReach.toString(3,3).c_str(), armReach.c_str());
-                        reply.addVocab(ack);
+                        reply.addVocab32(ack);
                     }
                     else
-                        reply.addVocab(nack);
+                        reply.addVocab32(nack);
                 }
                 else
-                    reply.addVocab(nack);
+                    reply.addVocab32(nack);
             }
             else if (command.get(0).asString() == "reach_pose")
             {
@@ -332,21 +332,21 @@ public:
                     if (armReach == "left" || armReach == "right")
                     {
                         for (uint8_t i=0; i<xReach.size(); i++)
-                            xReach[i] = command.get(i+2).asDouble();
+                            xReach[i] = command.get(i+2).asFloat64();
                         for (uint8_t i=0; i<oReach.size(); i++)
-                            oReach[i] = command.get(i+5).asDouble();
+                            oReach[i] = command.get(i+5).asFloat64();
                         oReach[3] = oReach[3]*M_PI/180.0;
                         data[armReach.c_str()].home_x = xReach;
                         data[armReach.c_str()].home_o = oReach;
                         askedReachPose = true;
                         yDebug("[%s] REACH A POSE (%s) (%s) by %s arm",name.c_str(), xReach.toString(3,3).c_str(), oReach.toString(3,3).c_str(), armReach.c_str());
-                        reply.addVocab(ack);
+                        reply.addVocab32(ack);
                     }
                     else
-                        reply.addVocab(nack);
+                        reply.addVocab32(nack);
                 }
                 else
-                    reply.addVocab(nack);
+                    reply.addVocab32(nack);
             }
             else if (command.get(0).asString() == "home")
             {
@@ -355,11 +355,11 @@ public:
                 data["left"].home_o = o0;
                 data["right"].home_o = o0;
                 askedHome = true;
-                reply.addVocab(ack);
+                reply.addVocab32(ack);
             }
             else if (command.get(0).asString() == "help")
             {
-                reply.addVocab(Vocab::encode("many"));
+                reply.addVocab32(Vocab32::encode("many"));
                 reply.addString("Available commands are:");
                 reply.addString("[reach] <arm_string> x y z - "
                                 "reach a position of (x,y,z) by left/right arm, <arm_string> = left/right");
@@ -367,10 +367,10 @@ public:
                 reply.addString("[get] motionGain - Return the setting value of motionGain");
                 reply.addString("[get] home - Return the setting values of home position");
                 reply.addString("help - produces this help.");
-                reply.addVocab(ack);
+                reply.addVocab32(ack);
             }
             else
-                reply.addVocab(nack);
+                reply.addVocab32(nack);
         }
 
         return true;
@@ -380,18 +380,18 @@ public:
     bool configure(ResourceFinder &rf)
     {
         name    =rf.check("name",Value("yetAnotherAvoidance")).asString().c_str();
-        period  =rf.check("period",Value(0.05)).asDouble();
-        trajTime=rf.check("trajTime",Value(0.9)).asDouble();
+        period  =rf.check("period",Value(0.05)).asFloat64();
+        trajTime=rf.check("trajTime",Value(0.9)).asFloat64();
 
-        valence=rf.check("body_valence",Value(1.0)).asDouble();
+        valence=rf.check("body_valence",Value(1.0)).asFloat64();
 
         elbow_set=rf.check("elbow_set",Value(1)).asBool();
         if (elbow_set)
         {
             if (Bottle *pB=rf.find("elbow_set").asList())
             {
-                elbow_height=pB->get(0).asDouble();
-                elbow_weight=pB->get(1).asDouble();
+                elbow_height=pB->get(0).asFloat64();
+                elbow_weight=pB->get(1).asFloat64();
             }
             else
             {
@@ -487,7 +487,7 @@ public:
             Bottle options;
             Bottle &straightOpt=options.addList();
             straightOpt.addString("straightness");
-            straightOpt.addDouble(30.0);
+            straightOpt.addFloat64(30.0);
             data["left"].iarm->tweakSet(options);
 
 
@@ -547,7 +547,7 @@ public:
             Bottle options;
             Bottle &straightOpt=options.addList();
             straightOpt.addString("straightness");
-            straightOpt.addDouble(30.0);
+            straightOpt.addFloat64(30.0);
             data["right"].iarm->tweakSet(options);
 
 
